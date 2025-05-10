@@ -9,6 +9,25 @@ import {
 
 import type { Route } from "./+types/root";
 import "./app.css";
+import React from "react";
+import ResponsiveNavigation from "./layout/ResponsiveNavigation";
+import { sidebarItems, bottomBarItems } from "./layout/navigationItems";
+
+
+export default function App() {
+  return (
+    <div className="flex h-screen flex-col md:flex-row">
+      <ResponsiveNavigation
+        sidebarItems={sidebarItems}
+        bottomBarItems={bottomBarItems}
+        />
+
+      <div className="flex-1 pb-16">
+        <Outlet />
+      </div>
+    </div>
+  );
+}
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -23,11 +42,13 @@ export const links: Route.LinksFunction = () => [
   },
 ];
 
+// {/* <link rel="manifest" href="/manifest.json" /> */}
 export function Layout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
+        <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />
@@ -39,10 +60,6 @@ export function Layout({ children }: { children: React.ReactNode }) {
       </body>
     </html>
   );
-}
-
-export default function App() {
-  return <Outlet />;
 }
 
 export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {

@@ -1,5 +1,7 @@
 import type { Route } from "./+types/home";
 import { Welcome } from "../welcome/welcome";
+import ResponsiveNavigation from "~/layout/ResponsiveNavigation";
+import { Calendar, NotebookText, Clock, BarChart2, FolderKanban, Settings } from "lucide-react";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +10,10 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
+
+
 export default function Home() {
-  return <Welcome />;
+  return (<>
+  <Welcome />
+  </>);
 }
