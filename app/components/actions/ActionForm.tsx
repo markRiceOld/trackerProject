@@ -6,12 +6,15 @@ import { Label } from "~/components/ui/label";
 import { format, isToday, isBefore, isAfter } from "date-fns";
 import { Calendar } from "~/components/ui/calendar";
 import { Badge } from "~/components/ui/badge";
+import { ADD_ACTION, UPDATE_ACTION } from "~/api/queries";
+import { useApi } from "~/api/useApi";
 
 export default function ActionForm() {
   const { id } = useParams();
   const [title, setTitle] = useState("");
   const [tbd, setTbd] = useState<Date | undefined>(undefined);
   const navigate = useNavigate();
+  const { call } = useApi();
 
   const isEdit = Boolean(id);
 
@@ -54,26 +57,8 @@ export default function ActionForm() {
       const isEditing = isEdit && id;
   
       const mutation = isEditing
-        ? `
-          mutation UpdateAction($id: ID!, $title: String, $tbd: String, $done: Boolean) {
-            updateAction(id: $id, title: $title, tbd: $tbd, done: $done) {
-              id
-              title
-              tbd
-              done
-            }
-          }
-        `
-        : `
-          mutation AddAction($title: String!, $tbd: String) {
-            addAction(title: $title, tbd: $tbd) {
-              id
-              title
-              tbd
-              done
-            }
-          }
-        `;
+        ? UPDATE_ACTION
+        : ADD_ACTION;
   
       const variables = isEditing
         ? {
@@ -87,19 +72,13 @@ export default function ActionForm() {
             tbd: tbd ? tbd.toISOString() : null,
           };
   
-      const response = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: mutation, variables }),
-      });
+      call({ query: mutation, variables }).catch(err => {
+        throw new Error(err);
+      }).then(() => {
+        navigate("/activities/actions");
+      })
+
   
-      const result = await response.json();
-  
-      if (result.errors) {
-        throw new Error(result.errors[0].message);
-      }
-  
-      navigate("/activities/actions");
     } catch (error) {
       console.error("Failed to submit action:", error);
     }

@@ -2,67 +2,64 @@ import { Skeleton } from "~/components/ui/skeleton";
 import TodayActionWidget from "./TodayActionWidget";
 import UnderConstruction from "../UnderConstruction";
 import { useState, useEffect } from "react";
+import { useAuth } from "../auth/AuthContext";
+import { useAuthGuard } from "../auth/useAuthGuard";
+import { useNavigate, useRoutes } from "react-router";
+import { useApi } from "~/api/useApi";
+import { GET_LINKED_ACTIONS } from "~/api/queries";
 
 export default function TodayPage() {
+  console.log('todayPAge')
+  // useAuthGuard();
   const [linkedActions, setLinkedActions] = useState<any[] | null>(null);
-  const [standaloneActions, setStandaloneActions] = useState<any[] | null>(null);
+  // const [standaloneActions, setStandaloneActions] = useState<any[] | null>(null);
   const [laLoading, setLaLoading] = useState(true);
-  const [saLoading, setSaLoading] = useState(true);
+  // const [saLoading, setSaLoading] = useState(true);
+  const { call } = useApi();
 
   useEffect(() => {
     const todayISO = new Date().toISOString().split("T")[0]; // e.g. "2025-05-09"
 
     async function fetchLinkedActions() {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query GetLinkedActions($date: String!) {
-              linkedActions(date: $date) {
-                id
-                title
-                tbd
-                done
-                project {
-                  id
-                  title
-                }
-              }
-            }
-          `,
-          variables: { date: todayISO },
-        }),
-      });
+      call({ query: GET_LINKED_ACTIONS, variables: { date: todayISO } }).then(res => {
+        setLinkedActions(res?.linkedActions ?? []);
+        setLaLoading(false);
+      })
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     query: LINKED_ACTIONS,
+      //     variables: { date: todayISO },
+      //   }),
+      // });
 
-      const json = await res.json();
-      setLinkedActions(json.data?.linkedActions ?? []);
-      setLaLoading(false);
+      // const json = await res.json();
     }
 
-    async function fetchStandaloneActions() {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query GetStandaloneActions($date: String!) {
-              standaloneActions(date: $date) {
-                id
-                title
-                tbd
-                done
-              }
-            }
-          `,
-          variables: { date: todayISO },
-        }),
-      });
+    // async function fetchStandaloneActions() {
+    //   const res = await fetch("http://localhost:4000/graphql", {
+    //     method: "POST",
+    //     headers: { "Content-Type": "application/json" },
+    //     body: JSON.stringify({
+    //       query: `
+    //         query GetStandaloneActions($date: String!) {
+    //           standaloneActions(date: $date) {
+    //             id
+    //             title
+    //             tbd
+    //             done
+    //           }
+    //         }
+    //       `,
+    //       variables: { date: todayISO },
+    //     }),
+    //   });
 
-      const json = await res.json();
-      setStandaloneActions(json.data?.standaloneActions ?? []);
-      setSaLoading(false);
-    }
+    //   const json = await res.json();
+    //   setStandaloneActions(json.data?.standaloneActions ?? []);
+    //   setSaLoading(false);
+    // }
 
     fetchLinkedActions();
   }, []);
@@ -95,30 +92,29 @@ export default function TodayPage() {
     )
   }
 
-  const renderStandaloneActions = () => {
-    if (laLoading)
-      return (
-        <>
-          <Skeleton className="h-16 w-full rounded-md" />
-        </>
-      );
-    if (!standaloneActions?.length)
-      return (
-        <p className="text-muted-foreground">No standalone actions for today.</p>
-      )
-    return(
-      <ul className="space-y-2">
-        {standaloneActions.map((action) => (
-          <li key={action.id} className="border p-3 rounded-md">
-            <div className="flex justify-between items-center">
-              <span>{action.title}</span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    )
-  }
-
+  // const renderStandaloneActions = () => {
+  //   if (saLoading)
+  //     return (
+  //       <>
+  //         <Skeleton className="h-16 w-full rounded-md" />
+  //       </>
+  //     );
+  //   if (!standaloneActions?.length)
+  //     return (
+  //       <p className="text-muted-foreground">No standalone actions for today.</p>
+  //     )
+  //   return(
+  //     <ul className="space-y-2">
+  //       {standaloneActions.map((action) => (
+  //         <li key={action.id} className="border p-3 rounded-md">
+  //           <div className="flex justify-between items-center">
+  //             <span>{action.title}</span>
+  //           </div>
+  //         </li>
+  //       ))}
+  //     </ul>
+  //   )
+  // }
 
   return (
     <main className="space-y-8 p-6">

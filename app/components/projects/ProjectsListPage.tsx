@@ -5,23 +5,8 @@ import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
 import { Plus } from "lucide-react";
 import ProjectPreview, { type ProjectPreviewProps, getProjectStatus } from "./ProjectPreview";
-
-export const GET_PROJECTS = `
-  query GetProjects {
-    projects {
-      id
-      title
-      dod
-      type
-      actions {
-        id
-        title
-        done
-        tbd
-      }
-    }
-  }
-`
+import { useApi } from "../../api/useApi";
+import { GET_PROJECTS } from "~/api/queries";
 
 function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPreviewProps["firstTbdAction"] | undefined {
   return [...actions]
@@ -33,29 +18,22 @@ export default function ProjectsListPage() {
   const [projects, setProjects] = useState<ProjectPreviewProps[] | null>(null);
   const [hideDone, setHideDone] = useState(false);
   const navigate = useNavigate();
+  const { call } = useApi(GET_PROJECTS);
 
   useEffect(() => {
     async function fetchProjects() {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: GET_PROJECTS,
-        }),
+      call({ variables: { id: "projectId123" } }).then((res) => {
+        const data = res?.projects ?? [];
+        const parsed = data.map((project: any) => ({
+          ...project,
+          actions: project.actions.map((a: any) => ({
+            ...a,
+            tbd: a.tbd ? new Date(+a.tbd) : undefined,
+          })),
+          goalTitle: project.goal?.title ?? undefined,
+        }));
+        setProjects(parsed)
       });
-
-      const json = await res.json();
-      const data = json?.data?.projects ?? [];
-
-      const parsed = data.map((project: any) => ({
-        ...project,
-        actions: project.actions.map((a: any) => ({
-          ...a,
-          tbd: a.tbd ? new Date(+a.tbd) : undefined,
-        })),
-      }));
-
-      setProjects(parsed);
     }
 
     fetchProjects();
@@ -69,10 +47,18 @@ export default function ProjectsListPage() {
 
   return (
     <main className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap">
         <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
         <Button size="sm" onClick={() => navigate("/activities/project")}>
           <Plus className="h-4 w-4 mr-2" /> Add Project
+        </Button>
+        <Button
+          size='sm'
+          variant="link"
+          onClick={() => navigate("/activities")}
+          className="!p-0 font-light"
+        >
+          ← Back to Activities
         </Button>
       </div>
 
@@ -89,6 +75,7 @@ export default function ProjectsListPage() {
             showControls
             onDelete={(id) => { setProjects(prev => prev?.filter(i => i.id !== id) ?? []) }}
             firstTbdAction={getFirstTbdAction(project.actions)}
+            goalTitle={project.goalTitle}
           />
         ))}
       </div>

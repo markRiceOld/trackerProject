@@ -1,24 +1,43 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import App from "./root";
+import { AuthProvider } from "./components/auth/AuthContext";
+import { RouterProvider, createBrowserRouter } from "react-router";
+import { ProtectedAppLayout } from "./root";
+import TodayPage from "./components/today/TodayPage";
+import LoginPage from "./components/auth/LoginPage";
+import RegisterPage from "./components/auth/RegisterPage";
+import protectedRoutes from "./protectedRoutes";
 
-async function start() {
-  const root = document.getElementById("root")!;
-  const { ApolloClient, InMemoryCache, ApolloProvider } = await import("@apollo/client");
+const root = document.getElementById("root")!;
+const { ApolloClient, InMemoryCache, ApolloProvider } = await import("@apollo/client");
 
-  const client = new ApolloClient({
-    uri: "http://localhost:4000/graphql",
-    cache: new InMemoryCache(),
-  });
+const client = new ApolloClient({
+  uri: "http://localhost:4000/graphql",
+  cache: new InMemoryCache(),
+});
 
-  ReactDOM.createRoot(root).render(
-    <React.StrictMode>
-      <ApolloProvider client={client}>
-        <App />
-      </ApolloProvider>
-    </React.StrictMode>
-  );
-}
+const router = createBrowserRouter([
+  {
+    path: "/",
+    element: <ProtectedAppLayout />,
+    children: protectedRoutes,
+    // children: [
+    //   { path: "today", element: <TodayPage /> },
+    //   // other child routes like /activities, /projects, etc.
+    // ],
+  },
+  { path: "/login", element: <LoginPage /> },
+  { path: "/register", element: <RegisterPage /> },
+]);
 
-start();
+ReactDOM.createRoot(root).render(
+  <React.StrictMode>
+    <ApolloProvider client={client}>
+      <AuthProvider>
+        <RouterProvider router={router} />
+      </AuthProvider>
+    </ApolloProvider>
+  </React.StrictMode>
+);
+
 

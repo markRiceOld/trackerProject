@@ -4,6 +4,8 @@ import { Badge } from "~/components/ui/badge";
 import { format, isBefore, isAfter } from "date-fns";
 import { Button } from "~/components/ui/button";
 import ActionPreview from "../actions/ActionPreview";
+import { useApi } from "~/api/useApi";
+import { DELETE_PROJECT } from "~/api/queries";
 
 export interface Project {
   title: string;
@@ -24,10 +26,17 @@ export interface ProjectPreviewProps extends Project {
     done?: boolean;
     tbd?: Date;
   };
+  goalTitle?: string;
 }
 
 export function getProjectStatus(props: ProjectPreviewProps): string {
-  const { dod, startDate, endDate, actions } = props;
+  const {
+    dod,
+    startDate,
+    endDate,
+    actions,
+    goalTitle,
+  } = props;
   const allChecked = actions.length > 0 && actions.every((a) => a.done);
   const now = new Date();
 
@@ -73,6 +82,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
   const status = getProjectStatus(props);
   const doneCount = actions.filter((a) => a.done).length;
   const statusColor = getStatusColor(status);
+  const { call } = useApi(DELETE_PROJECT);
 
   const handleManage = () => {
     navigate(`/activities/project/${id}`);
@@ -84,22 +94,9 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
     if (!confirmed) return;
 
     try {
-      await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            mutation DeleteProject($id: ID!) {
-              deleteProject(id: $id) {
-                id
-              }
-            }
-          `,
-          variables: { id },
-        }),
-      });
-
-      if (onDelete) onDelete(id);
+      call({ variables: { id } }).then(() => {
+        if (onDelete) onDelete(id);
+      })
     } catch (err) {
       console.error("Failed to delete project", err);
     }
@@ -112,7 +109,15 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
         <Badge className={statusColor}>{status}</Badge>
       </div>
 
-      <div className="text-xs text-muted-foreground">{actions.length} actions</div>
+      <div className="text-xs text-muted-foreground">
+        {actions.length} actions
+        {props.goalTitle && (
+          <span className="ml-2 italic text-muted-foreground/70">
+            for <span className="font-medium">{props.goalTitle}</span>
+          </span>
+        )}
+      </div>
+
 
       {status === "TBD" && startDate && (
         <div className="text-xs text-muted-foreground">

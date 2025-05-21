@@ -6,24 +6,10 @@ import { Label } from "~/components/ui/label";
 import { Plus } from "lucide-react";
 import GoalPreview, { type GoalPreviewProps, getGoalStatus } from "./GoalPreview";
 import type { Action } from "../actions/ActionsListPage";
+import { useApi } from "~/api/useApi";
+import { GET_GOALS } from "~/api/queries";
 
-export const GET_GOALS = `
-  query GetGoals {
-    goals {
-      id
-      title
-      dod
-      startDate
-      endDate
-      projects {
-        id
-        title
-        startDate
-        endDate
-      }
-    }
-  }
-`
+
 
 function getFirstTbdProject(projects: GoalPreviewProps["projects"]): GoalPreviewProps["firstTbdProject"] | undefined {
   return [...projects]
@@ -35,34 +21,37 @@ export default function GoalsListPage() {
   const [goals, setGoals] = useState<GoalPreviewProps[] | null>(null);
   const [hideDone, setHideDone] = useState(false);
   const navigate = useNavigate();
+  const { call } = useApi(GET_GOALS);
 
   useEffect(() => {
     async function fetchGoals() {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: GET_GOALS,
-        }),
-      });
+      call().then(res => {
+        const data = res?.goals ?? [];
+  
+        const parsed = data.map((goal: any) => ({
+          ...goal,
+          startDate: goal.startDate ? new Date(goal.startDate) : undefined,
+          endDate: goal.endDate ? new Date(goal.endDate) : undefined,
+          projects: goal.projects.map((p: any) => ({
+            id: p.id,
+            title: p.title,
+            startDate: p.startDate ? new Date(p.startDate) : undefined,
+            endDate: p.endDate ? new Date(p.endDate) : undefined,
+            done: !p.actions ? false : p.actions.every((a: Action) => a.done),
+          })),
+        }));
+  
+        setGoals(parsed);
+      })
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     query: GET_GOALS,
+      //   }),
+      // });
 
-      const json = await res.json();
-      const data = json?.data?.goals ?? [];
-
-      const parsed = data.map((goal: any) => ({
-        ...goal,
-        startDate: goal.startDate ? new Date(goal.startDate) : undefined,
-        endDate: goal.endDate ? new Date(goal.endDate) : undefined,
-        projects: goal.projects.map((p: any) => ({
-          id: p.id,
-          title: p.title,
-          startDate: p.startDate ? new Date(p.startDate) : undefined,
-          endDate: p.endDate ? new Date(p.endDate) : undefined,
-          done: p.actions.every((a: Action) => a.done),
-        })),
-      }));
-
-      setGoals(parsed);
+      // const json = await res.json();
     }
 
     fetchGoals();

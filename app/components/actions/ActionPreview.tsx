@@ -6,6 +6,8 @@ import { isToday, isBefore, isAfter, format } from "date-fns";
 import { Badge } from "../ui/badge";
 import { useNavigate } from "react-router";
 import { useEffect, useState } from "react";
+import { useApi } from "~/api/useApi";
+import { DELETE_ACTION, TOGGLE_ACTION } from "~/api/queries";
 
 interface ActionPreviewProps {
   action: Action;
@@ -22,6 +24,7 @@ export default function ActionPreview({
 }: ActionPreviewProps) {
   const navigate = useNavigate();
   const [checked, setChecked] = useState(action.done ?? false)
+  const { call } = useApi();
   function getStatus(actionArg: Action): string {
     if (actionArg.done) return "Done";
     if (!actionArg.tbd) return "Backlog";
@@ -60,25 +63,22 @@ export default function ActionPreview({
 
   const handleToggle = async () => {
     try {
-      await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            mutation ToggleAction($id: ID!) {
-              toggleAction(id: $id) {
-                id
-                done
-              }
-            }
-          `,
-          variables: { id: action.id },
-        }),
-      });
-      setChecked(prev => !prev)
-  
-      // Optional: trigger parent refetch
-      onToggle?.(action.id ?? '', !!action.done);
+      call({ query: TOGGLE_ACTION, variables: {
+        id: action.id
+      } }).then(() => {
+        setChecked(prev => !prev)
+    
+        // Optional: trigger parent refetch
+        onToggle?.(action.id ?? '', !!action.done);
+      })
+      // await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     query: ,
+      //     variables: {  },
+      //   }),
+      // });
     } catch (err) {
       console.error("Toggle failed", err);
     }
@@ -86,22 +86,26 @@ export default function ActionPreview({
 
   const handleDelete = async () => {
     try {
-      await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            mutation DeleteAction($id: ID!) {
-              deleteAction(id: $id) {
-                id
-              }
-            }
-          `,
-          variables: { id: action.id },
-        }),
-      });
+      call({
+        query: DELETE_ACTION,
+        variables: { id: action.id },
+      }).then(() => {
+        onDelete?.(action.id ?? '');
+      })
+      // await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     query: `
+      //       mutation DeleteAction($id: ID!) {
+      //         deleteAction(id: $id) {
+      //           id
+      //         }
+      //       }
+      //     `,
+      //   }),
+      // });
   
-      onDelete?.(action.id ?? '');
     } catch (err) {
       console.error("Delete failed", err);
     }

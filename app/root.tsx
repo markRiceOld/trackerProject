@@ -2,9 +2,11 @@ import {
   isRouteErrorResponse,
   Links,
   Meta,
+  Navigate,
   Outlet,
   Scripts,
   ScrollRestoration,
+  useLocation,
 } from "react-router";
 
 import type { Route } from "./+types/root";
@@ -12,22 +14,40 @@ import "./app.css";
 import React from "react";
 import ResponsiveNavigation from "./layout/ResponsiveNavigation";
 import { sidebarItems, bottomBarItems } from "./layout/navigationItems";
+import { AuthProvider, useAuth } from "./components/auth/AuthContext";
 
+export function ProtectedAppLayout() {
+  console.log('protexted')
+  const { isAuthenticated, ready } = useAuth();
+  const location = useLocation();
 
-export default function App() {
+  const publicRoutes = ["/login", "/register"];
+  const isPublic = publicRoutes.includes(location.pathname);
+
+  if (!ready) return null; // wait for hydration
+
+  if (!isAuthenticated && !isPublic) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
   return (
     <div className="flex h-screen flex-col md:flex-row">
-      <ResponsiveNavigation
-        sidebarItems={sidebarItems}
-        bottomBarItems={bottomBarItems}
-        />
-
+      <ResponsiveNavigation sidebarItems={sidebarItems} bottomBarItems={bottomBarItems} />
       <div className="flex-1 pb-16">
         <Outlet />
       </div>
     </div>
   );
 }
+
+// export default function App() {
+//   console.log('app')
+//   return (
+//     <AuthProvider>
+//       <ProtectedAppLayout />
+//     </AuthProvider>
+//   );
+// }
 
 export const links: Route.LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -48,7 +68,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     <html lang="en">
       <head>
         <meta charSet="utf-8" />
-        <link rel="manifest" href="/manifest.webmanifest" />
+        <link rel="manifest" href="/manifest.json" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <Meta />
         <Links />

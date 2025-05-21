@@ -8,6 +8,8 @@ import { Label } from "~/components/ui/label";
 import { Badge } from "~/components/ui/badge";
 import { useNavigate } from "react-router";
 import ActionPreview from "./ActionPreview";
+import { useApi } from "~/api/useApi";
+import { GET_ACTIONS } from "~/api/queries";
 
 export interface Action {
   id?: string;
@@ -16,37 +18,34 @@ export interface Action {
   done?: boolean;
 }
 
-export const GET_ACTIONS = `
-  query GetActions {
-    actions {
-      id
-      title
-      tbd
-      done
-    }
-  }
-`;
+
 
 export default function ActionsListPage() {
   const [actions, setActions] = useState<Action[] | null>(null);
+  const { call } = useApi();
 
   useEffect(() => {
     async function fetchActions() {
-      const { gql } = await import("@apollo/client");
-      const query = gql(GET_ACTIONS);
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.loc?.source.body }),
-      });
-      let json = null;
-      try {
-        json = await res.json();
-      } catch (err) {
+      call({
+        query: GET_ACTIONS
+      }).catch(err => {
         console.log('error');
         console.log(err);
-      }
-      setActions(json?.data?.actions ?? []);
+      }).then(res => {
+        setActions(res?.actions ?? []);
+      })
+      // const { gql } = await import("@apollo/client");
+      // const query = gql(GET_ACTIONS);
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ query: query.loc?.source.body }),
+      // });
+      // let json = null;
+      // try {
+      //   json = await res.json();
+      // } catch (err) {
+      // }
     }
 
     fetchActions();

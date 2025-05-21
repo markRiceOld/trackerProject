@@ -1,4 +1,4 @@
-import TrackerCalendar from "~/components/calendar/TrackerCalendar";
+import TrackerCalendar from "./TrackerCalendar";
 
 export default function CalendarPage() {
   return (

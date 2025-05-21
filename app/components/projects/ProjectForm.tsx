@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
-import { useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Calendar } from "~/components/ui/calendar";
 import ActionPreview from "../actions/ActionPreview";
+import { useApi } from "../../api/useApi";
+import { ADD_GOAL_PROJECT, ADD_PROJECT, ADD_PROJECT_ACTION, DELETE_ACTION, GET_PROJECT, UPDATE_PROJECT } from "~/api/queries";
 
 export default function ProjectForm() {
   const navigate = useNavigate();
@@ -19,44 +21,28 @@ export default function ProjectForm() {
 
   const [newActions, setNewActions] = useState<any[]>([]);
   const [deletedActionIds, setDeletedActionIds] = useState<string[]>([]);
+  const { call } = useApi();
+
+  const location = useLocation();
+  const queryParams = new URLSearchParams(location.search);
+  const goalId = queryParams.get("goalId");
+
 
   useEffect(() => {
     if (!isEdit) return;
 
     async function fetchProject() {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query GetProject($id: ID!) {
-              project(id: $id) {
-                id
-                title
-                dod
-                actions {
-                  id
-                  title
-                  done
-                  tbd
-                }
-              }
-            }
-          `,
-          variables: { id },
-        }),
-      });
-
-      const json = await res.json();
-      const data = json.data.project;
-      setTitle(data.title);
-      setDod(data.dod ?? "");
-      setActions(
-        data.actions.map((a: any) => ({
-          ...a,
-          tbd: a.tbd ? new Date(+a.tbd) : undefined,
-        }))
-      );
+      call({ variables: { id }, query: GET_PROJECT}).then((res) => {
+        const data = res?.project;
+        setTitle(data.title);
+        setDod(data.dod ?? "");
+        setActions(
+          data.actions.map((a: any) => ({
+            ...a,
+            tbd: a.tbd ? new Date(+a.tbd) : undefined,
+          }))
+        );
+      })
     }
 
     fetchProject();
@@ -67,84 +53,56 @@ export default function ProjectForm() {
 
     try {
       // 1. Create or update the project
+      console.log('a')
+      console.log(goalId)
+      console.log(id)
+      console.log(isEdit)
       const query = isEdit
-        ? `
-          mutation UpdateProject($id: ID!, $title: String, $dod: String) {
-            updateProject(id: $id, title: $title, dod: $dod) {
-              id
-            }
-          }
-        `
-        : `
-          mutation AddProject($title: String!, $dod: String, $actions: [ActionInput!]) {
-            addProject(title: $title, dod: $dod, actions: $actions) {
-              id
-            }
-          }
-        `;
+        ? UPDATE_PROJECT
+        : goalId ? ADD_GOAL_PROJECT : ADD_PROJECT;
 
       const variables: any = isEdit
-        ? { id, title, dod }
-        : {
+        ? {
             title,
             dod,
             actions: [...actions, ...newActions].map((a) => ({
               title: a.title,
               tbd: a.tbd ? a.tbd.toISOString() : null,
             })),
+          }
+        : {
+            title,
+            dod,
+            ...(goalId ? { goalId, type: "linked" } : {}),
           };
 
-      const response = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, variables }),
-      });
+          console.log(query)
+          console.log(variables)
 
-      if (!response.ok) throw new Error("Failed to save project");
-
-      // 2. If edit, handle actions
-      if (isEdit) {
-        await Promise.all([
+      call({ variables, query }).catch(() => {
+        throw new Error("Failed to save project");
+      }).then(async () => {
+        // 2. If edit, handle actions
+        if (isEdit) await Promise.all([
           ...newActions.map((a) =>
-            fetch("http://localhost:4000/graphql", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                query: `
-                  mutation AddAction($title: String!, $tbd: String, $projectId: String) {
-                    addAction(title: $title, tbd: $tbd, projectId: $projectId) {
-                      id
-                    }
-                  }
-                `,
-                variables: {
-                  title: a.title,
-                  tbd: a.tbd ? a.tbd.toISOString() : null,
-                  projectId: id,
-                },
-              }),
+            call({
+              query: ADD_PROJECT_ACTION,
+              variables: {
+                title: a.title,
+                tbd: a.tbd ? a.tbd.toISOString() : null,
+                projectId: id,
+              },
             })
           ),
           ...deletedActionIds.map((actionId) =>
-            fetch("http://localhost:4000/graphql", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                query: `
-                  mutation DeleteAction($id: ID!) {
-                    deleteAction(id: $id) {
-                      id
-                    }
-                  }
-                `,
-                variables: { id: actionId },
-              }),
-            })
+            call({ query: DELETE_ACTION, variables: { id: actionId } })
           ),
         ]);
-      }
+        // navigate("/activities/projects");
+        navigate(goalId ? `/activities/goal/${goalId}` : "/activities/projects");
 
-      navigate("/activities/projects");
+      })
+
     } catch (err) {
       console.error("Failed to submit project", err);
     }
@@ -223,7 +181,7 @@ export default function ProjectForm() {
 
         <div className="flex gap-2 pt-2">
           <Button type="submit">Submit</Button>
-          <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+          <Button type="button" variant="ghost" onClick={() => navigate(goalId ? `/activities/goal/${goalId}` : "/activities/projects")}>
             Cancel
           </Button>
         </div>

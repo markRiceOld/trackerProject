@@ -2,35 +2,33 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
+import { useApi } from "~/api/useApi";
+import { ADD_GOAL } from "~/api/queries";
 
 export default function GoalForm() {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
   const [dod, setDod] = useState("");
+  const { call } = useApi(ADD_GOAL)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const query = 
-      `
-        mutation AddGoal($title: String!, $dod: String) {
-          addGoal(title: $title, dod: $dod) {
-            id
-          }
-        }
-      `;
+    
 
     const variables = { title, dod };
 
     try {
-      await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, variables }),
-      });
+      call({ variables }).then(() => {
+        navigate("/activities/goals");
+      })
+      // await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ ADD_GOAL, variables }),
+      // });
 
-      navigate("/activities/goals");
     } catch (err) {
       console.error("Failed to submit goal", err);
     }

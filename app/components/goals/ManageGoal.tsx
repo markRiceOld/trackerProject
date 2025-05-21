@@ -6,6 +6,9 @@ import { Progress } from "~/components/ui/progress";
 import { Badge } from "~/components/ui/badge";
 import ProjectPreview, { type ProjectPreviewProps } from "../projects/ProjectPreview";
 import { getGoalStatus } from "./GoalPreview";
+import { replacePlaceholders } from "~/api/utils";
+import { useApi } from "~/api/useApi";
+import { DELETE_PROJECT, GET_GOAL, UPDATE_GOAL } from "~/api/queries";
 
 export default function ManageGoalPage() {
   const { id } = useParams();
@@ -16,94 +19,76 @@ export default function ManageGoalPage() {
   const [editingDod, setEditingDod] = useState(false);
   const [tempTitle, setTempTitle] = useState("");
   const [tempDod, setTempDod] = useState("");
+  const { call } = useApi();
 
   useEffect(() => {
     async function fetchGoal() {
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            query GetGoal($id: ID!) {
-              goal(id: $id) {
-                id
-                title
-                dod
-                startDate
-                endDate
-                projects {
-                  id
-                  title
-                  startDate
-                  endDate
-                  actions { done }
-                }
-              }
-            }
-          `,
-          variables: { id },
-        }),
-      });
+      call({ query: GET_GOAL, variables: { id } }).then(res => {
+        const data = res.goal;
+  
+        const parsed = {
+          ...data,
+          startDate: data.startDate ? new Date(data.startDate) : null,
+          endDate: data.endDate ? new Date(data.endDate) : null,
+          projects: data.projects.map((p: ProjectPreviewProps) => ({
+            ...p,
+            startDate: p.startDate ? new Date(p.startDate) : null,
+            endDate: p.endDate ? new Date(p.endDate) : null,
+            done: p.actions.every((a) => a.done),
+          })),
+        };
+  
+        setGoal(parsed);
+        setTempTitle(parsed.title);
+        setTempDod(parsed.dod || "");
+      })
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     query: GET_GOAL,
+      //     variables: { id },
+      //   }),
+      // });
 
-      const json = await res.json();
-      const data = json.data.goal;
-
-      const parsed = {
-        ...data,
-        startDate: data.startDate ? new Date(data.startDate) : null,
-        endDate: data.endDate ? new Date(data.endDate) : null,
-        projects: data.projects.map((p: ProjectPreviewProps) => ({
-          ...p,
-          startDate: p.startDate ? new Date(p.startDate) : null,
-          endDate: p.endDate ? new Date(p.endDate) : null,
-          done: p.actions.every((a) => a.done),
-        })),
-      };
-
-      setGoal(parsed);
-      setTempTitle(parsed.title);
-      setTempDod(parsed.dod || "");
+      // const json = await res.json();
     }
 
     fetchGoal();
   }, [id]);
 
   const updateGoalField = async (field: string, value: string) => {
-    await fetch("http://localhost:4000/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `
-          mutation UpdateGoal($id: ID!, $${field}: String) {
-            updateGoal(id: $id, ${field}: $${field}) {
-              id
-            }
-          }
-        `,
-        variables: { id, [field]: value },
-      }),
-    });
-    setGoal((prev: any) => ({ ...prev, [field]: value }));
+    call({
+      query: replacePlaceholders(UPDATE_GOAL, [field]),
+      variables: { id, [field]: value },  
+    }).then(() => {
+      setGoal((prev: any) => ({ ...prev, [field]: value }));
+    })
+    // await fetch("http://localhost:4000/graphql", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //   }),
+    // });
   };
 
   const handleDeleteProject = async (projectId: string) => {
     if (!confirm("Delete this project?")) return;
-    await fetch("http://localhost:4000/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `
-          mutation DeleteProject($id: ID!) {
-            deleteProject(id: $id) { id }
-          }
-        `,
-        variables: { id: projectId },
-      }),
-    });
-    setGoal((prev: any) => ({
-      ...prev,
-      projects: prev.projects.filter((p: ProjectPreviewProps) => p.id !== projectId),
-    }));
+    call({
+      query: DELETE_PROJECT,
+      variables: { id: projectId },
+    }).then(() => {
+      setGoal((prev: any) => ({
+        ...prev,
+        projects: prev.projects.filter((p: ProjectPreviewProps) => p.id !== projectId),
+      }));
+    })
+    // await fetch("http://localhost:4000/graphql", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //   }),
+    // });
   };
 
   if (!goal) return <p className="p-6">Loading...</p>;
@@ -168,7 +153,7 @@ export default function ManageGoalPage() {
 
       <div className="flex justify-between items-center pt-4">
         <h2 className="text-lg font-semibold">Projects</h2>
-        <Button size="sm" onClick={() => navigate(`/activities/project/new?goalId=${id}`)}>
+        <Button size="sm" onClick={() => navigate(`/activities/project?goalId=${id}`)}>
           + Add Project
         </Button>
       </div>
@@ -183,7 +168,7 @@ export default function ManageGoalPage() {
               {...project}
               showControls
               onDelete={() => handleDeleteProject(project.id)}
-              onManage={() => navigate(`/activities/project/${project.id}`)}
+              onManage={() => navigate(`/activities/project/${project.id}?goalId=${id}`)}
             />
           ))}
         </div>

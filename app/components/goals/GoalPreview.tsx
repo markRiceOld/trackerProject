@@ -4,6 +4,8 @@ import { Badge } from "~/components/ui/badge";
 import { format, isBefore, isAfter } from "date-fns";
 import { Button } from "~/components/ui/button";
 import ProjectPreview from "../projects/ProjectPreview";
+import { useApi } from "~/api/useApi";
+import { DELETE_GOAL } from "~/api/queries";
 
 export interface Goal {
   title: string;
@@ -74,6 +76,7 @@ export default function GoalPreview(props: GoalPreviewProps) {
   const status = getGoalStatus(props);
   const doneCount = projects.filter((a) => a.done).length;
   const statusColor = getStatusColor(status);
+  const { call } = useApi(DELETE_GOAL);
 
   const handleManage = () => {
     if (onManage) return onManage(id);
@@ -85,22 +88,18 @@ export default function GoalPreview(props: GoalPreviewProps) {
     if (!confirmed) return;
 
     try {
-      await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          query: `
-            mutation DeleteGoal($id: ID!) {
-              deleteGoal(id: $id) {
-                id
-              }
-            }
-          `,
-          variables: { id },
-        }),
-      });
+      call({ variables: { id } }).then(() => {
+        if (onDelete) onDelete(id);
+      })
+      // await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({
+      //     query: DELETE_GOAL,
+      //     variables: { id },
+      //   }),
+      // });
 
-      if (onDelete) onDelete(id);
     } catch (err) {
       console.error("Failed to delete goal", err);
     }

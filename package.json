@@ -3,9 +3,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "react-router build",
-    "dev": "react-router dev",
-    "start": "react-router-serve ./build/server/index.js",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
     "typecheck": "react-router typegen && tsc",
     "generate-pwa-assets": "pwa-assets-generator"
   },
@@ -36,7 +36,6 @@
     "tw-animate-css": "^1.2.5"
   },
   "devDependencies": {
-    "@react-router/dev": "^7.4.1",
     "@tailwindcss/vite": "^4.0.0",
     "@types/node": "^20",
     "@types/react-big-calendar": "^1.16.1",

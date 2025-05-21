@@ -1,51 +1,60 @@
 import ActivityPanel from "~/components/activities/ActivityPanel";
 import ActionPreview from "../actions/ActionPreview";
 import { useEffect, useState, type ReactNode, useCallback } from "react";
-import { GET_PROJECTS } from "../projects/ProjectsListPage";
 import ProjectPreview, { type Project } from "../projects/ProjectPreview";
-import { GET_ACTIONS, type Action } from "../actions/ActionsListPage";
-import { GET_GOALS } from "../goals/GoalsListPage";
+import { type Action } from "../actions/ActionsListPage";
 import type { Goal } from "../goals/GoalPreview";
 import GoalPreview from "../goals/GoalPreview";
+import { GET_ACTIONS, GET_GOALS, GET_PROJECTS } from "~/api/queries";
+import { useApi } from "~/api/useApi";
 
 export default function ActivitiesPage() {
   const [actions, setActions] = useState<Action[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const { call } = useApi();
 
   useEffect(() => {
     async function fetchActions() {
-      const { gql } = await import("@apollo/client");
-      const query = gql(GET_ACTIONS);
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.loc?.source.body }),
-      });
-      const json = await res.json();
-      setActions(json?.data?.actions ?? []);
+      call({ query: GET_ACTIONS }).then(res => {
+        setActions(res?.actions ?? []);
+      })
+      // const { gql } = await import("@apollo/client");
+      // const query = gql(GET_ACTIONS);
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ query: query.loc?.source.body }),
+      // });
+      // const json = await res.json();
     }
     async function fetchProjects() {
-      const { gql } = await import("@apollo/client");
-      const query = gql(GET_PROJECTS);
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.loc?.source.body }),
-      });
-      const json = await res.json();
-      setProjects(json?.data?.projects ?? []);
+      call({
+        query: GET_PROJECTS
+      }).then(res => {
+        setProjects(res?.projects ?? []);
+      })
+      // const { gql } = await import("@apollo/client");
+      // const query = gql(GET_PROJECTS);
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ query: query.loc?.source.body }),
+      // });
+      // const json = await res.json();
     }
     async function fetchGoals() {
-      const { gql } = await import("@apollo/client");
-      const query = gql(GET_GOALS);
-      const res = await fetch("http://localhost:4000/graphql", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query: query.loc?.source.body }),
-      });
-      const json = await res.json();
-      setGoals(json?.data?.goals ?? []);
+      call({ query: GET_GOALS }).then(res => {
+        setGoals(res?.goals ?? []);
+      })
+      // const { gql } = await import("@apollo/client");
+      // const query = gql(GET_GOALS);
+      // const res = await fetch("http://localhost:4000/graphql", {
+      //   method: "POST",
+      //   headers: { "Content-Type": "application/json" },
+      //   body: JSON.stringify({ query: query.loc?.source.body }),
+      // });
+      // const json = await res.json();
     }
 
     fetchActions();
