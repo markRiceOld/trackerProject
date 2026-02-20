@@ -20,12 +20,15 @@ type BottomBarNavItem = {
 type ResponsiveNavigationProps = {
   sidebarItems: SidebarNavItem[];
   bottomBarItems: BottomBarNavItem[];
+  /** When true, hide the bottom bar (e.g. on internal/detail pages). */
+  hideBottomBar?: boolean;
 };
 
 // --- Component ---
 export default function ResponsiveNavigation({
   sidebarItems,
   bottomBarItems,
+  hideBottomBar = false,
 }: ResponsiveNavigationProps) {
   const location = useLocation();
 
@@ -40,21 +43,23 @@ export default function ResponsiveNavigation({
         </nav>
       </aside>
 
-      {/* Bottom Bar Navigation (mobile) */}
-      <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t bg-white p-2 md:hidden">
-        {bottomBarItems.map((item) => (
-          <Link
-            key={item.id}
-            to={item.href}
-            className={cn(
-              "flex flex-col items-center text-sm text-muted-foreground",
-              location.pathname === item.href && "text-primary"
-            )}
-          >
-            {item.icon}
-          </Link>
-        ))}
-      </nav>
+      {/* Bottom Bar Navigation (mobile) - hidden on internal pages */}
+      {!hideBottomBar && (
+        <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t bg-white p-2 md:hidden">
+          {bottomBarItems.map((item) => (
+            <Link
+              key={item.id}
+              to={item.href}
+              className={cn(
+                "flex flex-col items-center text-sm text-muted-foreground",
+                location.pathname === item.href && "text-primary"
+              )}
+            >
+              {item.icon}
+            </Link>
+          ))}
+        </nav>
+      )}
     </>
   );
 }

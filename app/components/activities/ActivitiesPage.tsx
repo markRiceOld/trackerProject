@@ -5,13 +5,15 @@ import ProjectPreview, { type Project } from "../projects/ProjectPreview";
 import { type Action } from "../actions/ActionsListPage";
 import type { Goal } from "../goals/GoalPreview";
 import GoalPreview from "../goals/GoalPreview";
-import { GET_ACTIONS, GET_GOALS, GET_PROJECTS } from "~/api/queries";
+import IntervalPreview, { type IntervalPreviewProps } from "../intervals/IntervalPreview";
+import { GET_ACTIONS, GET_GOALS, GET_PROJECTS, GET_INTERVALS } from "~/api/queries";
 import { useApi } from "~/api/useApi";
 
 export default function ActivitiesPage() {
   const [actions, setActions] = useState<Action[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
+  const [intervals, setIntervals] = useState<IntervalPreviewProps[]>([]);
   const { call } = useApi();
 
   useEffect(() => {
@@ -47,27 +49,21 @@ export default function ActivitiesPage() {
       call({ query: GET_GOALS }).then(res => {
         setGoals(res?.goals ?? []);
       })
-      // const { gql } = await import("@apollo/client");
-      // const query = gql(GET_GOALS);
-      // const res = await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ query: query.loc?.source.body }),
-      // });
-      // const json = await res.json();
+    }
+    async function fetchIntervals() {
+      call({ query: GET_INTERVALS }).then(res => {
+        setIntervals(res?.intervals ?? []);
+      });
     }
 
     fetchActions();
     fetchProjects();
     fetchGoals();
+    fetchIntervals();
   }, []);
 
-  const updateActions = (next: Action[]) => {
-    setActions(next.filter((a) => !a.done));
-  };
-
-  const handleDeleteAction = async (id: string) => {
-    updateActions(actions.filter((a) => a.id !== id));
+  const handleDeleteAction = (id: string) => {
+    setActions((prev) => prev.filter((a) => a.id !== id));
   };
 
   const handleToggleDone = async (id: string, done: boolean) => {
@@ -79,11 +75,8 @@ export default function ActivitiesPage() {
 
   const renderActionPreviews = useCallback(() => {
     const visible = actions.filter((a) => !a.done);
-    console.log(actions)
-    console.log(visible)
     const result: { preview1?: ReactNode; preview2?: ReactNode } = {};
     if (visible[0]) {
-      console.log(visible[0].done)
       result.preview1 = (
         <ActionPreview
           action={visible[0]}
@@ -93,7 +86,6 @@ export default function ActivitiesPage() {
       );
     }
     if (visible[1]) {
-      console.log(visible[1].done)
       result.preview2 = (
         <ActionPreview
           action={visible[1]}
@@ -108,8 +100,8 @@ export default function ActivitiesPage() {
   const renderProjectPreviews = () => {
     if (!projects?.[0]) return {};
     const result: { preview1?: ReactNode; preview2?: ReactNode } = {};
-    result.preview1 = <ProjectPreview showControls {...projects[0]} />;
-    if (projects[1]) result.preview2 = <ProjectPreview showControls {...projects[1]} />;
+    result.preview1 = <ProjectPreview compact showControls {...projects[0]} />;
+    if (projects[1]) result.preview2 = <ProjectPreview compact showControls {...projects[1]} />;
     return result;
   };
 
@@ -121,24 +113,24 @@ export default function ActivitiesPage() {
     return result;
   };
 
+  const renderIntervalPreviews = () => {
+    const active = intervals.filter((iv) => iv.status === "active");
+    if (!active[0]) return {};
+    const result: { preview1?: ReactNode; preview2?: ReactNode } = {};
+    result.preview1 = <IntervalPreview showControls {...active[0]} />;
+    if (active[1]) result.preview2 = <IntervalPreview showControls {...active[1]} />;
+    return result;
+  };
+
   return (
     <main className="space-y-6 p-6">
       <h1 className="text-2xl font-bold tracking-tight">Activities</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <ActivityPanel type="habit" title="Habits" />
         <ActivityPanel type="goal" title="Goals" {...renderGoalPreviews()} />
         <ActivityPanel type="project" title="Projects" {...renderProjectPreviews()} />
+        <ActivityPanel type="interval" title="Intervals and Routines" {...renderIntervalPreviews()} />
         <ActivityPanel type="action" title="Actions" {...renderActionPreviews()} />
-      </div>
-
-      <div className="pt-6">
-        <a
-          href="/activities/all"
-          className="text-sm font-medium text-primary hover:underline"
-        >
-          View All Activities
-        </a>
       </div>
     </main>
   );

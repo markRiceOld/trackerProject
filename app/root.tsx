@@ -12,8 +12,10 @@ import {
 import type { Route } from "./+types/root";
 import "./app.css";
 import React from "react";
+import { cn } from "~/lib/utils";
 import ResponsiveNavigation from "./layout/ResponsiveNavigation";
 import { sidebarItems, bottomBarItems } from "./layout/navigationItems";
+import { isInternalPage } from "./layout/pathUtils";
 import { AuthProvider, useAuth } from "./components/auth/AuthContext";
 
 export function ProtectedAppLayout() {
@@ -30,10 +32,15 @@ export function ProtectedAppLayout() {
     return <Navigate to="/login" state={{ from: location }} replace />;
   }
 
+  const internal = isInternalPage(location.pathname);
   return (
     <div className="flex h-screen flex-col md:flex-row">
-      <ResponsiveNavigation sidebarItems={sidebarItems} bottomBarItems={bottomBarItems} />
-      <div className="flex-1 pb-16">
+      <ResponsiveNavigation
+        sidebarItems={sidebarItems}
+        bottomBarItems={bottomBarItems}
+        hideBottomBar={internal}
+      />
+      <div className={cn("flex-1 flex flex-col min-h-0", !internal && "pb-16")}>
         <Outlet />
       </div>
     </div>

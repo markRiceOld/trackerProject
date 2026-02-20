@@ -5,7 +5,7 @@ import { Link } from "react-router";
 import type { ReactNode } from "react";
 
 interface ActivityPanelProps {
-  type: "habit" | "goal" | "project" | "action";
+  type: "goal" | "project" | "action" | "interval";
   title: string;
   preview1?: ReactNode;
   preview2?: ReactNode;

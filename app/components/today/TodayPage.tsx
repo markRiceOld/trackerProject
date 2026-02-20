@@ -1,156 +1,278 @@
 import { Skeleton } from "~/components/ui/skeleton";
-import TodayActionWidget from "./TodayActionWidget";
+import { Button } from "~/components/ui/button";
+import { Input } from "~/components/ui/input";
+import ActionPreview from "~/components/actions/ActionPreview";
+import AfterDayWizard from "./AfterDayWizard";
+import PreDayWizard from "./PreDayWizard";
 import UnderConstruction from "../UnderConstruction";
-import { useState, useEffect } from "react";
-import { useAuth } from "../auth/AuthContext";
-import { useAuthGuard } from "../auth/useAuthGuard";
-import { useNavigate, useRoutes } from "react-router";
+import { useState, useEffect, useCallback } from "react";
 import { useApi } from "~/api/useApi";
-import { GET_LINKED_ACTIONS } from "~/api/queries";
+import {
+  GET_TODAY_ACTIONS,
+  GET_DAY_STATE,
+  GET_PRE_DAY_STATUS,
+  ADD_ACTION,
+} from "~/api/queries";
+import { toLocalDateString } from "~/utils/dateUtils";
+import { Moon, Pencil, Sun, Plus } from "lucide-react";
 
 export default function TodayPage() {
-  console.log('todayPAge')
-  // useAuthGuard();
-  const [linkedActions, setLinkedActions] = useState<any[] | null>(null);
-  // const [standaloneActions, setStandaloneActions] = useState<any[] | null>(null);
-  const [laLoading, setLaLoading] = useState(true);
-  // const [saLoading, setSaLoading] = useState(true);
+  const todayKey = toLocalDateString(new Date());
+  const [dayState, setDayState] = useState<{ preDayCompletedAt?: string | null } | null>(null);
+  const [preDayStatus, setPreDayStatus] = useState<{ afterDayRequired?: boolean } | null>(null);
+  const [dayStateLoading, setDayStateLoading] = useState(true);
+  const [showAfterDay, setShowAfterDay] = useState(false);
+  const [showPreDay, setShowPreDay] = useState(false);
+  const [todayActions, setTodayActions] = useState<any[] | null>(null);
+  const [addInput, setAddInput] = useState("");
+  const [addDate, setAddDate] = useState(todayKey);
+  const [addEstimatedMin, setAddEstimatedMin] = useState<string>("");
+  const [addTimeOfDay, setAddTimeOfDay] = useState<string>("");
   const { call } = useApi();
+  const showAddFields = addInput.trim().length > 0;
+  const addDateIsToday = addDate === todayKey;
+  const addEstimatedNum = addEstimatedMin.trim() ? parseInt(addEstimatedMin, 10) : NaN;
+  const canSubmitAdd =
+    addInput.trim().length > 0 &&
+    addDate.length > 0 &&
+    !Number.isNaN(addEstimatedNum) &&
+    addEstimatedNum >= 0 &&
+    (!addDateIsToday || addTimeOfDay.length > 0);
 
+  const refetchDayState = useCallback(() => {
+    call({ query: GET_DAY_STATE, variables: { date: todayKey } }).then((res: any) => {
+      setDayState(res?.dayState ?? null);
+    });
+    call({ query: GET_PRE_DAY_STATUS, variables: { date: todayKey } }).then((res: any) => {
+      setPreDayStatus(res?.preDayStatus ?? null);
+    });
+  }, [call, todayKey]);
+
+  // Initial load: only re-run when date changes to avoid loop from unstable `call` reference
   useEffect(() => {
-    const todayISO = new Date().toISOString().split("T")[0]; // e.g. "2025-05-09"
-
-    async function fetchLinkedActions() {
-      call({ query: GET_LINKED_ACTIONS, variables: { date: todayISO } }).then(res => {
-        setLinkedActions(res?.linkedActions ?? []);
-        setLaLoading(false);
+    let cancelled = false;
+    setDayStateLoading(true);
+    call({ query: GET_DAY_STATE, variables: { date: todayKey } })
+      .then((res: any) => {
+        if (!cancelled) setDayState(res?.dayState ?? null);
       })
-      // const res = await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     query: LINKED_ACTIONS,
-      //     variables: { date: todayISO },
-      //   }),
-      // });
+      .finally(() => {
+        if (!cancelled) setDayStateLoading(false);
+      });
+    call({ query: GET_PRE_DAY_STATUS, variables: { date: todayKey } }).then((res: any) => {
+      if (!cancelled) setPreDayStatus(res?.preDayStatus ?? null);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [todayKey]);
 
-      // const json = await res.json();
-    }
+  const refetchTodayActions = useCallback(() => {
+    call({ query: GET_TODAY_ACTIONS, variables: { date: todayKey } }).then((res: any) =>
+      setTodayActions(res?.todayActions ?? [])
+    );
+  }, [call, todayKey]);
 
-    // async function fetchStandaloneActions() {
-    //   const res = await fetch("http://localhost:4000/graphql", {
-    //     method: "POST",
-    //     headers: { "Content-Type": "application/json" },
-    //     body: JSON.stringify({
-    //       query: `
-    //         query GetStandaloneActions($date: String!) {
-    //           standaloneActions(date: $date) {
-    //             id
-    //             title
-    //             tbd
-    //             done
-    //           }
-    //         }
-    //       `,
-    //       variables: { date: todayISO },
-    //     }),
-    //   });
+  // Initial load of today actions: only when date changes
+  useEffect(() => {
+    call({ query: GET_TODAY_ACTIONS, variables: { date: todayKey } }).then((res: any) =>
+      setTodayActions(res?.todayActions ?? [])
+    );
+  }, [todayKey]);
 
-    //   const json = await res.json();
-    //   setStandaloneActions(json.data?.standaloneActions ?? []);
-    //   setSaLoading(false);
-    // }
+  const preDayDone = Boolean(dayState?.preDayCompletedAt);
+  const afterDayRequired = preDayStatus?.afterDayRequired === true;
 
-    fetchLinkedActions();
-  }, []);
-
-  const renderLinkedActions = () => {
-    if (laLoading)
-      return (
-        <>
-          <Skeleton className="h-16 w-full rounded-md" />
-          <Skeleton className="h-16 w-full rounded-md" />
-        </>
-      );
-    if (!linkedActions?.length)
-      return (
-        <p className="text-muted-foreground">No linked actions for today.</p>
-      )
-    return(
-      <ul className="space-y-2">
-        {linkedActions.map((action) => (
-          <li key={action.id} className="border p-3 rounded-md">
-            <div className="flex justify-between items-center">
-              <span>{action.title}</span>
-              <span className="text-sm text-muted-foreground">
-                from {action.project.title}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ul>
-    )
+  if (showAfterDay) {
+    return (
+      <AfterDayWizard
+        dateKeyToClose={todayKey}
+        onClose={() => {
+          setShowAfterDay(false);
+          refetchDayState();
+        }}
+      />
+    );
   }
 
-  // const renderStandaloneActions = () => {
-  //   if (saLoading)
-  //     return (
-  //       <>
-  //         <Skeleton className="h-16 w-full rounded-md" />
-  //       </>
-  //     );
-  //   if (!standaloneActions?.length)
-  //     return (
-  //       <p className="text-muted-foreground">No standalone actions for today.</p>
-  //     )
-  //   return(
-  //     <ul className="space-y-2">
-  //       {standaloneActions.map((action) => (
-  //         <li key={action.id} className="border p-3 rounded-md">
-  //           <div className="flex justify-between items-center">
-  //             <span>{action.title}</span>
-  //           </div>
-  //         </li>
-  //       ))}
-  //     </ul>
-  //   )
-  // }
+  if (showPreDay) {
+    return (
+      <PreDayWizard
+        todayKey={todayKey}
+        afterDayRequired={afterDayRequired}
+        onClose={() => setShowPreDay(false)}
+        onComplete={() => {
+          refetchDayState();
+          setShowPreDay(false);
+        }}
+      />
+    );
+  }
+
+  if (!dayStateLoading && !preDayDone) {
+    return (
+      <main className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-6 text-center">
+        <h1 className="text-3xl font-bold tracking-tight">Good morning</h1>
+        <Button onClick={() => setShowPreDay(true)} className="gap-2">
+          <Sun className="h-4 w-4" />
+          Start
+        </Button>
+      </main>
+    );
+  }
+
+  const linkedActions = (todayActions ?? []).filter(
+    (a: any) => a.project || a.isGathered
+  );
+  const standaloneActions = (todayActions ?? []).filter(
+    (a: any) => !a.project && !a.isGathered
+  );
+
+  const handleAddStandalone = () => {
+    if (!canSubmitAdd) return;
+    const title = addInput.trim();
+    call({
+      query: ADD_ACTION,
+      variables: {
+        title,
+        tbd: addDate,
+        estimatedTimeMinutes: addEstimatedNum,
+        startTimeOfDay: addDateIsToday ? addTimeOfDay : undefined,
+      },
+    }).then(() => {
+      setAddInput("");
+      setAddDate(todayKey);
+      setAddEstimatedMin("");
+      setAddTimeOfDay("");
+      refetchTodayActions();
+    });
+  };
 
   return (
     <main className="space-y-8 p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Today</h1>
+      <div className="flex flex-wrap items-center justify-between gap-4">
+        <h1 className="text-2xl font-bold tracking-tight">Today</h1>
+        <Button
+          variant="outline"
+          onClick={() => setShowAfterDay(true)}
+          className="gap-2"
+        >
+          <Moon className="h-4 w-4" />
+          After day
+        </Button>
+      </div>
 
-      {/* Section 1: Linked Actions Skeleton */}
+      {/* Section 1: Linked Actions */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-muted-foreground">Linked Actions</h2>
-        {renderLinkedActions()}
+        {todayActions === null ? (
+          <>
+            <Skeleton className="h-16 w-full rounded-md" />
+            <Skeleton className="h-16 w-full rounded-md" />
+          </>
+        ) : !linkedActions.length ? (
+          <p className="text-muted-foreground">No linked actions for today.</p>
+        ) : (
+          <ul className="space-y-2">
+            {linkedActions.map((action: any) => (
+              <ActionPreview
+                key={action.id}
+                action={action}
+                showTodayOptions
+                onRefetch={refetchTodayActions}
+              />
+            ))}
+          </ul>
+        )}
       </section>
 
-      {/* Section 2: Standalone Actions Skeleton */}
+      {/* Section 2: Standalone Actions */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-muted-foreground">Standalone Actions</h2>
-        <TodayActionWidget />
+        <div className="space-y-3">
+          <div className="flex gap-2 items-center">
+            <label htmlFor="today-add-action-title" className="flex items-center gap-2 shrink-0 text-muted-foreground">
+              <Pencil className="h-4 w-4" aria-hidden />
+            </label>
+            <Input
+              id="today-add-action-title"
+              placeholder="Add a new action (title)"
+              value={addInput}
+              onChange={(e) => setAddInput(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && (showAddFields ? canSubmitAdd && handleAddStandalone() : false)}
+            />
+            <Button onClick={handleAddStandalone} size="icon" variant="default" disabled={showAddFields && !canSubmitAdd}>
+              <Plus className="h-4 w-4" />
+            </Button>
+          </div>
+          {showAddFields && (
+            <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <label htmlFor="today-add-date" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                </label>
+                <Input
+                  id="today-add-date"
+                  type="date"
+                  min={todayKey}
+                  value={addDate}
+                  onChange={(e) => setAddDate(e.target.value)}
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <label htmlFor="today-add-estimated" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                  Estimated time (min) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                </label>
+                <Input
+                  id="today-add-estimated"
+                  type="number"
+                  min={0}
+                  placeholder="e.g. 30"
+                  value={addEstimatedMin}
+                  onChange={(e) => setAddEstimatedMin(e.target.value)}
+                  required
+                />
+              </div>
+              {addDateIsToday && (
+                <div className="space-y-1.5 sm:col-span-2">
+                  <label htmlFor="today-add-time" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                    Time to do <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  </label>
+                  <Input
+                    id="today-add-time"
+                    type="time"
+                    value={addTimeOfDay}
+                    onChange={(e) => setAddTimeOfDay(e.target.value)}
+                  />
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+        {todayActions === null ? (
+          <Skeleton className="h-16 w-full rounded-md" />
+        ) : !standaloneActions.length ? (
+          <p className="text-muted-foreground">No standalone actions for today.</p>
+        ) : (
+          <ul className="space-y-2">
+            {standaloneActions.map((action: any) => (
+              <ActionPreview
+                key={action.id}
+                action={action}
+                showTodayOptions
+                onRefetch={refetchTodayActions}
+              />
+            ))}
+          </ul>
+        )}
       </section>
 
-      {/* Section 3: Mood Tracker Widget Skeleton */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-muted-foreground">Mood Tracker</h2>
-        {/* <Skeleton className="h-24 w-full rounded-md" /> */}
-        <UnderConstruction title="Mood tracker" />
-      </section>
-
-      {/* Section 4: Journal/Log Widget Skeleton */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-muted-foreground">Journal</h2>
-        {/* <Skeleton className="h-24 w-full rounded-md" /> */}
-        <UnderConstruction title="Journal" />
-      </section>
-
-      {/* Section 5: Focus Mode Button Skeleton */}
-      <section className="space-y-4">
+      {/* Focus Mode Button Skeleton */}
+      {/* <section className="space-y-4"> */}
         {/* <Skeleton className="h-12 w-full rounded-full" /> */}
-        <UnderConstruction title="Focus mode" />
-      </section>
+        {/* <UnderConstruction title="Focus mode" /> */}
+      {/* </section> */}
     </main>
   );
 }

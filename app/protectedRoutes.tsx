@@ -1,6 +1,6 @@
 import ActivitiesPage from "./components/activities/ActivitiesPage";
 import CalendarPage from "./components/calendar/CalendarPage";
-import InsightsPage from "./components/insights/InsightsPage";
+import ToolsPage from "./components/tools/ToolsPage";
 import SettingsPage from "./components/settings/SettingsPage";
 import TodayPage from "./components/today/TodayPage";
 import ActionsListPage from "./components/actions/ActionsListPage";
@@ -10,6 +10,9 @@ import ProjectForm from "./components/projects/ProjectForm";
 import GoalsListPage from "./components/goals/GoalsListPage";
 import GoalForm from "./components/goals/GoalForm";
 import ManageGoalPage from "./components/goals/ManageGoal";
+import MilestoneForm from "./components/milestones/MilestoneForm";
+import IntervalsListPage from "./components/intervals/IntervalsListPage";
+import IntervalForm from "./components/intervals/IntervalForm";
 import { Welcome } from "./welcome/welcome";
 
 export default [
@@ -22,8 +25,8 @@ export default [
     element: <ActivitiesPage />,
   },
   {
-    path: "/insights",
-    element: <InsightsPage />,
+    path: "/tools",
+    element: <ToolsPage />,
   },
   {
     path: "/settings",
@@ -52,7 +55,19 @@ export default [
   {
     path: "/activities/project/:id?",
     element: <ProjectForm />,
-    },
+  },
+  {
+    path: "/activities/intervals",
+    element: <IntervalsListPage />,
+  },
+  {
+    path: "/activities/interval/:id?",
+    element: <IntervalForm mode="interval" />,
+  },
+  {
+    path: "/activities/routine/:id?",
+    element: <IntervalForm mode="routine" />,
+  },
   {
     path: "/activities/goals",
     element: <GoalsListPage />,
@@ -64,5 +79,9 @@ export default [
   {
     path: "/activities/goal/:id",
     element: <ManageGoalPage />,
+  },
+  {
+    path: "/activities/goal/:goalId/milestone/:milestoneId?",
+    element: <MilestoneForm />,
   },
 ]

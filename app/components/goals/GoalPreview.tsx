@@ -1,19 +1,18 @@
 import { useNavigate } from "react-router";
-import { Progress } from "~/components/ui/progress";
 import { Badge } from "~/components/ui/badge";
-import { format, isBefore, isAfter } from "date-fns";
+import { isBefore, isAfter } from "date-fns";
+import { Settings } from "lucide-react";
 import { Button } from "~/components/ui/button";
-import ProjectPreview from "../projects/ProjectPreview";
-import { useApi } from "~/api/useApi";
-import { DELETE_GOAL } from "~/api/queries";
 
 export interface Goal {
+  id: string;
   title: string;
   dod?: string;
+  isGoalGroup?: boolean;
   startDate?: Date;
   endDate?: Date;
-  projects: { id: string; title: string; startDate: Date; endDate?: Date; done: boolean; }[];
-  id: string;
+  projects: { id: string; title: string; startDate?: Date; endDate?: Date; done: boolean }[];
+  milestones?: { id: string; title: string }[];
 }
 
 export interface GoalPreviewProps extends Goal {
@@ -28,12 +27,17 @@ export interface GoalPreviewProps extends Goal {
   };
 }
 
+/** A project counts as "done" for goal/milestone status only when it has dates and all actions done (i.e. not Backlog). */
+export function isProjectDoneForGoal(project: { done?: boolean; startDate?: Date | null; endDate?: Date | null }): boolean {
+  return Boolean(project.done && project.startDate && project.endDate);
+}
+
 export function getGoalStatus(props: GoalPreviewProps): string {
   const { dod, startDate, endDate, projects } = props;
-  const allChecked = projects.length > 0 && projects.every((a) => a.done);
+  const allDone = projects.length > 0 && projects.every((p) => isProjectDoneForGoal(p));
   const now = new Date();
 
-  if (allChecked) return "Done";
+  if (allDone) return "Done";
   if (!dod || !startDate || !endDate) return "Backlog";
   if (isBefore(endDate, now)) return "Ignored";
   if (isAfter(startDate, now)) return "TBD";
@@ -57,94 +61,81 @@ function getStatusColor(status: string): string {
   }
 }
 
+/** Project that is currently in progress (startDate <= now <= endDate, not done). */
+function getCurrentProject(
+  projects: GoalPreviewProps["projects"]
+): { id: string; title: string } | undefined {
+  const now = new Date();
+  return projects.find(
+    (p) =>
+      p.startDate &&
+      p.endDate &&
+      !isProjectDoneForGoal(p) &&
+      !isBefore(now, p.startDate) &&
+      !isAfter(now, p.endDate)
+  );
+}
+
 export default function GoalPreview(props: GoalPreviewProps) {
   const navigate = useNavigate();
-
   const {
     title,
-    dod,
-    startDate,
-    endDate,
     projects,
+    milestones,
     showControls,
     onManage,
-    onDelete,
     firstTbdProject,
     id,
+    isGoalGroup,
   } = props;
 
   const status = getGoalStatus(props);
-  const doneCount = projects.filter((a) => a.done).length;
   const statusColor = getStatusColor(status);
-  const { call } = useApi(DELETE_GOAL);
+  const currentProject = getCurrentProject(projects);
+  const nextProject = firstTbdProject;
+  const nextMilestone = milestones?.length ? milestones[0] : undefined;
 
   const handleManage = () => {
     if (onManage) return onManage(id);
     navigate(`/activities/goal/${id}`);
   };
 
-  const handleDelete = async () => {
-    const confirmed = window.confirm("Are you sure you want to delete this goal?");
-    if (!confirmed) return;
-
-    try {
-      call({ variables: { id } }).then(() => {
-        if (onDelete) onDelete(id);
-      })
-      // await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     query: DELETE_GOAL,
-      //     variables: { id },
-      //   }),
-      // });
-
-    } catch (err) {
-      console.error("Failed to delete goal", err);
-    }
-  };
+  const currentOrNextLine =
+    currentProject
+      ? `Current: ${currentProject.title}`
+      : nextProject
+        ? `Next: ${nextProject.title}`
+        : nextMilestone
+          ? `Next milestone: ${nextMilestone.title}`
+          : null;
 
   return (
-    <div className="border rounded-md p-4 shadow-sm space-y-2">
-      <div className="flex items-center justify-between">
-        <h2 className="font-semibold text-sm line-clamp-1">{title}</h2>
-        <Badge className={statusColor}>{status}</Badge>
-      </div>
-
-      <div className="text-xs text-muted-foreground">{projects.length} projects</div>
-
-      {status === "TBD" && startDate && (
-        <div className="text-xs text-muted-foreground">
-          Starts on {format(startDate, "MMM d, yyyy")}
-        </div>
-      )}
-
-      {status === "In Progress" && endDate && (
-        <div className="space-y-1">
-          <Progress value={(doneCount / projects.length) * 100} />
-          <div className="text-xs text-muted-foreground">
-            Ends on {format(endDate, "MMM d, yyyy")}
+    <div className="border rounded-md p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-2">
+        <div className="min-w-0 flex-1 space-y-1">
+          <h2 className="font-semibold text-sm line-clamp-1">{title}</h2>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
+            {isGoalGroup && (
+              <Badge variant="secondary" className="text-xs">Goal group</Badge>
+            )}
+            {!isGoalGroup && <Badge className={statusColor}>{status}</Badge>}
+            {!isGoalGroup && currentOrNextLine && (
+              <span className="truncate">{currentOrNextLine}</span>
+            )}
           </div>
         </div>
-      )}
-
-      {status === "Ignored" && (
-        <Progress value={(doneCount / projects.length) * 100} />
-      )}
-
-      {firstTbdProject && (
-        <div className="pt-2">
-          <ProjectPreview {...firstTbdProject} actions={[]} />
-        </div>
-      )}
-
-      {showControls && (
-        <div className="flex gap-2 justify-end pt-2">
-          <Button variant="ghost" size="sm" onClick={handleManage}>Manage</Button>
-          <Button variant="destructive" size="sm" onClick={handleDelete}>Delete</Button>
-        </div>
-      )}
+        {showControls && (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={handleManage}
+            aria-label="Manage goal"
+            className="shrink-0"
+          >
+            <Settings className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
     </div>
   );
 }

@@ -15,7 +15,7 @@ export default function LoginPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const { login } = useAuth();
-  const { call } = useApi(LOGIN_MUTATION);
+  const { call, getLastError } = useApi(LOGIN_MUTATION);
 
   const from = location.state?.from?.pathname || "/";
 
@@ -24,35 +24,20 @@ export default function LoginPage() {
     setError("");
 
     try {
-      call({ variables: {
-        email,
-        password,
-      } }).catch(err => {
-        setError(err || "Login failed")
-      }).then(res => {
-        const token = res.login.token;
-        login(token);
-        navigate(from, { replace: true });
-      })
-      // const res = await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     query: LOGIN_MUTATION,
-      //     variables: { email, password },
-      //   }),
-      // });
+      const res = await call({
+        variables: { email, password },
+      });
 
-      // const json = await res.json();
+      if (!res?.login?.token) {
+        setError(getLastError() || "Login failed. Please try again.");
+        return;
+      }
 
-      // if (json.errors) {
-      //   setError(json.errors[0].message || "Login failed");
-      //   return;
-      // }
-
-    } catch (err) {
+      login(res.login.token);
+      navigate(from, { replace: true });
+    } catch (err: any) {
+      setError(err?.message || "Something went wrong. Try again.");
       console.error(err);
-      setError("Something went wrong. Try again.");
     }
   };
 

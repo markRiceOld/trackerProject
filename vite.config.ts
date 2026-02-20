@@ -1,10 +1,19 @@
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import tailwindcss from "@tailwindcss/vite";
 import { defineConfig } from "vite";
 import tsconfigPaths from "vite-tsconfig-paths";
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+
 export default defineConfig({
+  resolve: {
+    alias: {
+      "~": path.resolve(__dirname, "app"),
+    },
+  },
   optimizeDeps: {
     include: ["@apollo/client", "graphql"],
     esbuildOptions: {
@@ -40,5 +49,8 @@ export default defineConfig({
       },
     }),
   ],
+  build: {
+    target: 'es2022',
+  },
 });
 

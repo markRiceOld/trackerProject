@@ -17,10 +17,11 @@ export default function RegisterPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const fromPath = location.state?.from?.pathname || "/today";
-  const { call } = useApi(REGISTER_MUTATION)
+  const { call, getLastError, loading } = useApi(REGISTER_MUTATION);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
 
     if (password !== confirmPassword) {
       setError("Passwords do not match.");
@@ -28,24 +29,18 @@ export default function RegisterPage() {
     }
 
     try {
-      call({ variables: { email, password } }).then(res => {
-        const { token } = res.register;
-        login(token);
-        navigate(fromPath, { replace: true });
-        window.location.href = "/today";
-      })
-      // const res = await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     query: REGISTER_MUTATION,
-      //     variables: { email, password },
-      //   }),
-      // });
+      const res = await call({ variables: { email, password } });
 
-      // const json = await res.json();
+      if (!res?.register) {
+        setError(getLastError() || "Registration failed. Please try again.");
+        return;
+      }
+
+      const { token } = res.register;
+      login(token);
+      navigate(fromPath, { replace: true });
     } catch (err: any) {
-      setError("Registration failed.");
+      setError(err?.message || "Registration failed. Please try again.");
       console.error(err);
     }
   };
@@ -55,25 +50,34 @@ export default function RegisterPage() {
       <h1 className="text-2xl font-bold">Register</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
+          type="email"
           placeholder="Email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
+          required
+          autoComplete="email"
         />
         <Input
           type="password"
           placeholder="Password"
           value={password}
           onChange={(e) => setPassword(e.target.value)}
+          required
+          minLength={1}
+          autoComplete="new-password"
         />
         <Input
           type="password"
           placeholder="Confirm Password"
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
+          required
+          minLength={1}
+          autoComplete="new-password"
         />
         {error && <div className="text-sm text-red-500">{error}</div>}
-        <Button type="submit" className="w-full">
-          Register
+        <Button type="submit" className="w-full" disabled={loading}>
+          {loading ? "Registering…" : "Register"}
         </Button>
       </form>
       <Button variant="link" className="text-yellow-700">

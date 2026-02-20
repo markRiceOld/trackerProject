@@ -1,0 +1,164 @@
+import { format, startOfWeek, addDays, setHours, setMinutes } from "date-fns";
+import type { CalendarItem } from "./calendarTypes";
+import CalendarEvent from "./CalendarEvent";
+
+const PERIOD_MINUTES = 90; /* 1.5 hours for day view */
+
+function toDateKey(d: Date): string {
+  return format(d, "yyyy-MM-dd");
+}
+
+function eventsOnDay(items: CalendarItem[], day: Date): CalendarItem[] {
+  const key = toDateKey(day);
+  return items.filter((e) => {
+    const startKey = toDateKey(e.start);
+    const endKey = toDateKey(e.end);
+    return key >= startKey && key <= endKey;
+  });
+}
+
+/** Sort: timed first (by start time), then untimed (allDay) at the end. */
+function sortDayEvents(events: CalendarItem[]): CalendarItem[] {
+  const timed = events.filter((e) => !e.allDay).sort((a, b) => a.start.getTime() - b.start.getTime());
+  const untimed = events.filter((e) => e.allDay);
+  return [...timed, ...untimed];
+}
+
+/** Timed events that overlap the [periodStart, periodEnd) interval on the given day. */
+function eventsInPeriod(events: CalendarItem[], day: Date, periodStart: Date, periodEnd: Date): CalendarItem[] {
+  const dayKey = toDateKey(day);
+  const startMs = periodStart.getTime();
+  const endMs = periodEnd.getTime();
+  return events.filter((e) => {
+    if (e.allDay) return false;
+    const eStart = e.start.getTime();
+    const eEnd = e.end.getTime();
+    return toDateKey(e.start) === dayKey && eStart < endMs && eEnd > startMs;
+  });
+}
+
+const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+interface WeekDayListViewProps {
+  currentDate: Date;
+  items: CalendarItem[];
+  isDayView: boolean;
+}
+
+export default function WeekDayListView({ currentDate, items, isDayView }: WeekDayListViewProps) {
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const days = isDayView
+    ? [currentDate]
+    : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
+
+  /* Day view: 16 × 1.5 hour periods (00:00–01:30, 01:30–03:00, …) */
+  if (isDayView) {
+    const dayEvents = sortDayEvents(eventsOnDay(items, currentDate));
+    const untimed = dayEvents.filter((e) => e.allDay);
+    const periods = Array.from({ length: 16 }, (_, i) => {
+      const startMin = i * PERIOD_MINUTES;
+      const endMin = startMin + PERIOD_MINUTES;
+      const start = setMinutes(setHours(new Date(currentDate), Math.floor(startMin / 60)), startMin % 60);
+      const end = setMinutes(setHours(new Date(currentDate), Math.floor(endMin / 60)), endMin % 60);
+      return { start, end, label: `${format(start, "HH:mm")} – ${format(end, "HH:mm")}` };
+    });
+
+    return (
+      <div className="flex flex-col gap-3 overflow-auto flex-1 min-h-0">
+        {periods.map((period, i) => {
+          const periodEvents = sortDayEvents(eventsInPeriod(items, currentDate, period.start, period.end));
+          return (
+            <div key={i} className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0 shrink-0">
+              <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">
+                {period.label}
+              </div>
+              <div className="p-2 space-y-1 min-h-0">
+                {periodEvents.length === 0 ? (
+                  <p className="text-muted-foreground text-xs">—</p>
+                ) : (
+                  <ul className="space-y-1">
+                    {periodEvents.map((ev) => (
+                      <li key={ev.id}>
+                        {ev.allDay ? (
+                          <CalendarEvent event={ev} className="!text-xs" />
+                        ) : (
+                          <>
+                            <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm")}</span>
+                            <CalendarEvent event={ev} className="!text-xs inline-block" />
+                          </>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {untimed.length > 0 && (
+          <div className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0 shrink-0">
+            <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">Untimed / all day</div>
+            <div className="p-2">
+              <ul className="space-y-1">
+                {untimed.map((ev) => (
+                  <li key={ev.id}>
+                    <CalendarEvent event={ev} className="!text-xs" />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  /* Week view: 3 columns → rows of 3, 3, 1 */
+  return (
+    <div className="grid gap-4 overflow-auto flex-1 min-h-0 content-start"
+      style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
+    >
+      {days.map((day) => {
+        const dayEvents = sortDayEvents(eventsOnDay(items, day));
+        const timed = dayEvents.filter((e) => !e.allDay);
+        const untimed = dayEvents.filter((e) => e.allDay);
+        return (
+          <div key={toDateKey(day)} className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0">
+            <div className="bg-muted/60 px-3 py-2 text-sm font-medium shrink-0">
+              {DAY_LABELS[day.getDay()]}, {format(day, "MMM d")}
+            </div>
+            <div className="p-2 space-y-2 overflow-auto flex-1 min-h-0">
+              {timed.length > 0 && (
+                <ul className="space-y-1">
+                  {timed.map((ev) => (
+                    <li key={ev.id}>
+                      <span className="text-xs text-muted-foreground mr-1">
+                        {format(ev.start, "HH:mm")}
+                      </span>
+                      <CalendarEvent event={ev} className="!text-xs inline-block" />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {timed.length > 0 && untimed.length > 0 && (
+                <div className="border-t border-border my-2 pt-2" aria-hidden />
+              )}
+              {untimed.length > 0 && (
+                <ul className="space-y-1">
+                  {untimed.map((ev) => (
+                    <li key={ev.id}>
+                      <CalendarEvent event={ev} className="!text-xs" />
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {dayEvents.length === 0 && (
+                <p className="text-muted-foreground text-xs">No items</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}

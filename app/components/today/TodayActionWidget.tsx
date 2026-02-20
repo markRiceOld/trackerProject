@@ -1,11 +1,13 @@
 import { useEffect, useState } from "react";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
-import { Plus } from "lucide-react";
+import { Label } from "~/components/ui/label";
+import { Pencil, Plus } from "lucide-react";
 import ActionPreview from "~/components/actions/ActionPreview";
 import type { Action } from "../actions/ActionsListPage";
 import { useApi } from "~/api/useApi";
-import { ADD_ACTION, GET_STANDALONE_ACTIONS } from "~/api/queries";
+import { ADD_ACTION, DELETE_ACTION, GET_STANDALONE_ACTIONS } from "~/api/queries";
+import { toLocalDateString } from "~/utils/dateUtils";
 
 export default function TodayActionWidget() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -13,14 +15,13 @@ export default function TodayActionWidget() {
   const [loading, setLoading] = useState(true);
   const { call } = useApi();
 
-  const todayISO = new Date().toISOString().split("T")[0];
+  const todayISO = toLocalDateString(new Date());
 
   useEffect(() => {
     async function fetchStandaloneActions() {
-      call({ query: GET_STANDALONE_ACTIONS }).then(res => {
-        setActions(res?.standaloneActions || []);
-        setLoading(false);
-      })
+      call({ query: GET_STANDALONE_ACTIONS, variables: { date: todayISO } })
+        .then((res) => setActions(res?.standaloneActions ?? []))
+        .finally(() => setLoading(false));
       // const res = await fetch("http://localhost:4000/graphql", {
       //   method: "POST",
       //   headers: { "Content-Type": "application/json" },
@@ -39,11 +40,11 @@ export default function TodayActionWidget() {
   async function handleAdd() {
     if (input.trim() === "") return;
 
-    call({ query: ADD_ACTION, variables: { title: input.trim(), tbd: todayISO } }).then(res => {
+    call({ query: ADD_ACTION, variables: { title: input.trim(), tbd: todayISO } }).then((res) => {
       const newAction = res?.addAction;
       if (newAction) setActions((prev) => [...prev, newAction]);
       setInput("");
-    })
+    });
 
     // const res = await fetch("http://localhost:4000/graphql", {
     //   method: "POST",
@@ -66,30 +67,30 @@ export default function TodayActionWidget() {
   }
 
   async function handleDelete(id: string) {
-    await fetch("http://localhost:4000/graphql", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        query: `
-          mutation DeleteAction($id: ID!) {
-            deleteAction(id: $id) {
-              id
-            }
-          }
-        `,
-        variables: { id },
-      }),
+    call({ query: DELETE_ACTION, variables: { id } }).then(() => {
+      setActions((prev) => prev.filter((action) => action.id !== id));
     });
+    // await fetch("http://localhost:4000/graphql", {
+    //   method: "POST",
+    //   headers: { "Content-Type": "application/json" },
+    //   body: JSON.stringify({
+    //     query: ,
+    //     variables: { id },
+    //   }),
+    // });
 
-    setActions((prev) => prev.filter((action) => action.id !== id));
   }
 
   if (loading) return <p className="p-6">Loading...</p>;
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
+      <div className="flex gap-2 items-center">
+        <Label htmlFor="today-widget-add-title" className="flex items-center gap-2 shrink-0 text-muted-foreground">
+          <Pencil className="h-4 w-4" aria-hidden />
+        </Label>
         <Input
+          id="today-widget-add-title"
           placeholder="Add a new action for today"
           value={input}
           onChange={(e) => setInput(e.target.value)}

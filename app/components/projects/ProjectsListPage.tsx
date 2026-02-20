@@ -4,9 +4,11 @@ import { Button } from "~/components/ui/button";
 import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
 import { Plus } from "lucide-react";
+import InternalPageLayout from "~/layout/InternalPageLayout";
 import ProjectPreview, { type ProjectPreviewProps, getProjectStatus } from "./ProjectPreview";
 import { useApi } from "../../api/useApi";
 import { GET_PROJECTS } from "~/api/queries";
+import { parseDateOnly } from "~/utils/dateUtils";
 
 function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPreviewProps["firstTbdAction"] | undefined {
   return [...actions]
@@ -22,15 +24,17 @@ export default function ProjectsListPage() {
 
   useEffect(() => {
     async function fetchProjects() {
-      call({ variables: { id: "projectId123" } }).then((res) => {
+      call({}).then((res) => {
         const data = res?.projects ?? [];
         const parsed = data.map((project: any) => ({
           ...project,
           actions: project.actions.map((a: any) => ({
             ...a,
-            tbd: a.tbd ? new Date(+a.tbd) : undefined,
+            tbd: a.tbd ? parseDateOnly(a.tbd) : undefined,
           })),
           goalTitle: project.goal?.title ?? undefined,
+          milestoneTitle: project.milestone?.title ?? undefined,
+          showGoalContext: true,
         }));
         setProjects(parsed)
       });
@@ -46,40 +50,36 @@ export default function ProjectsListPage() {
     : projects;
 
   return (
-    <main className="space-y-6 p-6">
-      <div className="flex items-center justify-between flex-wrap">
-        <h1 className="text-2xl font-bold tracking-tight">Projects</h1>
+    <InternalPageLayout
+      backLink={{ to: "/activities", label: "← Back to Activities" }}
+      title="Projects"
+      actions={
         <Button size="sm" onClick={() => navigate("/activities/project")}>
           <Plus className="h-4 w-4 mr-2" /> Add Project
         </Button>
-        <Button
-          size='sm'
-          variant="link"
-          onClick={() => navigate("/activities")}
-          className="!p-0 font-light"
-        >
-          ← Back to Activities
-        </Button>
-      </div>
+      }
+    >
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="hide-done">Hide Done</Label>
+          <Switch id="hide-done" checked={hideDone} onCheckedChange={setHideDone} />
+        </div>
 
-      <div className="flex items-center gap-2">
-        <Label htmlFor="hide-done">Hide Done</Label>
-        <Switch id="hide-done" checked={hideDone} onCheckedChange={setHideDone} />
+        <div className="space-y-4">
+          {visibleProjects.map((project, i) => (
+            <ProjectPreview
+              key={project.id ?? i}
+              {...project}
+              showControls
+              onDelete={(id) => setProjects((prev) => prev?.filter((p) => p.id !== id) ?? [])}
+              firstTbdAction={getFirstTbdAction(project.actions)}
+              goalTitle={project.goalTitle}
+              milestoneTitle={project.milestoneTitle}
+            />
+          ))}
+        </div>
       </div>
-
-      <div className="space-y-4">
-        {visibleProjects.map((project, i) => (
-          <ProjectPreview
-            key={project.id ?? i}
-            {...project}
-            showControls
-            onDelete={(id) => { setProjects(prev => prev?.filter(i => i.id !== id) ?? []) }}
-            firstTbdAction={getFirstTbdAction(project.actions)}
-            goalTitle={project.goalTitle}
-          />
-        ))}
-      </div>
-    </main>
+    </InternalPageLayout>
   );
 }
 

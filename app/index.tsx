@@ -7,12 +7,13 @@ import TodayPage from "./components/today/TodayPage";
 import LoginPage from "./components/auth/LoginPage";
 import RegisterPage from "./components/auth/RegisterPage";
 import protectedRoutes from "./protectedRoutes";
+import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client'
 
 const root = document.getElementById("root")!;
-const { ApolloClient, InMemoryCache, ApolloProvider } = await import("@apollo/client");
+// const { ApolloClient, InMemoryCache, ApolloProvider } = await import("@apollo/client");
 
 const client = new ApolloClient({
-  uri: "http://localhost:4000/graphql",
+  uri: import.meta.env.VITE_API_URL || "http://localhost:4000/graphql",
   cache: new InMemoryCache(),
 });
 

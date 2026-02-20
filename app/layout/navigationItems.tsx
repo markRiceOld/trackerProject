@@ -1,8 +1,9 @@
 import {
   Calendar,
-  BarChart2,
   FolderKanban,
   Settings,
+  Sun,
+  Wrench,
 } from "lucide-react";
 
 export const sidebarItems = [
@@ -10,7 +11,7 @@ export const sidebarItems = [
     id: "today",
     title: "Today",
     href: "/today",
-    icon: <Calendar className="h-4 w-4" />,
+    icon: <Sun className="h-4 w-4" />,
   },
   {
     id: "calendar",
@@ -19,10 +20,10 @@ export const sidebarItems = [
     icon: <Calendar className="h-4 w-4" />,
   },
   {
-    id: "insights",
-    title: "Insights",
-    href: "/insights",
-    icon: <BarChart2 className="h-4 w-4" />,
+    id: "tools",
+    title: "Tools",
+    href: "/tools",
+    icon: <Wrench className="h-4 w-4" />,
   },
   {
     id: "activities",
@@ -42,7 +43,7 @@ export const bottomBarItems = [
   {
     id: "today",
     href: "/today",
-    icon: <Calendar className="h-5 w-5" />,
+    icon: <Sun className="h-5 w-5" />,
   },
   {
     id: "calendar",
@@ -50,9 +51,9 @@ export const bottomBarItems = [
     icon: <Calendar className="h-5 w-5" />,
   },
   {
-    id: "insights",
-    href: "/insights",
-    icon: <BarChart2 className="h-5 w-5" />,
+    id: "tools",
+    href: "/tools",
+    icon: <Wrench className="h-5 w-5" />,
   },
   {
     id: "activities",

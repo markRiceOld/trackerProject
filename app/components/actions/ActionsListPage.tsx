@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
-import { format, isToday, isBefore, isAfter } from "date-fns";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
-import { Trash2, CalendarClock, Plus } from "lucide-react";
+import { Trash2, Plus } from "lucide-react";
 import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
-import { Badge } from "~/components/ui/badge";
 import { useNavigate } from "react-router";
+import InternalPageLayout from "~/layout/InternalPageLayout";
 import ActionPreview from "./ActionPreview";
 import { useApi } from "~/api/useApi";
-import { GET_ACTIONS } from "~/api/queries";
+import { GET_ACTIONS, DELETE_ACTION } from "~/api/queries";
+import { parseDateOnly } from "~/utils/dateUtils";
+import { format } from "date-fns";
 
 export interface Action {
   id?: string;
@@ -26,14 +27,15 @@ export default function ActionsListPage() {
 
   useEffect(() => {
     async function fetchActions() {
-      call({
-        query: GET_ACTIONS
-      }).catch(err => {
-        console.log('error');
-        console.log(err);
-      }).then(res => {
-        setActions(res?.actions ?? []);
-      })
+      call({ query: GET_ACTIONS }).then((res) => {
+        const list = (res?.actions ?? []).map((a: any) => ({
+          ...a,
+          tbd: a.tbd ? parseDateOnly(a.tbd) : undefined,
+          goal: a.project?.goal ?? undefined,
+          milestone: a.project?.milestone ?? undefined,
+        }));
+        setActions(list);
+      });
       // const { gql } = await import("@apollo/client");
       // const query = gql(GET_ACTIONS);
       // const res = await fetch("http://localhost:4000/graphql", {
@@ -52,6 +54,8 @@ export default function ActionsListPage() {
   }, []);
 
   const [hideCompleted, setHideCompleted] = useState(false);
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
   function toggleDone(id: string) {
@@ -64,11 +68,35 @@ export default function ActionsListPage() {
     setActions((prev) => (prev as Action[]).filter((a) => a.id !== id));
   }
 
+  function toggleSelected(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  async function deleteSelected() {
+    if (selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    try {
+      await Promise.all(
+        ids.map((id) => call({ query: DELETE_ACTION, variables: { id } }))
+      );
+      setActions((prev) => (prev as Action[]).filter((a) => a.id && !selectedIds.has(a.id)));
+      setSelectedIds(new Set());
+      setSelectionMode(false);
+    } catch (err) {
+      console.error("Failed to delete selected:", err);
+    }
+  }
+
   const sorted = [...(actions ?? [])].sort((a, b) => {
     if (!a.tbd) return -1;
     if (!b.tbd) return 1;
-    const aTbd = new Date(+a.tbd);
-    const bTbd = new Date(+b.tbd)
+    const aTbd = parseDateOnly(a.tbd);
+    const bTbd = parseDateOnly(b.tbd);
     return aTbd.getTime() - bTbd.getTime();
   });
 
@@ -77,39 +105,99 @@ export default function ActionsListPage() {
   if (!actions) return <p>Loading...</p>;
 
   return (
-    <main className="space-y-6 p-6">
-      {/* <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Actions</h1>
-        <Button size="sm" onClick={() => navigate("/activities/action")}> 
+    <InternalPageLayout
+      backLink={{ to: "/activities", label: "← Back to Activities" }}
+      title="Actions"
+      actions={
+        <Button size="sm" onClick={() => navigate("/activities/action")}>
           <Plus className="h-4 w-4 mr-2" /> Add Action
         </Button>
-      </div> */}
-      <div className="space-y-1">
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold tracking-tight">Actions</h1>
-          <Button size="sm" onClick={() => navigate("/activities/action")}>
-            <Plus className="h-4 w-4 mr-2" /> Add Action
-          </Button>
+      }
+    >
+      <div className="space-y-6">
+      <div className="flex items-center gap-4 flex-wrap">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="hide-done">Hide Done</Label>
+          <Switch id="hide-done" checked={hideCompleted} onCheckedChange={setHideCompleted} />
         </div>
-        <button
-          onClick={() => navigate("/activities")}
-          className="text-sm text-primary hover:underline"
-        >
-          ← Back to Activities
-        </button>
-      </div>
-
-
-      <div className="flex items-center gap-2">
-        <Label htmlFor="hide-done">Hide Done</Label>
-        <Switch id="hide-done" checked={hideCompleted} onCheckedChange={setHideCompleted} />
+        {!selectionMode ? (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              setSelectionMode(true);
+              setSelectedIds(new Set());
+            }}
+          >
+            Select
+          </Button>
+        ) : (
+          <>
+            <span className="text-sm text-muted-foreground">
+              {selectedIds.size} selected
+            </span>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={deleteSelected}
+              disabled={selectedIds.size === 0}
+            >
+              <Trash2 className="h-4 w-4 mr-1.5" />
+              Delete
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => {
+                setSelectionMode(false);
+                setSelectedIds(new Set());
+              }}
+            >
+              Done
+            </Button>
+          </>
+        )}
       </div>
 
       <div className="space-y-4">
-        {visible.map((action) => (
-          <ActionPreview key={action.id} action={action} onDelete={deleteAction} onToggle={toggleDone} />
-        ))}
+        {selectionMode ? (
+          visible.map((action) => {
+            const id = action.id ?? "";
+            const selected = selectedIds.has(id);
+            return (
+              <div
+                key={id}
+                className="flex items-center gap-3 rounded-md border px-4 py-2 shadow-sm cursor-pointer hover:bg-muted/50"
+                onClick={() => toggleSelected(id)}
+              >
+                <Checkbox
+                  checked={selected}
+                  onCheckedChange={() => toggleSelected(id)}
+                  onClick={(e) => e.stopPropagation()}
+                />
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-sm line-clamp-1">{action.title}</div>
+                  <div className="text-xs text-muted-foreground">
+                    {action.tbd
+                      ? format(parseDateOnly(action.tbd), "MMM d, yyyy")
+                      : "No date"}
+                  </div>
+                </div>
+              </div>
+            );
+          })
+        ) : (
+          visible.map((action) => (
+            <ActionPreview
+              key={action.id}
+              action={action}
+              onDelete={deleteAction}
+              onToggle={toggleDone}
+            />
+          ))
+        )}
       </div>
-    </main>
+      </div>
+    </InternalPageLayout>
   );
 }

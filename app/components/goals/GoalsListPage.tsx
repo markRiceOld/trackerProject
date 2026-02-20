@@ -4,10 +4,12 @@ import { Button } from "~/components/ui/button";
 import { Switch } from "~/components/ui/switch";
 import { Label } from "~/components/ui/label";
 import { Plus } from "lucide-react";
+import InternalPageLayout from "~/layout/InternalPageLayout";
 import GoalPreview, { type GoalPreviewProps, getGoalStatus } from "./GoalPreview";
 import type { Action } from "../actions/ActionsListPage";
 import { useApi } from "~/api/useApi";
 import { GET_GOALS } from "~/api/queries";
+import { parseDateOnly } from "~/utils/dateUtils";
 
 
 
@@ -30,28 +32,20 @@ export default function GoalsListPage() {
   
         const parsed = data.map((goal: any) => ({
           ...goal,
-          startDate: goal.startDate ? new Date(goal.startDate) : undefined,
-          endDate: goal.endDate ? new Date(goal.endDate) : undefined,
-          projects: goal.projects.map((p: any) => ({
+          startDate: goal.startDate ? parseDateOnly(goal.startDate) : undefined,
+          endDate: goal.endDate ? parseDateOnly(goal.endDate) : undefined,
+          milestones: (goal.milestones ?? []).map((m: any) => ({ id: m.id, title: m.title })),
+          projects: (goal.projects ?? []).map((p: any) => ({
             id: p.id,
             title: p.title,
-            startDate: p.startDate ? new Date(p.startDate) : undefined,
-            endDate: p.endDate ? new Date(p.endDate) : undefined,
+            startDate: p.startDate ? parseDateOnly(p.startDate) : undefined,
+            endDate: p.endDate ? parseDateOnly(p.endDate) : undefined,
             done: !p.actions ? false : p.actions.every((a: Action) => a.done),
           })),
         }));
   
         setGoals(parsed);
       })
-      // const res = await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     query: GET_GOALS,
-      //   }),
-      // });
-
-      // const json = await res.json();
     }
 
     fetchGoals();
@@ -64,30 +58,33 @@ export default function GoalsListPage() {
     : goals;
 
   return (
-    <main className="space-y-6 p-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">Goals</h1>
+    <InternalPageLayout
+      backLink={{ to: "/activities", label: "← Back to Activities" }}
+      title="Goals"
+      actions={
         <Button size="sm" onClick={() => navigate("/activities/goal")}>
           <Plus className="h-4 w-4 mr-2" /> Add Goal
         </Button>
-      </div>
+      }
+    >
+      <div className="space-y-6">
+        <div className="flex items-center gap-2">
+          <Label htmlFor="hide-done">Hide Done</Label>
+          <Switch id="hide-done" checked={hideDone} onCheckedChange={setHideDone} />
+        </div>
 
-      <div className="flex items-center gap-2">
-        <Label htmlFor="hide-done">Hide Done</Label>
-        <Switch id="hide-done" checked={hideDone} onCheckedChange={setHideDone} />
+        <div className="space-y-4">
+          {visibleGoals.map((goal, i) => (
+            <GoalPreview
+              key={goal.id ?? i}
+              {...goal}
+              showControls
+              onDelete={(id) => setGoals((prev) => prev?.filter((g) => g.id !== id) ?? [])}
+              firstTbdProject={getFirstTbdProject(goal.projects)}
+            />
+          ))}
+        </div>
       </div>
-
-      <div className="space-y-4">
-        {visibleGoals.map((goal, i) => (
-          <GoalPreview
-            key={goal.id ?? i}
-            {...goal}
-            showControls
-            onDelete={(id) => setGoals((prev) => prev?.filter((g) => g.id !== id) ?? [])}
-            firstTbdProject={getFirstTbdProject(goal.projects)}
-          />
-        ))}
-      </div>
-    </main>
+    </InternalPageLayout>
   );
 }
