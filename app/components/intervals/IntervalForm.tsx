@@ -23,7 +23,7 @@ import { useApi } from "~/api/useApi";
 import {
   GET_INTERVAL,
   GET_ROUTINE,
-  GET_GOALS,
+  GET_ALL_GOALS,
   GET_PROJECTS,
   ADD_INTERVAL,
   UPDATE_INTERVAL,
@@ -231,7 +231,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
   useEffect(() => {
     if (mode === "interval") {
-      call({ query: GET_GOALS }).then((res) => {
+      call({ query: GET_ALL_GOALS }).then((res) => {
         const list = res?.goals ?? [];
         setGoals(list);
         const gId = searchParams.get("goalId");
@@ -268,6 +268,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
               daysOfWeek?: number[];
               daysOfMonth?: number[];
               months?: number[];
+              timeOfDayBlocks?: string[];
             };
             setCustomRepeatRuleDaysOfWeek(Array.isArray(rule.daysOfWeek) ? rule.daysOfWeek : []);
             setCustomRepeatRuleDaysOfMonth(
@@ -277,17 +278,28 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
             setCustomRepeatRuleYearDaysOfMonth(
               rule.unit === "year" && Array.isArray(rule.daysOfMonth) ? rule.daysOfMonth : []
             );
+            setTimeOfDayBlocks(
+              Array.isArray(rule.timeOfDayBlocks)
+                ? rule.timeOfDayBlocks.map((t: string) => String(t).trim().slice(0, 5)).filter((t: string) => /^\d{2}:\d{2}$/.test(t))
+                : []
+            );
           } catch {
             setCustomRepeatRuleDaysOfWeek([]);
             setCustomRepeatRuleDaysOfMonth([]);
             setCustomRepeatRuleMonths([]);
             setCustomRepeatRuleYearDaysOfMonth([]);
+            setTimeOfDayBlocks([]);
           }
         } else {
           setCustomRepeatRuleDaysOfWeek([]);
           setCustomRepeatRuleDaysOfMonth([]);
           setCustomRepeatRuleMonths([]);
           setCustomRepeatRuleYearDaysOfMonth([]);
+          setTimeOfDayBlocks(
+            data.predictedToDoTime && /^\d{2}:\d{2}$/.test(String(data.predictedToDoTime).trim().slice(0, 5))
+              ? [String(data.predictedToDoTime).trim().slice(0, 5)]
+              : []
+          );
         }
         setSteps(
           (data.steps ?? []).map((s: any, i: number) => ({
@@ -389,25 +401,38 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
     const customDates =
       customRepeatDates.length > 0 ? customRepeatDates.filter(Boolean) : undefined;
     let customRepeatRulePayload: string | undefined;
+    const repeatTimeBlocks = timeOfDayBlocks
+      .map((t) => t.trim().slice(0, 5))
+      .filter((t) => /^\d{2}:\d{2}$/.test(t));
     if (repeatUnit === "week" && customRepeatRuleDaysOfWeek.length > 0) {
       customRepeatRulePayload = JSON.stringify({
         unit: "week",
         daysOfWeek: [...customRepeatRuleDaysOfWeek].sort((a, b) => a - b),
+        ...(repeatTimeBlocks.length > 0 ? { timeOfDayBlocks: repeatTimeBlocks } : {}),
       });
     } else if (repeatUnit === "month" && customRepeatRuleDaysOfMonth.length > 0) {
       customRepeatRulePayload = JSON.stringify({
         unit: "month",
         daysOfMonth: [...customRepeatRuleDaysOfMonth].sort((a, b) => a - b),
+        ...(repeatTimeBlocks.length > 0 ? { timeOfDayBlocks: repeatTimeBlocks } : {}),
       });
     } else if (repeatUnit === "year" && customRepeatRuleMonths.length > 0) {
-      const yearRule: { unit: string; months: number[]; daysOfMonth?: number[] } = {
+      const yearRule: { unit: string; months: number[]; daysOfMonth?: number[]; timeOfDayBlocks?: string[] } = {
         unit: "year",
         months: [...customRepeatRuleMonths].sort((a, b) => a - b),
       };
       if (customRepeatRuleYearDaysOfMonth.length > 0) {
         yearRule.daysOfMonth = [...customRepeatRuleYearDaysOfMonth].sort((a, b) => a - b);
       }
+      if (repeatTimeBlocks.length > 0) {
+        yearRule.timeOfDayBlocks = repeatTimeBlocks;
+      }
       customRepeatRulePayload = JSON.stringify(yearRule);
+    } else if (repeatTimeBlocks.length > 0) {
+      customRepeatRulePayload = JSON.stringify({
+        unit: repeatUnit || "day",
+        timeOfDayBlocks: repeatTimeBlocks,
+      });
     }
     const predictedToDoTimeStr =
       predictedToDoTime.trim().slice(0, 5) && /^\d{2}:\d{2}$/.test(predictedToDoTime.trim().slice(0, 5))
@@ -944,6 +969,47 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                 </div>
               </>
             )}
+
+            <div className="space-y-2 pt-2 border-t">
+              <Label htmlFor="intervalTimeBlock-0" className="flex items-center gap-2">
+                Time of day blocks (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+              </Label>
+              <p className="text-xs text-muted-foreground">
+                Add one or more times for each repeat day (e.g. 09:00 and 18:00).
+              </p>
+              {timeOfDayBlocks.map((block, i) => (
+                <div key={i} className="flex gap-2 items-center">
+                  <Label htmlFor={`intervalTimeBlock-${i}`} className="sr-only">Time block {i + 1}</Label>
+                  <Input
+                    id={`intervalTimeBlock-${i}`}
+                    type="time"
+                    value={block}
+                    onChange={(e) => {
+                      const next = e.target.value;
+                      setTimeOfDayBlocks((prev) => prev.map((t, j) => (j === i ? next : t)));
+                    }}
+                    className="max-w-xs"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setTimeOfDayBlocks((prev) => prev.filter((_, j) => j !== i))}
+                    aria-label="Remove time block"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setTimeOfDayBlocks((prev) => [...prev, "09:00"])}
+              >
+                <Plus className="h-4 w-4 mr-2" /> Add time block
+              </Button>
+            </div>
 
             <div className="space-y-2 pt-2 border-t">
               <Label htmlFor="customRepeatDate-0" className="flex items-center gap-2">

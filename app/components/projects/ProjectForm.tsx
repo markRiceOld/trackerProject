@@ -8,7 +8,7 @@ import ActionPreview from "../actions/ActionPreview";
 import AddActionWidget from "../actions/AddActionWidget";
 import InternalPageLayout from "~/layout/InternalPageLayout";
 import { useApi } from "../../api/useApi";
-import { ADD_GOAL_PROJECT, ADD_PROJECT, ADD_PROJECT_ACTION, DELETE_ACTION, DELETE_PROJECT, GET_GOALS, GET_PROJECT, UPDATE_PROJECT } from "~/api/queries";
+import { ADD_GOAL_PROJECT, ADD_PROJECT, ADD_PROJECT_ACTION, DELETE_ACTION, DELETE_PROJECT, GET_ALL_GOALS, GET_PROJECT, UPDATE_PROJECT } from "~/api/queries";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Pencil, Trash2 } from "lucide-react";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
@@ -66,7 +66,7 @@ export default function ProjectForm() {
 
   // Fetch goals (with milestones) for dropdowns
   useEffect(() => {
-    call({ query: GET_GOALS }).then((res) => {
+    call({ query: GET_ALL_GOALS }).then((res) => {
       const list = (res?.goals ?? []) as GoalOption[];
       setGoals(list);
     });
@@ -101,8 +101,6 @@ export default function ProjectForm() {
         if (!data) return;
         setTitle(data.title ?? "");
         setDod(data.dod ?? "");
-        setTempTitle(data.title ?? "");
-        setTempDod(data.dod ?? "");
         setGoalId(data.goal?.id ?? undefined);
         setMilestoneId(data.milestone?.id ?? undefined);
         setActions(
@@ -128,7 +126,6 @@ export default function ProjectForm() {
 
   const selectedGoal = goals.find((g) => g.id === goalId);
   const milestoneOptions = selectedGoal?.milestones ?? [];
-  const effectiveGoalId = goalId ?? goalIdParam;
   const goalTitle = selectedGoal?.title;
 
   const updateProjectField = async (field: string, value: string) => {
@@ -139,8 +136,6 @@ export default function ProjectForm() {
     }).then(() => {
       setTitle((prev) => (field === "title" ? value : prev));
       setDod((prev) => (field === "dod" ? value : prev));
-      setTempTitle((prev) => (field === "title" ? value : prev));
-      setTempDod((prev) => (field === "dod" ? value : prev));
     });
   };
 
@@ -162,12 +157,13 @@ export default function ProjectForm() {
             id,
             title,
             dod,
-            ...(milestoneId ? { milestoneId, goalId: null } : goalId ? { goalId, milestoneId: null } : {}),
+            goalId: goalId ?? null,
+            milestoneId: milestoneId ?? null,
           }
         : {
             title,
             dod,
-            actions: [...actions, ...newActions].map((a) => ({
+            actions: actions.map((a) => ({
               title: a.title,
               tbd: a.tbd ? (typeof a.tbd === "string" ? a.tbd : toLocalDateString(a.tbd)) : undefined,
               estimatedTimeMinutes: a.estimatedTimeMinutes ?? undefined,
@@ -324,37 +320,29 @@ export default function ProjectForm() {
         )}
 
         <div className="flex flex-wrap items-center gap-3 text-sm">
-          {goalId ? (
-            <span className="text-muted-foreground">
-              Goal: <span className="font-medium text-foreground">{goalTitle ?? "—"}</span>
-            </span>
-          ) : (
-            !isEdit && (
-              <div className="space-y-1">
-                <Label htmlFor="goal" className="sr-only">Goal (optional)</Label>
-                <select
-                  id="goal"
-                  value={goalId ?? ""}
-                  onChange={(e) => {
-                    const v = e.target.value || undefined;
-                    setGoalId(v);
-                    setMilestoneId(undefined);
-                  }}
-                  className={cn(
-                    "flex h-8 min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs outline-none",
-                    "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[2px]"
-                  )}
-                >
-                  <option value="">— Goal (optional) —</option>
-                  {goals.map((g) => (
-                    <option key={g.id} value={g.id}>
-                      {g.title}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )
-          )}
+          <div className="space-y-1">
+            <Label htmlFor="goal" className="sr-only">Goal (optional)</Label>
+            <select
+              id="goal"
+              value={goalId ?? ""}
+              onChange={(e) => {
+                const v = e.target.value || undefined;
+                setGoalId(v);
+                setMilestoneId(undefined);
+              }}
+              className={cn(
+                "flex h-8 min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm shadow-xs outline-none",
+                "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[2px]"
+              )}
+            >
+              <option value="">— Goal (optional) —</option>
+              {goals.map((g) => (
+                <option key={g.id} value={g.id}>
+                  {g.title}
+                </option>
+              ))}
+            </select>
+          </div>
           <div className="space-y-1">
             <Label htmlFor="milestone" className="sr-only">Milestone (optional)</Label>
             <select
@@ -368,7 +356,7 @@ export default function ProjectForm() {
                 !selectedGoal && "opacity-60 cursor-not-allowed"
               )}
             >
-              <option value="">— Milestone —</option>
+              <option value="">— Milestone (optional) —</option>
               {milestoneOptions.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.title}
@@ -376,6 +364,11 @@ export default function ProjectForm() {
               ))}
             </select>
           </div>
+          {goalId && (
+            <span className="text-muted-foreground">
+              Selected goal: <span className="font-medium text-foreground">{goalTitle ?? "—"}</span>
+            </span>
+          )}
         </div>
 
         {actions.map((a, i) => (

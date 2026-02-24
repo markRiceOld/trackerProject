@@ -1,6 +1,7 @@
 import ActivitiesPage from "./components/activities/ActivitiesPage";
 import CalendarPage from "./components/calendar/CalendarPage";
 import ToolsPage from "./components/tools/ToolsPage";
+import ToolsHomePage from "./components/tools/ToolsHomePage";
 import SettingsPage from "./components/settings/SettingsPage";
 import TodayPage from "./components/today/TodayPage";
 import ActionsListPage from "./components/actions/ActionsListPage";
@@ -13,12 +14,12 @@ import ManageGoalPage from "./components/goals/ManageGoal";
 import MilestoneForm from "./components/milestones/MilestoneForm";
 import IntervalsListPage from "./components/intervals/IntervalsListPage";
 import IntervalForm from "./components/intervals/IntervalForm";
-import { Welcome } from "./welcome/welcome";
+import { Navigate } from "react-router";
 
 export default [
   {
-    path: "/",
-    element: <Welcome />,
+    index: true,
+    element: <Navigate to="/today" replace />,
   },
   {
     path: "/activities",
@@ -26,6 +27,10 @@ export default [
   },
   {
     path: "/tools",
+    element: <ToolsHomePage />,
+  },
+  {
+    path: "/tools/time-map",
     element: <ToolsPage />,
   },
   {

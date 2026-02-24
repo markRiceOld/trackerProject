@@ -1,4 +1,5 @@
 import { format, startOfWeek, addDays, setHours, setMinutes } from "date-fns";
+import { useState } from "react";
 import type { CalendarItem } from "./calendarTypes";
 import CalendarEvent from "./CalendarEvent";
 
@@ -43,9 +44,25 @@ interface WeekDayListViewProps {
   currentDate: Date;
   items: CalendarItem[];
   isDayView: boolean;
+  manageMode?: boolean;
+  managedActionOptions?: { id: string; title: string }[];
+  onAssignActionToDate?: (actionId: string, dateKey: string) => void;
+  onReturnActionToQueue?: (actionId: string) => void;
+  assigningActionIds?: Set<string>;
 }
 
-export default function WeekDayListView({ currentDate, items, isDayView }: WeekDayListViewProps) {
+export default function WeekDayListView({
+  currentDate,
+  items,
+  isDayView,
+  manageMode = false,
+  managedActionOptions = [],
+  onAssignActionToDate,
+  onReturnActionToQueue,
+  assigningActionIds,
+}: WeekDayListViewProps) {
+  const [dayPickerValue, setDayPickerValue] = useState<Record<string, string>>({});
+  const todayKey = toDateKey(new Date());
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
   const days = isDayView
     ? [currentDate]
@@ -55,6 +72,8 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
   if (isDayView) {
     const dayEvents = sortDayEvents(eventsOnDay(items, currentDate));
     const untimed = dayEvents.filter((e) => e.allDay);
+    const dayKey = toDateKey(currentDate);
+    const canAssign = dayKey >= todayKey;
     const periods = Array.from({ length: 16 }, (_, i) => {
       const startMin = i * PERIOD_MINUTES;
       const endMin = startMin + PERIOD_MINUTES;
@@ -79,13 +98,36 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
                   <ul className="space-y-1">
                     {periodEvents.map((ev) => (
                       <li key={ev.id}>
-                        {ev.allDay ? (
-                          <CalendarEvent event={ev} className="!text-xs" />
+                        {manageMode && ev.type === "action" && ev.entityId ? (
+                          <div className="inline-flex items-center gap-1">
+                            {ev.allDay ? (
+                              <CalendarEvent event={ev} className="!text-xs" />
+                            ) : (
+                              <>
+                                <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm")}</span>
+                                <CalendarEvent event={ev} className="!text-xs inline-block" />
+                              </>
+                            )}
+                            <button
+                              type="button"
+                              className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
+                              onClick={() => onReturnActionToQueue?.(ev.entityId!)}
+                              disabled={assigningActionIds?.has(ev.entityId)}
+                              aria-label={`Remove ${ev.title} from day`}
+                              title="Remove from day"
+                            >
+                              {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
+                            </button>
+                          </div>
                         ) : (
-                          <>
-                            <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm")}</span>
-                            <CalendarEvent event={ev} className="!text-xs inline-block" />
-                          </>
+                          ev.allDay ? (
+                            <CalendarEvent event={ev} className="!text-xs" />
+                          ) : (
+                            <>
+                              <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm")}</span>
+                              <CalendarEvent event={ev} className="!text-xs inline-block" />
+                            </>
+                          )
                         )}
                       </li>
                     ))}
@@ -102,10 +144,63 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
               <ul className="space-y-1">
                 {untimed.map((ev) => (
                   <li key={ev.id}>
-                    <CalendarEvent event={ev} className="!text-xs" />
+                    {manageMode && ev.type === "action" && ev.entityId ? (
+                      <div className="inline-flex items-center gap-1">
+                        <CalendarEvent event={ev} className="!text-xs" />
+                        <button
+                          type="button"
+                          className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
+                          onClick={() => onReturnActionToQueue?.(ev.entityId!)}
+                          disabled={assigningActionIds?.has(ev.entityId)}
+                          aria-label={`Remove ${ev.title} from day`}
+                          title="Remove from day"
+                        >
+                          {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
+                        </button>
+                      </div>
+                    ) : (
+                      <CalendarEvent event={ev} className="!text-xs" />
+                    )}
                   </li>
                 ))}
               </ul>
+            </div>
+          </div>
+        )}
+        {manageMode && (
+          <div className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0 shrink-0">
+            <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">Assign action</div>
+            <div className="p-2">
+              <select
+                className="h-8 w-full rounded-md border bg-background px-2 text-xs"
+                value={dayPickerValue[dayKey] ?? ""}
+                onChange={(e) => {
+                  const selectedActionId = e.target.value;
+                  setDayPickerValue((prev) => ({ ...prev, [dayKey]: selectedActionId }));
+                  if (!selectedActionId) return;
+                  setDayPickerValue((prev) => ({ ...prev, [dayKey]: "" }));
+                  onAssignActionToDate?.(selectedActionId, dayKey);
+                }}
+                disabled={!canAssign || managedActionOptions.length === 0}
+              >
+                <option value="">Select Action...</option>
+                {managedActionOptions.map((action) => (
+                  <option
+                    key={`${toDateKey(currentDate)}-${action.id}`}
+                    value={action.id}
+                    disabled={assigningActionIds?.has(action.id)}
+                  >
+                    {assigningActionIds?.has(action.id)
+                      ? `${action.title} (saving...)`
+                      : action.title}
+                  </option>
+                ))}
+              </select>
+              {!canAssign && (
+                <p className="mt-1 text-[10px] text-muted-foreground">
+                  Assigning is only available from today onward.
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -119,11 +214,13 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
       style={{ gridTemplateColumns: "repeat(3, minmax(0, 1fr))" }}
     >
       {days.map((day) => {
+        const dayKey = toDateKey(day);
+        const canAssign = dayKey >= todayKey;
         const dayEvents = sortDayEvents(eventsOnDay(items, day));
         const timed = dayEvents.filter((e) => !e.allDay);
         const untimed = dayEvents.filter((e) => e.allDay);
         return (
-          <div key={toDateKey(day)} className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0">
+          <div key={dayKey} className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0">
             <div className="bg-muted/60 px-3 py-2 text-sm font-medium shrink-0">
               {DAY_LABELS[day.getDay()]}, {format(day, "MMM d")}
             </div>
@@ -132,10 +229,31 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
                 <ul className="space-y-1">
                   {timed.map((ev) => (
                     <li key={ev.id}>
-                      <span className="text-xs text-muted-foreground mr-1">
-                        {format(ev.start, "HH:mm")}
-                      </span>
-                      <CalendarEvent event={ev} className="!text-xs inline-block" />
+                      {manageMode && ev.type === "action" && ev.entityId ? (
+                        <div className="inline-flex items-center gap-1">
+                          <span className="text-xs text-muted-foreground mr-1">
+                            {format(ev.start, "HH:mm")}
+                          </span>
+                          <CalendarEvent event={ev} className="!text-xs inline-block" />
+                          <button
+                            type="button"
+                            className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
+                            onClick={() => onReturnActionToQueue?.(ev.entityId!)}
+                            disabled={assigningActionIds?.has(ev.entityId)}
+                            aria-label={`Remove ${ev.title} from day`}
+                            title="Remove from day"
+                          >
+                            {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
+                          </button>
+                        </div>
+                      ) : (
+                        <>
+                          <span className="text-xs text-muted-foreground mr-1">
+                            {format(ev.start, "HH:mm")}
+                          </span>
+                          <CalendarEvent event={ev} className="!text-xs inline-block" />
+                        </>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -147,7 +265,23 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
                 <ul className="space-y-1">
                   {untimed.map((ev) => (
                     <li key={ev.id}>
-                      <CalendarEvent event={ev} className="!text-xs" />
+                      {manageMode && ev.type === "action" && ev.entityId ? (
+                        <div className="inline-flex items-center gap-1">
+                          <CalendarEvent event={ev} className="!text-xs" />
+                          <button
+                            type="button"
+                            className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
+                            onClick={() => onReturnActionToQueue?.(ev.entityId!)}
+                            disabled={assigningActionIds?.has(ev.entityId)}
+                            aria-label={`Remove ${ev.title} from day`}
+                            title="Remove from day"
+                          >
+                            {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
+                          </button>
+                        </div>
+                      ) : (
+                        <CalendarEvent event={ev} className="!text-xs" />
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -156,6 +290,40 @@ export default function WeekDayListView({ currentDate, items, isDayView }: WeekD
                 <p className="text-muted-foreground text-xs">No items</p>
               )}
             </div>
+            {manageMode && (
+              <div className="border-t p-2">
+                <select
+                  className="h-8 w-full rounded-md border bg-background px-2 text-xs"
+                  value={dayPickerValue[dayKey] ?? ""}
+                  onChange={(e) => {
+                    const selectedActionId = e.target.value;
+                    setDayPickerValue((prev) => ({ ...prev, [dayKey]: selectedActionId }));
+                    if (!selectedActionId) return;
+                    setDayPickerValue((prev) => ({ ...prev, [dayKey]: "" }));
+                    onAssignActionToDate?.(selectedActionId, dayKey);
+                  }}
+                  disabled={!canAssign || managedActionOptions.length === 0}
+                >
+                  <option value="">Select Action...</option>
+                  {managedActionOptions.map((action) => (
+                    <option
+                      key={`${dayKey}-${action.id}`}
+                      value={action.id}
+                      disabled={assigningActionIds?.has(action.id)}
+                    >
+                      {assigningActionIds?.has(action.id)
+                        ? `${action.title} (saving...)`
+                        : action.title}
+                    </option>
+                  ))}
+                </select>
+                {!canAssign && (
+                  <p className="mt-1 text-[10px] text-muted-foreground">
+                    Assigning is only available from today onward.
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         );
       })}

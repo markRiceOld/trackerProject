@@ -38,7 +38,8 @@ function toDateSafe(iso: string | null | undefined): Date | null {
 
 export function useCalendarItems(
   dateRange: { start: Date; end: Date } | null,
-  filters: CalendarFilters
+  filters: CalendarFilters,
+  refreshKey = 0
 ) {
   const { call } = useApi();
   const [goalsRaw, setGoalsRaw] = useState<any[]>([]);
@@ -51,7 +52,7 @@ export function useCalendarItems(
     call({ query: GET_ACTIONS }).then((res) => setActionsRaw(res?.actions ?? []));
     call({ query: GET_INTERVALS }).then((res) => setIntervalsRaw(res?.intervals ?? []));
     call({ query: GET_ROUTINES }).then((res) => setRoutinesRaw(res?.routines ?? []));
-  }, [call]);
+  }, [call, refreshKey]);
 
   const range = dateRange ?? defaultRange();
 

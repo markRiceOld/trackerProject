@@ -15,7 +15,7 @@ import {
   ADD_PROJECT_ACTION,
 } from "~/api/queries";
 import { cn } from "~/lib/utils";
-import { toLocalDateString } from "~/utils/dateUtils";
+import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
 import { Settings, Trash2, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
@@ -100,8 +100,9 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
     onActionAdded,
   } = props;
 
-  const status = getProjectStatus(props);
-  const doneCount = actions.filter((a) => a.done).length;
+  const [projectActions, setProjectActions] = useState(actions);
+  const status = getProjectStatus({ ...props, actions: projectActions });
+  const doneCount = projectActions.filter((a) => a.done).length;
   const statusColor = getStatusColor(status);
   const { call } = useApi();
 
@@ -125,6 +126,10 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
   const newActionDateIsToday = newActionDate === todayKey;
 
   useEffect(() => {
+    setProjectActions(actions);
+  }, [actions]);
+
+  useEffect(() => {
     if (!deleteWithActionsOpen) return;
     call({ query: GET_PROJECTS }).then((res: any) => {
       const list = (res?.projects ?? []).filter((p: any) => p.id !== id);
@@ -141,7 +146,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
   };
 
   const openDelete = () => {
-    if (actions.length === 0) {
+    if (projectActions.length === 0) {
       setConfirmDeleteOpen(true);
     } else {
       setDeleteWithActionsOpen(true);
@@ -170,13 +175,13 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
     try {
       if (deleteChoice === "delete-actions") {
         await Promise.all(
-          actions.map((a) =>
+          projectActions.map((a) =>
             call({ query: DELETE_ACTION, variables: { id: a.id } })
           )
         );
       } else if (deleteChoice === "move-to-project" && moveToProjectId) {
         await Promise.all(
-          actions.map((a) =>
+          projectActions.map((a) =>
             call({
               query: UPDATE_ACTION,
               variables: { id: a.id, projectId: moveToProjectId },
@@ -185,7 +190,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
         );
       } else if (deleteChoice === "to-backlog") {
         await Promise.all(
-          actions.map((a) =>
+          projectActions.map((a) =>
             call({
               query: UPDATE_ACTION,
               variables: {
@@ -227,7 +232,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
         ? newActionStartTimeOfDay.trim().slice(0, 5)
         : undefined;
     try {
-      await call({
+      const res = await call({
         query: ADD_PROJECT_ACTION,
         variables: {
           title: newActionTitle.trim(),
@@ -237,6 +242,17 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
           startTimeOfDay: startTime,
         },
       });
+      if (res?.addAction) {
+        setProjectActions((prev) => [
+          ...prev,
+          {
+            id: res.addAction.id,
+            title: newActionTitle.trim(),
+            done: false,
+            tbd: newActionDate ? parseDateOnly(newActionDate) : undefined,
+          },
+        ]);
+      }
       setNewActionTitle("");
       setNewActionDate("");
       setNewActionEstimatedMin("");
@@ -250,6 +266,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
 
   const handleDeleteActionInAccordion = (actionId: string) => {
     call({ query: DELETE_ACTION, variables: { id: actionId } }).then(() => {
+      setProjectActions((prev) => prev.filter((a) => a.id !== actionId));
       onActionAdded?.();
     });
   };
@@ -265,7 +282,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
               <span className="text-xs text-muted-foreground shrink-0">{dateLabel}</span>
             )}
             <span className="text-xs text-muted-foreground shrink-0">
-              {actions.length} action{actions.length !== 1 ? "s" : ""}
+              {projectActions.length} action{projectActions.length !== 1 ? "s" : ""}
             </span>
           </div>
           {showControls && (
@@ -337,7 +354,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
               onClick={(e) => e.stopPropagation()}
             >
               <p className="text-sm font-medium mb-3">
-                This project has {actions.length} action{actions.length !== 1 ? "s" : ""}. What should happen to them?
+                This project has {projectActions.length} action{projectActions.length !== 1 ? "s" : ""}. What should happen to them?
               </p>
               <div className="space-y-2 mb-4">
                 <label className="flex items-center gap-2 cursor-pointer">
@@ -416,7 +433,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
   // Detailed: accordion layout
   const goalLabel = props.goalTitle ?? props.goal?.title;
   const milestoneLabel = props.milestoneTitle ?? props.milestone?.title;
-  const firstAction = actions[0];
+  const firstAction = projectActions[0];
 
   return (
     <>
@@ -454,7 +471,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground">
-                    {actions.length} action{actions.length !== 1 ? "s" : ""}
+                    {projectActions.length} action{projectActions.length !== 1 ? "s" : ""}
                     {startDate && endDate && (
                       <span className="ml-2">
                         · {format(startDate, "MMM d")} – {format(endDate, "MMM d")}
@@ -485,14 +502,14 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
             {/* Progress bar separator */}
             <div className="px-4 pb-2">
               <Progress
-                value={actions.length ? (doneCount / actions.length) * 100 : 0}
+                value={projectActions.length ? (doneCount / projectActions.length) * 100 : 0}
                 className="h-2"
               />
             </div>
 
             {/* Section 2: actions + add */}
             <div className="px-4 pb-4 space-y-2">
-              {actions.length === 0 ? (
+              {projectActions.length === 0 ? (
                 !addingAction ? (
                   <Button
                     type="button"
@@ -509,7 +526,12 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                   <ActionPreview
                     action={firstAction}
                     onDelete={() => handleDeleteActionInAccordion(firstAction.id)}
-                    onToggle={() => onActionAdded?.()}
+                    onToggle={(actionId, done) => {
+                      setProjectActions((prev) =>
+                        prev.map((a) => (a.id === actionId ? { ...a, done } : a))
+                      );
+                      onActionAdded?.();
+                    }}
                     returnTo={{ from: "project", projectId: id }}
                   />
                   <Button
@@ -523,12 +545,17 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                 </>
               ) : (
                 <>
-                  {actions.map((action) => (
+                  {projectActions.map((action) => (
                     <ActionPreview
                       key={action.id}
                       action={action}
                       onDelete={() => handleDeleteActionInAccordion(action.id)}
-                      onToggle={() => onActionAdded?.()}
+                      onToggle={(actionId, done) => {
+                        setProjectActions((prev) =>
+                          prev.map((a) => (a.id === actionId ? { ...a, done } : a))
+                        );
+                        onActionAdded?.();
+                      }}
                       returnTo={{ from: "project", projectId: id }}
                     />
                   ))}
@@ -569,7 +596,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
               )}
 
               {/* When no actions, show add widget directly */}
-              {actions.length === 0 && addingAction && (
+              {projectActions.length === 0 && addingAction && (
                 <AddActionWidget
                   title={newActionTitle}
                   onTitleChange={setNewActionTitle}
@@ -632,7 +659,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
             onClick={(e) => e.stopPropagation()}
           >
             <p className="text-sm font-medium mb-3">
-              This project has {actions.length} action{actions.length !== 1 ? "s" : ""}. What should happen to them?
+              This project has {projectActions.length} action{projectActions.length !== 1 ? "s" : ""}. What should happen to them?
             </p>
             <div className="space-y-2 mb-4">
               <label className="flex items-center gap-2 cursor-pointer">

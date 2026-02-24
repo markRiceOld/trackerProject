@@ -1,4 +1,5 @@
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, addWeeks, isSameMonth } from "date-fns";
+import { useState } from "react";
 import type { CalendarItem } from "./calendarTypes";
 import CalendarEvent from "./CalendarEvent";
 import { Button } from "~/components/ui/button";
@@ -7,6 +8,11 @@ interface MonthWeeksViewProps {
   currentDate: Date;
   items: CalendarItem[];
   onNavigate: (date: Date) => void;
+  manageMode?: boolean;
+  managedActionOptions?: { id: string; title: string }[];
+  onAssignActionToDate?: (actionId: string, dateKey: string) => void;
+  onReturnActionToQueue?: (actionId: string) => void;
+  assigningActionIds?: Set<string>;
 }
 
 /** Get week blocks that touch the given month (weeks start Sunday). */
@@ -38,10 +44,20 @@ function eventsOnDay(items: CalendarItem[], day: Date): CalendarItem[] {
 
 const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
-export default function MonthWeeksView({ currentDate, items, onNavigate }: MonthWeeksViewProps) {
+export default function MonthWeeksView({
+  currentDate,
+  items,
+  onNavigate,
+  manageMode = false,
+  managedActionOptions = [],
+  onAssignActionToDate,
+  onReturnActionToQueue,
+  assigningActionIds,
+}: MonthWeeksViewProps) {
+  const [dayPickerValue, setDayPickerValue] = useState<Record<string, string>>({});
   const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
   const weekBlocks = getWeekBlocksInMonth(currentDate);
+  const todayKey = toDateKey(new Date());
 
   const handlePrev = () => {
     const d = new Date(currentDate);
@@ -86,6 +102,8 @@ export default function MonthWeeksView({ currentDate, items, onNavigate }: Month
                 {days.map((day) => {
                   const dayEvents = eventsOnDay(items, day);
                   const inMonth = isSameMonth(day, currentDate);
+                  const dayKey = toDateKey(day);
+                  const canAssign = dayKey >= todayKey;
                   return (
                     <div
                       key={day.toISOString()}
@@ -99,13 +117,63 @@ export default function MonthWeeksView({ currentDate, items, onNavigate }: Month
                       <ul className="space-y-1 overflow-auto min-h-0">
                         {dayEvents.slice(0, 6).map((ev) => (
                           <li key={ev.id} className="min-w-0">
-                            <CalendarEvent event={ev} className="!text-xs !py-0.5 !px-1" />
+                            {manageMode && ev.type === "action" && ev.entityId ? (
+                              <div className="flex items-center gap-1">
+                                <CalendarEvent event={ev} className="!text-xs !py-0.5 !px-1 flex-1" />
+                                <button
+                                  type="button"
+                                  className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
+                                  onClick={() => onReturnActionToQueue?.(ev.entityId!)}
+                                  disabled={assigningActionIds?.has(ev.entityId)}
+                                  aria-label={`Remove ${ev.title} from day`}
+                                  title="Remove from day"
+                                >
+                                  {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
+                                </button>
+                              </div>
+                            ) : (
+                              <CalendarEvent event={ev} className="!text-xs !py-0.5 !px-1" />
+                            )}
                           </li>
                         ))}
                         {dayEvents.length > 6 && (
                           <li className="text-muted-foreground text-xs">+{dayEvents.length - 6}</li>
                         )}
                       </ul>
+                      {manageMode && (
+                        <div className="mt-2">
+                          <select
+                            className="h-8 w-full rounded-md border bg-background px-2 text-xs"
+                            value={dayPickerValue[dayKey] ?? ""}
+                            onChange={(e) => {
+                              const selectedActionId = e.target.value;
+                              setDayPickerValue((prev) => ({ ...prev, [dayKey]: selectedActionId }));
+                              if (!selectedActionId) return;
+                              setDayPickerValue((prev) => ({ ...prev, [dayKey]: "" }));
+                              onAssignActionToDate?.(selectedActionId, dayKey);
+                            }}
+                            disabled={!canAssign || managedActionOptions.length === 0}
+                          >
+                            <option value="">Select Action...</option>
+                            {managedActionOptions.map((action) => (
+                              <option
+                                key={`${dayKey}-${action.id}`}
+                                value={action.id}
+                                disabled={assigningActionIds?.has(action.id)}
+                              >
+                                {assigningActionIds?.has(action.id)
+                                  ? `${action.title} (saving...)`
+                                  : action.title}
+                              </option>
+                            ))}
+                          </select>
+                          {!canAssign && (
+                            <p className="mt-1 text-[10px] text-muted-foreground">
+                              Assigning is only available from today onward.
+                            </p>
+                          )}
+                        </div>
+                      )}
                     </div>
                   );
                 })}

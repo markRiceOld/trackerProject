@@ -245,6 +245,20 @@ export const GET_GOALS = `
   }
 `;
 
+export const GET_ALL_GOALS = `
+  query GetAllGoals {
+    goals(includeAll: true) {
+      id
+      title
+      isGoalGroup
+      milestones {
+        id
+        title
+      }
+    }
+  }
+`;
+
 export const GET_GOAL = `
   query GetGoal($id: ID!) {
     goal(id: $id) {
@@ -292,7 +306,12 @@ export const GET_GOAL = `
           title
           startDate
           endDate
-          actions { id done }
+          actions {
+            id
+            title
+            tbd
+            done
+          }
         }
       }
       childGoals { id title isGoalGroup }
@@ -301,7 +320,12 @@ export const GET_GOAL = `
         title
         startDate
         endDate
-        actions { id done }
+        actions {
+          id
+          title
+          tbd
+          done
+        }
       }
     }
   }

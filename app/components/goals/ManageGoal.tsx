@@ -8,7 +8,7 @@ import ProjectPreview, { type ProjectPreviewProps } from "../projects/ProjectPre
 import MilestonePreview from "../milestones/MilestonePreview";
 import { getGoalStatus, isProjectDoneForGoal } from "./GoalPreview";
 import { useApi } from "~/api/useApi";
-import { DELETE_GOAL, DELETE_MILESTONE, DELETE_PROJECT, GET_GOAL, GET_GOALS, UPDATE_GOAL, UPDATE_MILESTONE, UPDATE_PROJECT } from "~/api/queries";
+import { DELETE_GOAL, DELETE_MILESTONE, DELETE_PROJECT, GET_GOAL, GET_GOALS, GET_INTERVALS, GET_PROJECTS, UPDATE_GOAL, UPDATE_INTERVAL, UPDATE_MILESTONE, UPDATE_PROJECT } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
 import { ListOrdered, Star, GripVertical, Trash2, ChevronDown, ChevronRight, Repeat } from "lucide-react";
 import {
@@ -132,6 +132,12 @@ export default function ManageGoalPage() {
   const [linkGoalToMilestone, setLinkGoalToMilestone] = useState<string | null>(null);
   const [linkableGoals, setLinkableGoals] = useState<{ id: string; title: string }[]>([]);
   const [selectedGoalToLink, setSelectedGoalToLink] = useState("");
+  const [linkIntervalToGoal, setLinkIntervalToGoal] = useState(false);
+  const [linkableIntervals, setLinkableIntervals] = useState<{ id: string; title: string }[]>([]);
+  const [selectedIntervalToLink, setSelectedIntervalToLink] = useState("");
+  const [linkProjectToGoal, setLinkProjectToGoal] = useState(false);
+  const [linkableProjects, setLinkableProjects] = useState<{ id: string; title: string }[]>([]);
+  const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
   const { call, getLastError } = useApi();
 
   const refetchGoal = () => {
@@ -239,6 +245,10 @@ export default function ManageGoalPage() {
   };
 
   const openLinkGoalToGoal = () => {
+    setLinkIntervalToGoal(false);
+    setSelectedIntervalToLink("");
+    setLinkProjectToGoal(false);
+    setSelectedProjectToLink("");
     setLinkGoalToMilestone(null);
     setLinkGoalToGoal(true);
     setSelectedGoalToLink("");
@@ -246,16 +256,62 @@ export default function ManageGoalPage() {
   };
 
   const openLinkGoalToMilestone = (milestoneId: string) => {
+    setLinkIntervalToGoal(false);
+    setSelectedIntervalToLink("");
+    setLinkProjectToGoal(false);
+    setSelectedProjectToLink("");
     setLinkGoalToGoal(false);
     setLinkGoalToMilestone(milestoneId);
     setSelectedGoalToLink("");
     call({ query: GET_GOALS }).then(fetchLinkableGoals);
   };
 
-  const closeLinkGoal = () => {
+  const openLinkIntervalToGoal = () => {
+    const alreadyLinkedIds = new Set([
+      ...(goal?.intervals ?? []).map((iv: ParsedInterval) => iv.id),
+      ...(goal?.milestones ?? []).flatMap((m: ParsedMilestone) =>
+        (m.intervals ?? []).map((iv: ParsedInterval) => iv.id)
+      ),
+    ]);
     setLinkGoalToGoal(false);
     setLinkGoalToMilestone(null);
     setSelectedGoalToLink("");
+    setLinkProjectToGoal(false);
+    setSelectedProjectToLink("");
+    setLinkIntervalToGoal(true);
+    setSelectedIntervalToLink("");
+    call({ query: GET_INTERVALS }).then((res) => {
+      const list = (res?.intervals ?? []).filter((iv: any) => !alreadyLinkedIds.has(iv.id));
+      setLinkableIntervals(list.map((iv: any) => ({ id: iv.id, title: iv.title ?? "" })));
+    });
+  };
+
+  const openLinkProjectToGoal = () => {
+    const alreadyLinkedProjectIds = new Set([
+      ...((goal?.projects ?? []).map((p: ParsedProject) => p.id)),
+      ...((goal?.milestones ?? []).flatMap((m: ParsedMilestone) => (m.projects ?? []).map((p: ParsedProject) => p.id))),
+    ]);
+    setLinkGoalToGoal(false);
+    setLinkGoalToMilestone(null);
+    setSelectedGoalToLink("");
+    setLinkIntervalToGoal(false);
+    setSelectedIntervalToLink("");
+    setLinkProjectToGoal(true);
+    setSelectedProjectToLink("");
+    call({ query: GET_PROJECTS }).then((res) => {
+      const list = (res?.projects ?? []).filter((p: any) => !alreadyLinkedProjectIds.has(p.id));
+      setLinkableProjects(list.map((p: any) => ({ id: p.id, title: p.title ?? "" })));
+    });
+  };
+
+  const closeLinkPanels = () => {
+    setLinkGoalToGoal(false);
+    setLinkGoalToMilestone(null);
+    setSelectedGoalToLink("");
+    setLinkIntervalToGoal(false);
+    setSelectedIntervalToLink("");
+    setLinkProjectToGoal(false);
+    setSelectedProjectToLink("");
   };
 
   const handleLinkGoal = async () => {
@@ -267,7 +323,36 @@ export default function ManageGoalPage() {
         ...(linkGoalToMilestone ? { parentMilestoneId: linkGoalToMilestone } : { parentGoalId: id }),
       },
     });
-    closeLinkGoal();
+    closeLinkPanels();
+    refetchGoal();
+  };
+
+  const handleLinkInterval = async () => {
+    if (!selectedIntervalToLink || !id) return;
+    await call({
+      query: UPDATE_INTERVAL,
+      variables: {
+        id: selectedIntervalToLink,
+        goalId: id,
+        milestoneId: null,
+        projectId: null,
+      },
+    });
+    closeLinkPanels();
+    refetchGoal();
+  };
+
+  const handleLinkProject = async () => {
+    if (!selectedProjectToLink || !id) return;
+    await call({
+      query: UPDATE_PROJECT,
+      variables: {
+        id: selectedProjectToLink,
+        goalId: id,
+        milestoneId: null,
+      },
+    });
+    closeLinkPanels();
     refetchGoal();
   };
 
@@ -439,6 +524,11 @@ export default function ManageGoalPage() {
             + Add project
           </Button>
         )}
+        {!isGoalGroup && (
+          <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={openLinkProjectToGoal}>
+            Link existing project
+          </Button>
+        )}
         {isGoalGroup && (
           <>
             <Button size="sm" className="justify-start sm:justify-center" onClick={() => navigate(`/activities/goal?parentGoalId=${id}`)}>
@@ -453,6 +543,9 @@ export default function ManageGoalPage() {
           + Add milestone
         </Button>
         <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={() => navigate(`/activities/interval?goalId=${id}`)}>
+          + Add interval
+        </Button>
+        <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={openLinkIntervalToGoal}>
           Link interval
         </Button>
       </div>
@@ -470,26 +563,60 @@ export default function ManageGoalPage() {
       backLink={backLink}
       title={titleBlock}
     >
-      {(linkGoalToGoal || linkGoalToMilestone) && (
+      {(linkGoalToGoal || linkGoalToMilestone || linkIntervalToGoal || linkProjectToGoal) && (
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 p-3 rounded-md border bg-muted/30">
           <span className="text-sm">
-            {linkGoalToMilestone ? "Link a goal to this milestone:" : "Link a goal to this goal group:"}
+            {linkIntervalToGoal
+              ? "Link an existing interval to this goal:"
+              : linkProjectToGoal
+                ? "Link an existing project to this goal:"
+              : linkGoalToMilestone
+                ? "Link a goal to this milestone:"
+                : "Link a goal to this goal group:"}
           </span>
-          <select
-            value={selectedGoalToLink}
-            onChange={(e) => setSelectedGoalToLink(e.target.value)}
-            className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
-          >
-            <option value="">— Select goal —</option>
-            {linkableGoals.map((g) => (
-              <option key={g.id} value={g.id}>{g.title}</option>
-            ))}
-          </select>
+          {linkIntervalToGoal ? (
+            <select
+              value={selectedIntervalToLink}
+              onChange={(e) => setSelectedIntervalToLink(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
+            >
+              <option value="">— Select interval —</option>
+              {linkableIntervals.map((iv) => (
+                <option key={iv.id} value={iv.id}>{iv.title}</option>
+              ))}
+            </select>
+          ) : linkProjectToGoal ? (
+            <select
+              value={selectedProjectToLink}
+              onChange={(e) => setSelectedProjectToLink(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
+            >
+              <option value="">— Select project —</option>
+              {linkableProjects.map((p) => (
+                <option key={p.id} value={p.id}>{p.title}</option>
+              ))}
+            </select>
+          ) : (
+            <select
+              value={selectedGoalToLink}
+              onChange={(e) => setSelectedGoalToLink(e.target.value)}
+              className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
+            >
+              <option value="">— Select goal —</option>
+              {linkableGoals.map((g) => (
+                <option key={g.id} value={g.id}>{g.title}</option>
+              ))}
+            </select>
+          )}
           <div className="flex gap-2">
-            <Button size="sm" onClick={handleLinkGoal} disabled={!selectedGoalToLink}>
+            <Button
+              size="sm"
+              onClick={linkIntervalToGoal ? handleLinkInterval : linkProjectToGoal ? handleLinkProject : handleLinkGoal}
+              disabled={linkIntervalToGoal ? !selectedIntervalToLink : linkProjectToGoal ? !selectedProjectToLink : !selectedGoalToLink}
+            >
               Link
             </Button>
-            <Button size="sm" variant="ghost" onClick={closeLinkGoal}>
+            <Button size="sm" variant="ghost" onClick={closeLinkPanels}>
               Cancel
             </Button>
           </div>

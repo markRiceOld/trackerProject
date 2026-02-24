@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useLocation, useNavigate, useParams } from "react-router";
+import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
@@ -7,12 +7,12 @@ import { format, isToday, isBefore, isAfter } from "date-fns";
 import { Calendar } from "~/components/ui/calendar";
 import { Badge } from "~/components/ui/badge";
 import InternalPageLayout from "~/layout/InternalPageLayout";
-import { ADD_ACTION, UPDATE_ACTION, GET_ACTION, DELETE_ACTION } from "~/api/queries";
+import { ADD_ACTION, UPDATE_ACTION, GET_ACTION, DELETE_ACTION, GET_PROJECTS } from "~/api/queries";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { InlineEdit } from "~/components/ui/inline-edit";
 import { Pencil, Trash2 } from "lucide-react";
 import { useApi } from "~/api/useApi";
-import { toLocalDateString } from "~/utils/dateUtils";
+import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
 
 const MAX_ESTIMATED_MINUTES = 24 * 60; // 24 hours
 
@@ -24,6 +24,13 @@ function isValidTime(s: string): boolean {
 type ActionFormReturnState =
   | { from: "project"; projectId: string }
   | { from: "goal"; goalId: string; milestoneId?: string };
+
+type ProjectOption = {
+  id: string;
+  title: string;
+  goal?: { id: string; title: string } | null;
+  milestone?: { id: string; title: string } | null;
+};
 
 function getActionFormReturnPath(state: unknown): string {
   if (state && typeof state === "object" && "from" in state) {
@@ -47,8 +54,18 @@ function getActionFormBackLabel(state: unknown): string {
 export default function ActionForm() {
   const { id } = useParams();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
   const returnTo = getActionFormReturnPath(location.state);
   const backLabel = getActionFormBackLabel(location.state);
+  const stateProjectId =
+    location.state &&
+    typeof location.state === "object" &&
+    "from" in location.state &&
+    (location.state as { from?: string; projectId?: string }).from === "project"
+      ? (location.state as { projectId?: string }).projectId
+      : undefined;
+  const projectIdParam = searchParams.get("projectId") ?? undefined;
+  const initialProjectId = projectIdParam ?? stateProjectId ?? "";
   const [title, setTitle] = useState("");
   const [tbd, setTbd] = useState<Date | undefined>(undefined);
   const [startTimeOfDay, setStartTimeOfDay] = useState("");
@@ -57,12 +74,8 @@ export default function ActionForm() {
   const [timeOfDayError, setTimeOfDayError] = useState<string | null>(null);
   const [editingTbd, setEditingTbd] = useState(false);
   const [tempTbd, setTempTbd] = useState<Date | undefined>(undefined);
-  const [project, setProject] = useState<{
-    id: string;
-    title: string;
-    goal?: { id: string; title: string } | null;
-    milestone?: { id: string; title: string } | null;
-  } | null>(null);
+  const [projectId, setProjectId] = useState<string>(initialProjectId);
+  const [projects, setProjects] = useState<ProjectOption[]>([]);
   const navigate = useNavigate();
   const { call } = useApi();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
@@ -77,6 +90,12 @@ export default function ActionForm() {
   const tbdIsToday = tbd != null && isToday(tbd);
 
   useEffect(() => {
+    call({ query: GET_PROJECTS }).then((res) => {
+      setProjects((res?.projects ?? []) as ProjectOption[]);
+    });
+  }, [call]);
+
+  useEffect(() => {
     if (!isEdit || !id) return;
     let cancelled = false;
     call({ query: GET_ACTION, variables: { id } })
@@ -84,14 +103,13 @@ export default function ActionForm() {
         const action = res?.action;
         if (cancelled || !action) return;
         setTitle(action.title ?? "");
-        setTempTitle(action.title ?? "");
-        setTbd(action.tbd ? new Date(action.tbd) : undefined);
-        setTempTbd(action.tbd ? new Date(action.tbd) : undefined);
+        setTbd(action.tbd ? parseDateOnly(action.tbd) : undefined);
+        setTempTbd(action.tbd ? parseDateOnly(action.tbd) : undefined);
         setEstimatedTimeMinutes(
           action.estimatedTimeMinutes != null ? String(action.estimatedTimeMinutes) : ""
         );
         setStartTimeOfDay(action.startTimeOfDay ?? "");
-        setProject(action.project ?? null);
+        setProjectId(action.project?.id ?? initialProjectId);
       })
       .catch((err) => {
         if (!cancelled) console.error("Failed to fetch action:", err);
@@ -99,7 +117,7 @@ export default function ActionForm() {
     return () => {
       cancelled = true;
     };
-  }, [isEdit, id, call]);
+  }, [isEdit, id, call, initialProjectId]);
 
   function getStatus(): string {
     if (!tbd) return "Backlog";
@@ -136,7 +154,6 @@ export default function ActionForm() {
       });
       if (field === "title") {
         setTitle(String(value ?? ""));
-        setTempTitle(String(value ?? ""));
       }
       if (field === "tbd") {
         setTbd(value ? new Date(value) : undefined);
@@ -194,12 +211,14 @@ export default function ActionForm() {
             done: false,
             estimatedTimeMinutes: estNum ?? undefined,
             startTimeOfDay: startTime ?? undefined,
+            projectId: projectId || null,
           }
         : {
             title,
             tbd: tbdStr,
             estimatedTimeMinutes: estNum ?? undefined,
             startTimeOfDay: startTime,
+            projectId: projectId || undefined,
           };
 
       const res = await call({ query: mutation, variables });
@@ -216,17 +235,7 @@ export default function ActionForm() {
   const status = getStatus();
   const statusColor = getStatusColor(status);
 
-  const linkedDisplay = project && (
-    <div className="text-sm text-muted-foreground flex flex-wrap gap-x-3 gap-y-0.5 mt-1">
-      {project.milestone?.title && (
-        <span>Milestone: {project.milestone.title}</span>
-      )}
-      {project.goal?.title && (
-        <span>Goal: {project.goal.title}</span>
-      )}
-      <span>Project: {project.title}</span>
-    </div>
-  );
+  const selectedProject = projects.find((p) => p.id === projectId);
 
   const handleDeleteConfirm = async () => {
     if (!id) return;
@@ -269,7 +278,6 @@ export default function ActionForm() {
               />
               <Badge className={statusColor}>{status}</Badge>
             </div>
-            {linkedDisplay}
           </div>
 
           <div className="space-y-1">
@@ -362,6 +370,37 @@ export default function ActionForm() {
               </p>
             )}
           </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="projectId" className="flex items-center gap-2">
+              Linked project (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            </Label>
+            <select
+              id="projectId"
+              value={projectId}
+              onChange={(e) => setProjectId(e.target.value)}
+              className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
+            >
+              <option value="">— No project —</option>
+              {projects.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.title}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {selectedProject && (
+            <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
+              <Badge variant="secondary">Project: {selectedProject.title}</Badge>
+              {selectedProject.goal?.title && (
+                <Badge variant="outline">Goal: {selectedProject.goal.title}</Badge>
+              )}
+              {selectedProject.milestone?.title && (
+                <Badge variant="outline">Milestone: {selectedProject.milestone.title}</Badge>
+              )}
+            </div>
+          )}
 
           <div className="flex gap-2 pt-2">
             <Button type="submit">Update Action</Button>
@@ -465,6 +504,25 @@ export default function ActionForm() {
               {estimatedTimeError}
             </p>
           )}
+        </div>
+
+        <div className="space-y-2">
+          <Label htmlFor="projectId" className="flex items-center gap-2">
+            Linked project (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+          </Label>
+          <select
+            id="projectId"
+            value={projectId}
+            onChange={(e) => setProjectId(e.target.value)}
+            className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
+          >
+            <option value="">— No project —</option>
+            {projects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.title}
+              </option>
+            ))}
+          </select>
         </div>
 
         <div className="space-y-1">

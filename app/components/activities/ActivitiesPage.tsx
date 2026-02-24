@@ -65,6 +65,12 @@ export default function ActivitiesPage() {
   const handleDeleteAction = (id: string) => {
     setActions((prev) => prev.filter((a) => a.id !== id));
   };
+  const handleDeleteProject = (id: string) => {
+    setProjects((prev) => prev.filter((p) => p.id !== id));
+  };
+  const handleDeleteInterval = (id: string) => {
+    setIntervals((prev) => prev.filter((iv) => iv.id !== id));
+  };
 
   const handleToggleDone = async (id: string, done: boolean) => {
     setActions(prev => prev.map((a) =>
@@ -81,7 +87,7 @@ export default function ActivitiesPage() {
         <ActionPreview
           action={visible[0]}
           onDelete={() => handleDeleteAction(visible[0].id ?? '')}
-          onToggle={() => handleToggleDone(visible[0].id ?? '', true)}
+          onToggle={handleToggleDone}
         />
       );
     }
@@ -90,7 +96,7 @@ export default function ActivitiesPage() {
         <ActionPreview
           action={visible[1]}
           onDelete={() => handleDeleteAction(visible[1].id ?? '')}
-          onToggle={() => handleToggleDone(visible[1].id ?? '', true)}
+          onToggle={handleToggleDone}
         />
       );
     }
@@ -100,8 +106,8 @@ export default function ActivitiesPage() {
   const renderProjectPreviews = () => {
     if (!projects?.[0]) return {};
     const result: { preview1?: ReactNode; preview2?: ReactNode } = {};
-    result.preview1 = <ProjectPreview compact showControls {...projects[0]} />;
-    if (projects[1]) result.preview2 = <ProjectPreview compact showControls {...projects[1]} />;
+    result.preview1 = <ProjectPreview compact showControls {...projects[0]} onDelete={handleDeleteProject} />;
+    if (projects[1]) result.preview2 = <ProjectPreview compact showControls {...projects[1]} onDelete={handleDeleteProject} />;
     return result;
   };
 
@@ -117,8 +123,8 @@ export default function ActivitiesPage() {
     const active = intervals.filter((iv) => iv.status === "active");
     if (!active[0]) return {};
     const result: { preview1?: ReactNode; preview2?: ReactNode } = {};
-    result.preview1 = <IntervalPreview showControls {...active[0]} />;
-    if (active[1]) result.preview2 = <IntervalPreview showControls {...active[1]} />;
+    result.preview1 = <IntervalPreview showControls {...active[0]} onDelete={handleDeleteInterval} />;
+    if (active[1]) result.preview2 = <IntervalPreview showControls {...active[1]} onDelete={handleDeleteInterval} />;
     return result;
   };
 

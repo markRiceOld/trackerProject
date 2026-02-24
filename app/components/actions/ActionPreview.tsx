@@ -105,7 +105,7 @@ export default function ActionPreview({
 
   useEffect(() => {
     setChecked(action.done ?? false);
-  }, [action.id]);
+  }, [action.id, action.done]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -153,12 +153,15 @@ export default function ActionPreview({
   };
 
   const handleToggle = async () => {
+    const nextDone = !checked;
+    setChecked(nextDone);
+    onToggle?.(action.id ?? "", nextDone);
     try {
       await call({ query: TOGGLE_ACTION, variables: { id: action.id } });
-      setChecked((prev) => !prev);
-      onToggle?.(action.id ?? "", !!action.done);
       onRefetch?.();
     } catch (err) {
+      setChecked(!nextDone);
+      onToggle?.(action.id ?? "", !nextDone);
       console.error("Toggle failed", err);
     }
   };

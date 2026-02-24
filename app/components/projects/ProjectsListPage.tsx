@@ -1,14 +1,13 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Button } from "~/components/ui/button";
-import { Switch } from "~/components/ui/switch";
-import { Label } from "~/components/ui/label";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
 import ProjectPreview, { type ProjectPreviewProps, getProjectStatus } from "./ProjectPreview";
 import { useApi } from "../../api/useApi";
 import { GET_PROJECTS } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
+import ListFilters from "~/components/ui/list-filters";
 
 function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPreviewProps["firstTbdAction"] | undefined {
   return [...actions]
@@ -18,7 +17,19 @@ function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPrev
 
 export default function ProjectsListPage() {
   const [projects, setProjects] = useState<ProjectPreviewProps[] | null>(null);
-  const [hideDone, setHideDone] = useState(false);
+  const [showLinksFilters, setShowLinksFilters] = useState(false);
+  const [showStatusFilters, setShowStatusFilters] = useState(false);
+  const [linkFilters, setLinkFilters] = useState({
+    milestones: true,
+    goals: true,
+  });
+  const [statusFilters, setStatusFilters] = useState({
+    backlog: true,
+    tbd: true,
+    inProgress: true,
+    ignored: true,
+    done: true,
+  });
   const navigate = useNavigate();
   const { call } = useApi(GET_PROJECTS);
 
@@ -45,9 +56,149 @@ export default function ProjectsListPage() {
 
   if (!projects) return <p className="p-6">Loading...</p>;
 
-  const visibleProjects = hideDone
-    ? projects.filter((p) => getProjectStatus(p) !== "Done")
-    : projects;
+  const allLinksSelected = linkFilters.milestones && linkFilters.goals;
+  const allStatusesSelected =
+    statusFilters.backlog &&
+    statusFilters.tbd &&
+    statusFilters.inProgress &&
+    statusFilters.ignored &&
+    statusFilters.done;
+
+  const linksLabel = allLinksSelected
+    ? "All"
+    : [
+        linkFilters.milestones ? "Milestones" : null,
+        linkFilters.goals ? "Goals" : null,
+      ]
+        .filter(Boolean)
+        .join(", ") || "None";
+
+  const statusLabel = allStatusesSelected
+    ? "All"
+    : [
+        statusFilters.backlog ? "Backlog" : null,
+        statusFilters.tbd ? "TBD" : null,
+        statusFilters.inProgress ? "In Progress" : null,
+        statusFilters.ignored ? "Ignored" : null,
+        statusFilters.done ? "Done" : null,
+      ]
+        .filter(Boolean)
+        .join(", ") || "None";
+
+  const matchesLinkFilter = (p: ProjectPreviewProps) => {
+    const isMilestone = Boolean(p.milestoneTitle);
+    const isGoal = !isMilestone && Boolean(p.goalTitle);
+    const isNone = !isMilestone && !isGoal;
+    if (!linkFilters.milestones && !linkFilters.goals) return isNone;
+    if (linkFilters.milestones && linkFilters.goals) return true;
+    return (isMilestone && linkFilters.milestones) || (isGoal && linkFilters.goals);
+  };
+
+  const matchesStatusFilter = (status: string) => {
+    switch (status) {
+      case "Backlog":
+        return statusFilters.backlog;
+      case "TBD":
+        return statusFilters.tbd;
+      case "In Progress":
+        return statusFilters.inProgress;
+      case "Ignored":
+        return statusFilters.ignored;
+      case "Done":
+        return statusFilters.done;
+      default:
+        return false;
+    }
+  };
+
+  const visibleProjects = projects.filter((p) => {
+    const status = getProjectStatus(p);
+    return matchesLinkFilter(p) && matchesStatusFilter(status);
+  });
+
+  // Keep previous behavior: if Done status is excluded, hide done actions inside project previews too.
+  const displayProjects = statusFilters.done
+    ? visibleProjects
+    : visibleProjects.map((p) => ({
+        ...p,
+        actions: p.actions.filter((a) => !a.done),
+      }));
+
+  const resetFilters = () => {
+    setLinkFilters({ milestones: true, goals: true });
+    setStatusFilters({
+      backlog: true,
+      tbd: true,
+      inProgress: true,
+      ignored: true,
+      done: true,
+    });
+    setShowLinksFilters(false);
+    setShowStatusFilters(false);
+  };
+
+  const linkOptions = [
+    {
+      id: "all",
+      label: "All",
+      active: allLinksSelected,
+      onClick: () => setLinkFilters({ milestones: true, goals: true }),
+    },
+    {
+      id: "milestones",
+      label: "Milestones",
+      active: linkFilters.milestones,
+      onClick: () => setLinkFilters((prev) => ({ ...prev, milestones: !prev.milestones })),
+    },
+    {
+      id: "goals",
+      label: "Goals",
+      active: linkFilters.goals,
+      onClick: () => setLinkFilters((prev) => ({ ...prev, goals: !prev.goals })),
+    },
+    {
+      id: "none",
+      label: "None",
+      alwaysMuted: true,
+      onClick: () => setLinkFilters({ milestones: false, goals: false }),
+    },
+  ];
+
+  const statusOptionDefs: [keyof typeof statusFilters, string][] = [
+    ["backlog", "Backlog"],
+    ["tbd", "TBD"],
+    ["inProgress", "In Progress"],
+    ["ignored", "Ignored"],
+    ["done", "Done"],
+  ];
+  const statusOptions = [
+    {
+      id: "all",
+      label: "All",
+      active: allStatusesSelected,
+      onClick: () =>
+        setStatusFilters({
+          backlog: true,
+          tbd: true,
+          inProgress: true,
+          ignored: true,
+          done: true,
+        }),
+    },
+    ...statusOptionDefs.map(([key, label]) => ({
+      id: key,
+      label,
+      active: statusFilters[key],
+      onClick: () =>
+        setStatusFilters((prev) => {
+          const selectedCount = Object.values(prev).filter(Boolean).length;
+          return {
+            ...prev,
+            [key]: prev[key] && selectedCount === 1 ? true : !prev[key],
+          };
+        }),
+    })),
+  ];
 
   return (
     <InternalPageLayout
@@ -60,13 +211,29 @@ export default function ProjectsListPage() {
       }
     >
       <div className="space-y-6">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="hide-done">Hide Done</Label>
-          <Switch id="hide-done" checked={hideDone} onCheckedChange={setHideDone} />
-        </div>
+        <ListFilters
+          linksLabel={linksLabel}
+          statusLabel={statusLabel}
+          showLinksFilters={showLinksFilters}
+          showStatusFilters={showStatusFilters}
+          onToggleLinks={() => {
+            setShowLinksFilters((v) => !v);
+            setShowStatusFilters(false);
+          }}
+          onToggleStatus={() => {
+            setShowStatusFilters((v) => !v);
+            setShowLinksFilters(false);
+          }}
+          onReset={resetFilters}
+          linkOptions={linkOptions}
+          statusOptions={statusOptions}
+        />
 
         <div className="space-y-4">
-          {visibleProjects.map((project, i) => (
+          {displayProjects.length === 0 && (
+            <p className="text-sm text-muted-foreground">No projects match current filters.</p>
+          )}
+          {displayProjects.map((project, i) => (
             <ProjectPreview
               key={project.id ?? i}
               {...project}

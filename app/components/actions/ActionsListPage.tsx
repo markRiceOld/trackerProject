@@ -2,27 +2,45 @@ import { useEffect, useState } from "react";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
-import { Switch } from "~/components/ui/switch";
-import { Label } from "~/components/ui/label";
 import { useNavigate } from "react-router";
 import InternalPageLayout from "~/layout/InternalPageLayout";
 import ActionPreview from "./ActionPreview";
 import { useApi } from "~/api/useApi";
 import { GET_ACTIONS, DELETE_ACTION } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
-import { format } from "date-fns";
+import { format, isAfter, isBefore, isToday, isValid } from "date-fns";
+import ListFilters from "~/components/ui/list-filters";
 
 export interface Action {
   id?: string;
   title: string;
   tbd?: Date;
   done?: boolean;
+  priority?: string;
+  project?: { id: string; title: string } | null;
+  goal?: { id: string; title: string } | null;
+  milestone?: { id: string; title: string } | null;
 }
 
 
 
 export default function ActionsListPage() {
   const [actions, setActions] = useState<Action[] | null>(null);
+  const [showLinksFilters, setShowLinksFilters] = useState(false);
+  const [showStatusFilters, setShowStatusFilters] = useState(false);
+  const [linkFilters, setLinkFilters] = useState({
+    project: true,
+    milestones: true,
+    goals: true,
+  });
+  const [statusFilters, setStatusFilters] = useState({
+    backlog: true,
+    bucketList: true,
+    tbd: true,
+    inProgress: true,
+    ignored: true,
+    done: true,
+  });
   const { call } = useApi();
 
   useEffect(() => {
@@ -53,14 +71,24 @@ export default function ActionsListPage() {
     fetchActions();
   }, []);
 
-  const [hideCompleted, setHideCompleted] = useState(false);
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const navigate = useNavigate();
 
-  function toggleDone(id: string) {
+  function getActionStatus(action: Action): string {
+    if (action.done) return "Done";
+    if (!action.tbd) return "Backlog";
+    const tbd = parseDateOnly(action.tbd);
+    if (!isValid(tbd)) return "Backlog";
+    if (isToday(tbd)) return "In Progress";
+    if (isBefore(tbd, new Date())) return "Ignored";
+    if (isAfter(tbd, new Date())) return "TBD";
+    return "";
+  }
+
+  function toggleDone(id: string, done: boolean) {
     setActions((prev) =>
-      (prev as Action[]).map((a) => (a.id === id ? { ...a, done: !a.done } : a))
+      (prev as Action[]).map((a) => (a.id === id ? { ...a, done } : a))
     );
   }
 
@@ -100,7 +128,159 @@ export default function ActionsListPage() {
     return aTbd.getTime() - bTbd.getTime();
   });
 
-  const visible = hideCompleted ? sorted.filter((a) => !a.done) : sorted;
+  const allLinksSelected = linkFilters.project && linkFilters.milestones && linkFilters.goals;
+  const allStatusesSelected =
+    statusFilters.backlog &&
+    statusFilters.bucketList &&
+    statusFilters.tbd &&
+    statusFilters.inProgress &&
+    statusFilters.ignored &&
+    statusFilters.done;
+
+  const linksLabel = allLinksSelected
+    ? "All"
+    : [
+        linkFilters.project ? "Project" : null,
+        linkFilters.milestones ? "Milestones" : null,
+        linkFilters.goals ? "Goals" : null,
+      ]
+        .filter(Boolean)
+        .join(", ") || "None";
+
+  const statusLabel = allStatusesSelected
+    ? "All"
+    : [
+        statusFilters.backlog ? "Backlog" : null,
+        statusFilters.bucketList ? "Bucket list" : null,
+        statusFilters.tbd ? "TBD" : null,
+        statusFilters.inProgress ? "In Progress" : null,
+        statusFilters.ignored ? "Ignored" : null,
+        statusFilters.done ? "Done" : null,
+      ]
+        .filter(Boolean)
+        .join(", ") || "None";
+
+  const matchesLinkFilter = (a: Action) => {
+    const isProject = Boolean(a.project?.id);
+    const isMilestone = Boolean(a.milestone?.id);
+    const isGoal = !isMilestone && Boolean(a.goal?.id);
+    const isNone = !isProject && !isMilestone && !isGoal;
+    if (!linkFilters.project && !linkFilters.milestones && !linkFilters.goals) return isNone;
+    if (linkFilters.project && linkFilters.milestones && linkFilters.goals) return true;
+    return (
+      (isProject && linkFilters.project) ||
+      (isMilestone && linkFilters.milestones) ||
+      (isGoal && linkFilters.goals)
+    );
+  };
+
+  const matchesStatusFilter = (status: string, action: Action) => {
+    const isBucketList = status === "Backlog" && !action.project && !action.goal && !action.milestone;
+    if (isBucketList) return statusFilters.bucketList;
+    switch (status) {
+      case "Backlog":
+        return statusFilters.backlog;
+      case "TBD":
+        return statusFilters.tbd;
+      case "In Progress":
+        return statusFilters.inProgress;
+      case "Ignored":
+        return statusFilters.ignored;
+      case "Done":
+        return statusFilters.done;
+      default:
+        return false;
+    }
+  };
+
+  const visible = sorted.filter((a) => {
+    const status = getActionStatus(a);
+    return matchesLinkFilter(a) && matchesStatusFilter(status, a);
+  });
+
+  const resetFilters = () => {
+    setLinkFilters({ project: true, milestones: true, goals: true });
+    setStatusFilters({
+      backlog: true,
+      bucketList: true,
+      tbd: true,
+      inProgress: true,
+      ignored: true,
+      done: true,
+    });
+    setShowLinksFilters(false);
+    setShowStatusFilters(false);
+  };
+
+  const linkOptions = [
+    {
+      id: "all",
+      label: "All",
+      active: allLinksSelected,
+      onClick: () => setLinkFilters({ project: true, milestones: true, goals: true }),
+    },
+    {
+      id: "project",
+      label: "Project",
+      active: linkFilters.project,
+      onClick: () => setLinkFilters((prev) => ({ ...prev, project: !prev.project })),
+    },
+    {
+      id: "milestones",
+      label: "Milestones",
+      active: linkFilters.milestones,
+      onClick: () => setLinkFilters((prev) => ({ ...prev, milestones: !prev.milestones })),
+    },
+    {
+      id: "goals",
+      label: "Goals",
+      active: linkFilters.goals,
+      onClick: () => setLinkFilters((prev) => ({ ...prev, goals: !prev.goals })),
+    },
+    {
+      id: "none",
+      label: "None",
+      alwaysMuted: true,
+      onClick: () => setLinkFilters({ project: false, milestones: false, goals: false }),
+    },
+  ];
+  const statusOptionDefs: [keyof typeof statusFilters, string][] = [
+    ["backlog", "Backlog"],
+    ["bucketList", "Bucket list"],
+    ["tbd", "TBD"],
+    ["inProgress", "In Progress"],
+    ["ignored", "Ignored"],
+    ["done", "Done"],
+  ];
+  const statusOptions = [
+    {
+      id: "all",
+      label: "All",
+      active: allStatusesSelected,
+      onClick: () =>
+        setStatusFilters({
+          backlog: true,
+          bucketList: true,
+          tbd: true,
+          inProgress: true,
+          ignored: true,
+          done: true,
+        }),
+    },
+    ...statusOptionDefs.map(([key, label]) => ({
+      id: key,
+      label,
+      active: statusFilters[key],
+      onClick: () =>
+        setStatusFilters((prev) => {
+          const selectedCount = Object.values(prev).filter(Boolean).length;
+          return {
+            ...prev,
+            [key]: prev[key] && selectedCount === 1 ? true : !prev[key],
+          };
+        }),
+    })),
+  ];
 
   if (!actions) return <p>Loading...</p>;
 
@@ -115,11 +295,25 @@ export default function ActionsListPage() {
       }
     >
       <div className="space-y-6">
-      <div className="flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2">
-          <Label htmlFor="hide-done">Hide Done</Label>
-          <Switch id="hide-done" checked={hideCompleted} onCheckedChange={setHideCompleted} />
-        </div>
+        <ListFilters
+          linksLabel={linksLabel}
+          statusLabel={statusLabel}
+          showLinksFilters={showLinksFilters}
+          showStatusFilters={showStatusFilters}
+          onToggleLinks={() => {
+            setShowLinksFilters((v) => !v);
+            setShowStatusFilters(false);
+          }}
+          onToggleStatus={() => {
+            setShowStatusFilters((v) => !v);
+            setShowLinksFilters(false);
+          }}
+          onReset={resetFilters}
+          linkOptions={linkOptions}
+          statusOptions={statusOptions}
+        />
+
+        <div className="flex items-center gap-4 flex-wrap">
         {!selectionMode ? (
           <Button
             variant="outline"
@@ -157,9 +351,12 @@ export default function ActionsListPage() {
             </Button>
           </>
         )}
-      </div>
+        </div>
 
       <div className="space-y-4">
+        {visible.length === 0 && (
+          <p className="text-sm text-muted-foreground">No actions match current filters.</p>
+        )}
         {selectionMode ? (
           visible.map((action) => {
             const id = action.id ?? "";

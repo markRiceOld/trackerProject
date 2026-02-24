@@ -1,4 +1,4 @@
-import { useMemo, useState, useCallback } from "react";
+import { useMemo, useState, useCallback, useEffect } from "react";
 import { Calendar, Views, type Components } from "react-big-calendar";
 import { format, startOfYear, endOfYear, addYears, addDays, addWeeks, startOfMonth, endOfMonth, startOfWeek } from "date-fns";
 import { localizer } from "~/lib/calendarLocalizer";
@@ -17,7 +17,7 @@ type ViewType = "year" | "month" | "month_weeks" | "week" | "day";
 const VIEW_OPTIONS: { value: ViewType; label: string }[] = [
   { value: "year", label: "Year" },
   { value: "month", label: "Month" },
-  { value: "month_weeks", label: "Month/Weeks" },
+  // { value: "month_weeks", label: "Month/Weeks" }, // temporarily hidden
   { value: "week", label: "Week" },
   { value: "day", label: "Day" },
 ];
@@ -26,13 +26,39 @@ const SMALL_SCREEN_BREAKPOINT = 768;
 
 interface TrackerCalendarProps {
   filters: CalendarFilters;
+  mode: "view" | "manage";
+  managedActionOptions: { id: string; title: string }[];
+  onAssignActionToDate: (actionId: string, dateKey: string) => void;
+  onReturnActionToQueue: (actionId: string) => void;
+  assigningActionIds: Set<string>;
+  refreshKey: number;
 }
 
-export default function TrackerCalendar({ filters }: TrackerCalendarProps) {
+export default function TrackerCalendar({
+  filters,
+  mode,
+  managedActionOptions,
+  onAssignActionToDate,
+  onReturnActionToQueue,
+  assigningActionIds,
+  refreshKey,
+}: TrackerCalendarProps) {
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [view, setView] = useState<ViewType>(() =>
     typeof window !== "undefined" && window.innerWidth < SMALL_SCREEN_BREAKPOINT ? "day" : "month"
   );
+
+  const activeViewOptions = useMemo(() => {
+    if (mode === "manage") {
+      return VIEW_OPTIONS.filter((option) => option.value === "month" || option.value === "week");
+    }
+    return VIEW_OPTIONS;
+  }, [mode]);
+
+  useEffect(() => {
+    if (activeViewOptions.some((option) => option.value === view)) return;
+    setView(activeViewOptions[0]?.value ?? "month");
+  }, [activeViewOptions, view]);
 
   const range = useMemo(() => {
     if (view === "year") {
@@ -51,7 +77,7 @@ export default function TrackerCalendar({ filters }: TrackerCalendarProps) {
     return null;
   }, [view, currentDate]);
 
-  const { items } = useCalendarItems(range, filters);
+  const { items } = useCalendarItems(range, filters, refreshKey);
 
   const events = useMemo(
     () =>
@@ -132,7 +158,7 @@ export default function TrackerCalendar({ filters }: TrackerCalendarProps) {
         {/* View controls — below calendar */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60 shrink-0 pb-12">
           <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {VIEW_OPTIONS.map(({ value, label }) => (
+          {activeViewOptions.map(({ value, label }) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
@@ -156,11 +182,16 @@ export default function TrackerCalendar({ filters }: TrackerCalendarProps) {
             currentDate={currentDate}
             items={items}
             onNavigate={setCurrentDate}
+            manageMode={mode === "manage"}
+            managedActionOptions={managedActionOptions}
+            onAssignActionToDate={onAssignActionToDate}
+            onReturnActionToQueue={onReturnActionToQueue}
+            assigningActionIds={assigningActionIds}
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60 shrink-0 pb-12">
           <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {VIEW_OPTIONS.map(({ value, label }) => (
+          {activeViewOptions.map(({ value, label }) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
@@ -198,11 +229,16 @@ export default function TrackerCalendar({ filters }: TrackerCalendarProps) {
             currentDate={currentDate}
             items={items}
             isDayView={view === "day"}
+            manageMode={mode === "manage"}
+            managedActionOptions={managedActionOptions}
+            onAssignActionToDate={onAssignActionToDate}
+            onReturnActionToQueue={onReturnActionToQueue}
+            assigningActionIds={assigningActionIds}
           />
         </div>
         <div className="sticky bottom-0 left-0 right-0 flex flex-wrap items-center gap-2 py-4 pt-4 mt-0 border-t border-border/60 shrink-0 bg-background pb-12">
           <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {VIEW_OPTIONS.map(({ value, label }) => (
+          {activeViewOptions.map(({ value, label }) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
@@ -217,26 +253,59 @@ export default function TrackerCalendar({ filters }: TrackerCalendarProps) {
     );
   }
 
-  /* Month: RBC calendar */
+  /* Month: RBC calendar (view mode) */
+  if (mode === "view") {
+    return (
+      <div className="flex flex-col flex-1 min-h-0 p-4">
+        <div className="flex-1 min-h-[400px]">
+          <Calendar
+            localizer={localizer}
+            view={Views.MONTH}
+            views={[Views.MONTH]}
+            events={events}
+            date={defaultDate}
+            onNavigate={onNavigate}
+            onView={() => {}}
+            style={{ height: "100%", minHeight: 360 }}
+            components={components}
+            popup
+          />
+        </div>
+        <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 pb-12 border-t border-border/60 shrink-0">
+          <span className="text-sm font-medium text-muted-foreground">View:</span>
+          {activeViewOptions.map(({ value, label }) => (
+            <Button
+              key={value}
+              variant={view === value ? "default" : "outline"}
+              size="sm"
+              onClick={() => setView(value)}
+            >
+              {label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  /* Month: manage mode uses week blocks with day-level assignment controls */
   return (
     <div className="flex flex-col flex-1 min-h-0 p-4">
-      <div className="flex-1 min-h-[400px]">
-        <Calendar
-          localizer={localizer}
-          view={Views.MONTH}
-          views={[Views.MONTH]}
-          events={events}
-          date={defaultDate}
-          onNavigate={onNavigate}
-          onView={() => {}}
-          style={{ height: "100%", minHeight: 360 }}
-          components={components}
-          popup
+      <div className="flex-1 min-h-[400px] overflow-auto">
+        <MonthWeeksView
+          currentDate={currentDate}
+          items={items}
+          onNavigate={setCurrentDate}
+          manageMode
+          managedActionOptions={managedActionOptions}
+          onAssignActionToDate={onAssignActionToDate}
+          onReturnActionToQueue={onReturnActionToQueue}
+          assigningActionIds={assigningActionIds}
         />
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 pb-12 border-t border-border/60 shrink-0">
         <span className="text-sm font-medium text-muted-foreground">View:</span>
-        {VIEW_OPTIONS.map(({ value, label }) => (
+        {activeViewOptions.map(({ value, label }) => (
           <Button
             key={value}
             variant={view === value ? "default" : "outline"}
