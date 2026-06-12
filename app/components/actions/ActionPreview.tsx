@@ -2,7 +2,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Pencil, Settings, Trash2, MoreVertical, Info } from "lucide-react";
+import { Pencil, Settings, Trash2, MoreVertical, Info, StickyNote } from "lucide-react";
 import type { Action } from "./ActionsListPage";
 import { isToday, isBefore, isAfter, format, isValid } from "date-fns";
 import { parseDateOnly } from "~/utils/dateUtils";
@@ -19,6 +19,7 @@ import {
   SET_ACTION_IGNORE,
   SET_ACTION_PASSED_ARCHIVED,
 } from "~/api/queries";
+import NotesModal from "~/components/notes/NotesModal";
 
 /** Action with optional today-module fields (project, goal, milestone, estimatedTimeMinutes, startTimeOfDay). */
 export type ActionWithTodayFields = Action & {
@@ -70,6 +71,7 @@ export default function ActionPreview({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [checked, setChecked] = useState(action.done ?? false);
+  const [notesOpen, setNotesOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [postponeModalOpen, setPostponeModalOpen] = useState(false);
   const [outsourceModalOpen, setOutsourceModalOpen] = useState(false);
@@ -328,6 +330,9 @@ export default function ActionPreview({
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
+            <Button variant="ghost" size="icon" onClick={() => setNotesOpen(true)} className="h-8 w-8" aria-label={t("notes.openNotes")}>
+              <StickyNote className="h-4 w-4" />
+            </Button>
             <Button variant="ghost" size="icon" onClick={handleManage} className="h-8 w-8" aria-label={t("goalManage.manage")}>
               <Settings className="h-4 w-4" />
             </Button>
@@ -519,6 +524,14 @@ export default function ActionPreview({
             </div>
           </div>
         )}
+        {notesOpen && (
+          <NotesModal
+            entityType="action"
+            entityId={action.id ?? ""}
+            entityTitle={action.title}
+            onClose={() => setNotesOpen(false)}
+          />
+        )}
       </li>
     );
   }
@@ -534,6 +547,7 @@ export default function ActionPreview({
           : null;
 
   return (
+    <>
     <div
       key={action.id}
       className="flex items-center justify-between gap-4 rounded-md border px-4 py-2 shadow-sm relative"
@@ -584,6 +598,10 @@ export default function ActionPreview({
       </div>
 
       <div className="flex items-center gap-1 shrink-0">
+        <Button variant="ghost" size="icon" onClick={() => setNotesOpen(true)}>
+          <StickyNote className="h-4 w-4" />
+          <span className="sr-only">{t("notes.openNotes")}</span>
+        </Button>
         <Button variant="ghost" size="icon" onClick={handleManage}>
           <Settings className="h-4 w-4" />
           <span className="sr-only">{t("goalManage.manage")}</span>
@@ -594,5 +612,14 @@ export default function ActionPreview({
         </Button>
       </div>
     </div>
+    {notesOpen && (
+      <NotesModal
+        entityType="action"
+        entityId={action.id ?? ""}
+        entityTitle={action.title}
+        onClose={() => setNotesOpen(false)}
+      />
+    )}
+    </>
   );
 }

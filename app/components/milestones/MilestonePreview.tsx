@@ -4,8 +4,9 @@ import { Button } from "~/components/ui/button";
 import { Progress } from "~/components/ui/progress";
 import ProjectPreview, { type ProjectPreviewProps } from "../projects/ProjectPreview";
 import { isProjectDoneForGoal } from "../goals/GoalPreview";
-import { ChevronDown, ChevronRight, Pencil, Plus, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronRight, Pencil, Plus, Trash2, StickyNote } from "lucide-react";
 import { cn } from "~/lib/utils";
+import NotesModal from "~/components/notes/NotesModal";
 
 export type MilestonePreviewProject = {
   id: string;
@@ -54,6 +55,7 @@ export default function MilestonePreview({
   const { t } = useTranslation();
   const [showDeleteChoices, setShowDeleteChoices] = useState(false);
   const [moveToMilestoneId, setMoveToMilestoneId] = useState("");
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const done = projects.filter((p) => isProjectDoneForGoal(p)).length;
   const total = projects.length;
@@ -90,6 +92,15 @@ export default function MilestonePreview({
           title="Edit milestone"
         >
           <Pencil className="h-4 w-4" />
+        </Button>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8"
+          onClick={() => setNotesOpen(true)}
+          title={t("notes.openNotes")}
+        >
+          <StickyNote className="h-4 w-4" />
         </Button>
         <Button
           size="icon"
@@ -184,6 +195,14 @@ export default function MilestonePreview({
             ))
           )}
         </div>
+      )}
+      {notesOpen && (
+        <NotesModal
+          entityType="milestone"
+          entityId={id}
+          entityTitle={title}
+          onClose={() => setNotesOpen(false)}
+        />
       )}
     </div>
   );

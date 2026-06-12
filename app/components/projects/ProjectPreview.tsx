@@ -17,9 +17,10 @@ import {
 } from "~/api/queries";
 import { cn } from "~/lib/utils";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
-import { Settings, Trash2, ChevronDown, ChevronRight, Plus, X } from "lucide-react";
+import { Settings, Trash2, ChevronDown, ChevronRight, Plus, X, StickyNote } from "lucide-react";
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
+import NotesModal from "~/components/notes/NotesModal";
 
 export interface Project {
   title: string;
@@ -115,6 +116,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
   const [otherProjects, setOtherProjects] = useState<{ id: string; title: string }[]>([]);
   const [deleting, setDeleting] = useState(false);
 
+  const [notesOpen, setNotesOpen] = useState(false);
   const [accordionOpen, setAccordionOpen] = useState(false);
   const [showAllActions, setShowAllActions] = useState(false);
   const [addingAction, setAddingAction] = useState(false);
@@ -289,6 +291,14 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
           </div>
           {showControls && (
             <div className="flex items-center gap-1 shrink-0">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setNotesOpen(true)}
+                aria-label={t("notes.openNotes")}
+              >
+                <StickyNote className="h-4 w-4" />
+              </Button>
               <Button
                 variant="ghost"
                 size="icon"
@@ -484,10 +494,13 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                 </div>
                 {showControls && (
                   <div className="flex items-center gap-1 shrink-0">
-<Button variant="ghost" size="icon" onClick={handleManage} aria-label={t("goalManage.manage")}>
-                    <Settings className="h-4 w-4" />
-                  </Button>
-                  <Button
+                    <Button variant="ghost" size="icon" onClick={() => setNotesOpen(true)} aria-label={t("notes.openNotes")}>
+                      <StickyNote className="h-4 w-4" />
+                    </Button>
+                    <Button variant="ghost" size="icon" onClick={handleManage} aria-label={t("goalManage.manage")}>
+                      <Settings className="h-4 w-4" />
+                    </Button>
+                    <Button
                       variant="ghost"
                       size="icon"
                       onClick={openDelete}
@@ -727,6 +740,14 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
             </div>
           </div>
         </div>
+      )}
+      {notesOpen && (
+        <NotesModal
+          entityType="project"
+          entityId={id}
+          entityTitle={title}
+          onClose={() => setNotesOpen(false)}
+        />
       )}
     </>
   );

@@ -5,9 +5,10 @@ import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { format } from "date-fns";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, StickyNote } from "lucide-react";
 import { useApi } from "~/api/useApi";
 import { DELETE_INTERVAL } from "~/api/queries";
+import NotesModal from "~/components/notes/NotesModal";
 
 export type RepeatUnit = "minute" | "hour" | "day" | "week" | "month" | "year";
 
@@ -88,6 +89,7 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
   const linkLabel = goal?.title ?? milestone?.title ?? project?.title;
   const { call } = useApi(DELETE_INTERVAL);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const handleManage = () => {
     navigate(`/activities/interval/${id}`);
@@ -136,6 +138,15 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
               size="icon"
               variant="ghost"
               className="h-7 w-7"
+              onClick={() => setNotesOpen(true)}
+              title={t("notes.openNotes")}
+            >
+              <StickyNote className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
               onClick={handleManage}
               title={t("goalManage.manage")}
             >
@@ -165,6 +176,14 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />
+      {notesOpen && (
+        <NotesModal
+          entityType="interval"
+          entityId={id}
+          entityTitle={title}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
     </div>
   );
 }

@@ -870,3 +870,47 @@ export const SAVE_DOD_CLARITY = `
     }
   }
 `;
+
+export const GET_NOTES = `
+  query GetNotes($entityType: String!, $entityId: ID!) {
+    notes(entityType: $entityType, entityId: $entityId) {
+      id
+      entityType
+      entityId
+      body
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const ADD_NOTE = `
+  mutation AddNote($entityType: String!, $entityId: ID!, $body: String!) {
+    addNote(entityType: $entityType, entityId: $entityId, body: $body) {
+      id
+      entityType
+      entityId
+      body
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const UPDATE_NOTE = `
+  mutation UpdateNote($id: ID!, $body: String!) {
+    updateNote(id: $id, body: $body) {
+      id
+      body
+      updatedAt
+    }
+  }
+`;
+
+export const DELETE_NOTE = `
+  mutation DeleteNote($id: ID!) {
+    deleteNote(id: $id) {
+      id
+    }
+  }
+`;

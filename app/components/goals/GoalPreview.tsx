@@ -1,9 +1,11 @@
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Badge } from "~/components/ui/badge";
 import { isBefore, isAfter } from "date-fns";
-import { Settings } from "lucide-react";
+import { Settings, StickyNote } from "lucide-react";
 import { Button } from "~/components/ui/button";
+import NotesModal from "~/components/notes/NotesModal";
 
 export interface Goal {
   id: string;
@@ -93,6 +95,8 @@ export default function GoalPreview(props: GoalPreviewProps) {
     dodClarityStatus,
   } = props;
 
+  const [notesOpen, setNotesOpen] = useState(false);
+
   const statusRaw = getGoalStatus(props);
   const statusColor = getStatusColor(statusRaw);
   const statusKey = statusRaw === "Done" ? "statusDone" : statusRaw === "In Progress" ? "statusInProgress" : statusRaw === "Backlog" ? "statusBacklog" : statusRaw === "TBD" ? "statusTbd" : "statusIgnored";
@@ -116,6 +120,7 @@ export default function GoalPreview(props: GoalPreviewProps) {
           : null;
 
   return (
+    <>
     <div className="border rounded-md p-4 shadow-sm">
       <div className="flex items-center justify-between gap-2">
         <div className="min-w-0 flex-1 space-y-1">
@@ -143,17 +148,35 @@ export default function GoalPreview(props: GoalPreviewProps) {
           </div>
         </div>
         {showControls && (
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={handleManage}
-            aria-label={t("goalManage.manage")}
-            className="shrink-0"
-          >
-            <Settings className="h-4 w-4" />
-          </Button>
+          <div className="flex items-center gap-0.5 shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setNotesOpen(true)}
+              aria-label={t("notes.openNotes")}
+            >
+              <StickyNote className="h-4 w-4" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={handleManage}
+              aria-label={t("goalManage.manage")}
+            >
+              <Settings className="h-4 w-4" />
+            </Button>
+          </div>
         )}
       </div>
     </div>
+    {notesOpen && (
+      <NotesModal
+        entityType="goal"
+        entityId={id}
+        entityTitle={title}
+        onClose={() => setNotesOpen(false)}
+      />
+    )}
+    </>
   );
 }

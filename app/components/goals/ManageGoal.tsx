@@ -11,7 +11,7 @@ import { getGoalStatus, isProjectDoneForGoal } from "./GoalPreview";
 import { useApi } from "~/api/useApi";
 import { DELETE_GOAL, DELETE_MILESTONE, DELETE_PROJECT, GET_GOAL, GET_GOALS, GET_INTERVALS, GET_PROJECTS, UPDATE_GOAL, UPDATE_INTERVAL, UPDATE_MILESTONE, UPDATE_PROJECT, SAVE_DOD_CLARITY } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
-import { ListOrdered, Star, GripVertical, Trash2, ChevronDown, ChevronRight, Repeat, Sparkles, Flag, Info } from "lucide-react";
+import { ListOrdered, Star, GripVertical, Trash2, ChevronDown, ChevronRight, Repeat, Sparkles, Flag, Info, StickyNote } from "lucide-react";
 import DodClarityWizard, {
   DIMENSION_KEYS,
   type ClarityResult,
@@ -34,6 +34,7 @@ import { CSS } from "@dnd-kit/utilities";
 import { cn } from "~/lib/utils";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { InlineEdit } from "~/components/ui/inline-edit";
+import NotesModal from "~/components/notes/NotesModal";
 
 type ParsedProject = ProjectPreviewProps & {
   startDate: Date | null;
@@ -152,6 +153,7 @@ export default function ManageGoalPage() {
   const [clarityWizardOpen, setClarityWizardOpen] = useState(false);
   const [clarityWizardStep, setClarityWizardStep] = useState<number | undefined>();
   const [clarityPartialAnswers, setClarityPartialAnswers] = useState<Record<DimensionKey, DimensionAnswer> | undefined>();
+  const [notesOpen, setNotesOpen] = useState(false);
   const { call, getLastError } = useApi();
 
   function openClarityWizard(startStep?: number) {
@@ -547,6 +549,17 @@ export default function ManageGoalPage() {
           />
           <Badge variant="outline">{status}</Badge>
         </div>
+        <Button
+          type="button"
+          size="icon"
+          variant="ghost"
+          className="h-8 w-8 shrink-0"
+          onClick={() => setNotesOpen(true)}
+          title={t("notes.openNotes")}
+          aria-label={t("notes.openNotes")}
+        >
+          <StickyNote className="h-4 w-4" />
+        </Button>
         <Button
           type="button"
           size="icon"
@@ -1062,6 +1075,14 @@ export default function ManageGoalPage() {
         variant="destructive"
         onConfirm={handleDeleteGoalConfirm}
       />
+      {notesOpen && id && (
+        <NotesModal
+          entityType="goal"
+          entityId={id}
+          entityTitle={goal?.title}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
     </InternalPageLayout>
   );
 }

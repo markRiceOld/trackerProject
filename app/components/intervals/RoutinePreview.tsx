@@ -4,9 +4,10 @@ import { useNavigate } from "react-router";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Trash2, StickyNote } from "lucide-react";
 import { useApi } from "~/api/useApi";
 import { DELETE_ROUTINE } from "~/api/queries";
+import NotesModal from "~/components/notes/NotesModal";
 
 export interface RoutinePreviewProps {
   id: string;
@@ -43,6 +44,7 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
   const timeLabel = formatTimeOfDayBlocks(timeOfDayBlocks);
   const { call } = useApi(DELETE_ROUTINE);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [notesOpen, setNotesOpen] = useState(false);
 
   const handleManage = () => {
     navigate(`/activities/routine/${id}`);
@@ -85,6 +87,15 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
               size="icon"
               variant="ghost"
               className="h-7 w-7"
+              onClick={() => setNotesOpen(true)}
+              title={t("notes.openNotes")}
+            >
+              <StickyNote className="h-3.5 w-3.5" />
+            </Button>
+            <Button
+              size="icon"
+              variant="ghost"
+              className="h-7 w-7"
               onClick={handleManage}
               title={t("goalManage.manage")}
             >
@@ -114,6 +125,14 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />
+      {notesOpen && (
+        <NotesModal
+          entityType="routine"
+          entityId={id}
+          entityTitle={title}
+          onClose={() => setNotesOpen(false)}
+        />
+      )}
     </div>
   );
 }

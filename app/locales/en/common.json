@@ -461,7 +461,9 @@
     "cancel": "Cancel",
     "loading": "Loading...",
     "submit": "Submit",
-    "delete": "Delete"
+    "delete": "Delete",
+    "save": "Save",
+    "edit": "Edit"
   },
   "welcome": {
     "whatsNext": "What's next?",
@@ -599,5 +601,19 @@
     "typeProject": "project",
     "typeAction": "action",
     "typeInterval": "interval"
+  },
+  "notes": {
+    "modalTitle": "Notes",
+    "notesFor": "Notes for {{title}}",
+    "addPlaceholder": "Add a note…",
+    "addButton": "Add",
+    "emptyState": "No notes yet.",
+    "editPlaceholder": "Edit note…",
+    "saveNote": "Save note",
+    "cancelEdit": "Cancel edit",
+    "deleteNote": "Delete note",
+    "openNotes": "Notes",
+    "saving": "Saving…",
+    "close": "Close notes"
   }
 }
