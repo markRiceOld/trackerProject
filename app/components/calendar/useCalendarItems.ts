@@ -17,7 +17,7 @@ function getISODayOfWeek(d: Date): number {
   return day === 0 ? 7 : day;
 }
 
-function dateMatchesRepeatFromAnchor(anchor: Date, date: Date, repeatValue: number, repeatUnit: string): boolean {
+export function dateMatchesRepeatFromAnchor(anchor: Date, date: Date, repeatValue: number, repeatUnit: string): boolean {
   const anchorDay = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), anchor.getUTCDate()));
   const targetDay = new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
   if (targetDay < anchorDay) return false;
@@ -40,7 +40,7 @@ function dateMatchesRepeatFromAnchor(anchor: Date, date: Date, repeatValue: numb
   }
 }
 
-function intervalOccursOnDate(
+export function intervalOccursOnDate(
   iv: {
     customRepeatDates: string[];
     customRepeatRule: string | null;
@@ -100,7 +100,7 @@ function intervalOccursOnDate(
   return false;
 }
 
-function getIntervalOccurrenceTimes(iv: { customRepeatRule: string | null; predictedToDoTime: string | null }): string[] {
+export function getIntervalOccurrenceTimes(iv: { customRepeatRule: string | null; predictedToDoTime: string | null }): string[] {
   let blocks: string[] = [];
   if (iv.customRepeatRule) {
     try {
