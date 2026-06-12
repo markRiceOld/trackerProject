@@ -53,7 +53,7 @@ export default function GoalsListPage() {
             title: p.title,
             startDate: p.startDate ? parseDateOnly(p.startDate) : undefined,
             endDate: p.endDate ? parseDateOnly(p.endDate) : undefined,
-            done: !p.actions ? false : p.actions.every((a: Action) => a.done),
+            done: Array.isArray(p.actions) && p.actions.length > 0 && p.actions.every((a: Action) => a.done),
           })),
         }));
   
@@ -116,6 +116,9 @@ export default function GoalsListPage() {
         return statusFilters.ignored;
       case "Done":
         return statusFilters.done;
+      // Goal groups are containers without a computable status — always show them
+      case "GoalGroup":
+        return true;
       default:
         return false;
     }

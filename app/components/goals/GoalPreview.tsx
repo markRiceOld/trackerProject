@@ -37,6 +37,10 @@ export function isProjectDoneForGoal(project: { done?: boolean; startDate?: Date
 }
 
 export function getGoalStatus(props: GoalPreviewProps): string {
+  // Goal groups are containers — they have no direct projects, so treat them as a special category
+  // rather than computing a misleading "Backlog" status.
+  if (props.isGoalGroup) return "GoalGroup";
+
   const { dod, startDate, endDate, projects } = props;
   const allDone = projects.length > 0 && projects.every((p) => isProjectDoneForGoal(p));
   const now = new Date();

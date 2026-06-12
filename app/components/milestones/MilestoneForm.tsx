@@ -206,9 +206,19 @@ export default function MilestoneForm() {
         <div className="space-y-2">
           <Label>{t("milestones.predictionDate")}</Label>
           {showPredictionReadOnly && predictionDate && isValid(predictionDate) ? (
-            <p className="text-sm text-muted-foreground py-2">
-              {format(predictionDate, "MMM d, yyyy")}
-            </p>
+            <div className="flex items-center gap-3 py-2">
+              <p className="text-sm text-muted-foreground">
+                {format(predictionDate, "MMM d, yyyy")}
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setPredictionDateLocked(false)}
+              >
+                {t("common.change")}
+              </Button>
+            </div>
           ) : canSetPrediction ? (
             <Calendar
               mode="single"

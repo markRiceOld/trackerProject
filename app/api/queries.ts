@@ -422,6 +422,9 @@ export const GET_INTERVALS = `
       repeatUnit
       customRepeatDates
       customRepeatRule
+      predictedToDoTime
+      estimatedTimeMinutes
+      createdAt
       steps {
         id
         title

@@ -463,7 +463,8 @@
     "submit": "Submit",
     "delete": "Delete",
     "save": "Save",
-    "edit": "Edit"
+    "edit": "Edit",
+    "change": "Change"
   },
   "welcome": {
     "whatsNext": "What's next?",

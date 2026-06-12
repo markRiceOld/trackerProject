@@ -56,18 +56,6 @@ export default function ActionsListPage() {
         }));
         setActions(list);
       });
-      // const { gql } = await import("@apollo/client");
-      // const query = gql(GET_ACTIONS);
-      // const res = await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ query: query.loc?.source.body }),
-      // });
-      // let json = null;
-      // try {
-      //   json = await res.json();
-      // } catch (err) {
-      // }
     }
 
     fetchActions();

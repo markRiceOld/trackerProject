@@ -2,6 +2,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
+import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Pencil, Settings, Trash2, MoreVertical, Info, StickyNote } from "lucide-react";
 import type { Action } from "./ActionsListPage";
 import { isToday, isBefore, isAfter, format, isValid } from "date-fns";
@@ -72,6 +73,7 @@ export default function ActionPreview({
   const navigate = useNavigate();
   const [checked, setChecked] = useState(action.done ?? false);
   const [notesOpen, setNotesOpen] = useState(false);
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const [postponeModalOpen, setPostponeModalOpen] = useState(false);
   const [outsourceModalOpen, setOutsourceModalOpen] = useState(false);
@@ -252,20 +254,6 @@ export default function ActionPreview({
         variables: { id: action.id },
       });
       onDelete?.(action.id ?? '');
-      // await fetch("http://localhost:4000/graphql", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({
-      //     query: `
-      //       mutation DeleteAction($id: ID!) {
-      //         deleteAction(id: $id) {
-      //           id
-      //         }
-      //       }
-      //     `,
-      //   }),
-      // });
-  
     } catch (err) {
       console.error("Delete failed", err);
     }
@@ -606,7 +594,7 @@ export default function ActionPreview({
           <Settings className="h-4 w-4" />
           <span className="sr-only">{t("goalManage.manage")}</span>
         </Button>
-        <Button variant="ghost" size="icon" onClick={handleDelete}>
+        <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmOpen(true)}>
           <Trash2 className="h-4 w-4" />
           <span className="sr-only">{t("common.delete")}</span>
         </Button>
@@ -620,6 +608,15 @@ export default function ActionPreview({
         onClose={() => setNotesOpen(false)}
       />
     )}
+    <ConfirmDialog
+      open={deleteConfirmOpen}
+      onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
+      title={t("actions.deleteActionTitle")}
+      description={t("actions.cannotUndo")}
+      confirmLabel={t("actions.delete")}
+      variant="destructive"
+      onConfirm={handleDelete}
+    />
     </>
   );
 }

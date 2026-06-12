@@ -557,6 +557,39 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                   >
                     {t("filters.more")}
                   </Button>
+                  {addingAction ? (
+                    <AddActionWidget
+                      title={newActionTitle}
+                      onTitleChange={setNewActionTitle}
+                      estimatedMinutes={newActionEstimatedMin}
+                      onEstimatedMinutesChange={setNewActionEstimatedMin}
+                      date={newActionDate}
+                      onDateChange={setNewActionDate}
+                      startTimeOfDay={newActionStartTimeOfDay}
+                      onStartTimeOfDayChange={setNewActionStartTimeOfDay}
+                      onAdd={handleAddActionInAccordion}
+                      onCancel={() => {
+                        setAddingAction(false);
+                        setNewActionTitle("");
+                        setNewActionDate("");
+                        setNewActionEstimatedMin("");
+                        setNewActionStartTimeOfDay("");
+                      }}
+                      todayKey={todayKey}
+                      canAdd={canAddAction}
+                      addButtonSize="sm"
+                    />
+                  ) : (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAddingAction(true)}
+                    >
+                      <Plus className="h-4 w-4 mr-1.5" />
+                      {t("actionsList.addAction")}
+                    </Button>
+                  )}
                 </>
               ) : (
                 <>

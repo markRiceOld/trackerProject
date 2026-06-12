@@ -485,7 +485,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                           size="sm"
                           onClick={() => {
                             setOutsourceOpen(null);
-                            setLinkedResponses((p) => ({ ...p, [action.id]: undefined! }));
+                            setLinkedResponses((p) => {
+                              const next = { ...p };
+                              delete next[action.id];
+                              return next;
+                            });
                           }}
                         >
                           {t("common.cancel")}
@@ -609,7 +613,8 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
         </section>
       )}
 
-      {/* Step 3: Tomorrow review (hidden when embedded in Pre-day) */}
+      {/* Step 3: Tomorrow review — intentionally hidden when embedded in Pre-day because
+          Pre-day shows tomorrow's actions in its own "Day overview" step immediately after. */}
       {step === 3 && !embeddedInPreDay && (
         <section className="space-y-6">
           <p className="text-muted-foreground">
