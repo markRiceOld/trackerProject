@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Badge } from "~/components/ui/badge";
-import { isBefore, isAfter } from "date-fns";
+import { isBefore, isAfter, format } from "date-fns";
 import { Settings, StickyNote } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import NotesModal from "~/components/notes/NotesModal";
@@ -31,9 +31,9 @@ export interface GoalPreviewProps extends Goal {
   };
 }
 
-/** A project counts as "done" for goal/milestone status only when it has dates and all actions done (i.e. not Backlog). */
-export function isProjectDoneForGoal(project: { done?: boolean; startDate?: Date | null; endDate?: Date | null }): boolean {
-  return Boolean(project.done && project.startDate && project.endDate);
+/** A project counts as "done" for goal/milestone status when all its actions are done. */
+export function isProjectDoneForGoal(project: { done?: boolean }): boolean {
+  return Boolean(project.done);
 }
 
 export function getGoalStatus(props: GoalPreviewProps): string {
@@ -41,12 +41,12 @@ export function getGoalStatus(props: GoalPreviewProps): string {
   // rather than computing a misleading "Backlog" status.
   if (props.isGoalGroup) return "GoalGroup";
 
-  const { dod, startDate, endDate, projects } = props;
+  const { startDate, endDate, projects } = props;
   const allDone = projects.length > 0 && projects.every((p) => isProjectDoneForGoal(p));
   const now = new Date();
 
   if (allDone) return "Done";
-  if (!dod || !startDate || !endDate) return "Backlog";
+  if (!startDate || !endDate) return "Backlog";
   if (isBefore(endDate, now)) return "Ignored";
   if (isAfter(startDate, now)) return "TBD";
   return "In Progress";
@@ -134,6 +134,11 @@ export default function GoalPreview(props: GoalPreviewProps) {
               <Badge variant="secondary" className="text-xs">{t("goalsList.goalGroup")}</Badge>
             )}
             {!isGoalGroup && <Badge className={statusColor}>{status}</Badge>}
+            {!isGoalGroup && props.startDate && props.endDate && (
+              <span className="shrink-0">
+                {format(props.startDate, "MMM d")} – {format(props.endDate, "MMM d, yyyy")}
+              </span>
+            )}
             {dodClarityStatus === "green" && (
               <span className="flex items-center gap-1 text-xs text-green-600" title={t("dodClarity.clarityGreen")}>
                 <span className="inline-block h-2 w-2 rounded-full bg-green-500" />

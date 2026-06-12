@@ -200,7 +200,7 @@ export default function ManageGoalPage() {
       ...p,
       startDate: p.startDate ? parseDateOnly(p.startDate) : null,
       endDate: p.endDate ? parseDateOnly(p.endDate) : null,
-      done: (p.actions ?? []).every((a: any) => a.done),
+      done: Array.isArray(p.actions) && p.actions.length > 0 && p.actions.every((a: any) => a.done),
     });
     const projects = (data.projects ?? []).map(parseProject);
     const parseInterval = (iv: any): ParsedInterval | null => {

@@ -53,13 +53,23 @@ export interface ProjectPreviewProps extends Project {
 }
 
 export function getProjectStatus(props: ProjectPreviewProps): string {
-  const { dod, startDate, endDate, actions } = props;
-  const allChecked = actions.length > 0 && actions.every((a) => a.done);
+  const { startDate, actions } = props;
   const now = new Date();
 
-  if (!dod || !startDate || !endDate) return "Backlog";
-  if (allChecked) return "Done";
-  if (isBefore(endDate, now)) return "Ignored";
+  if (!actions.length) return "Backlog";
+
+  const allDone = actions.every((a) => a.done);
+  if (allDone) return "Done";
+
+  // All incomplete actions with tbd dates are in the past → Ignored
+  const incomplete = actions.filter((a) => !a.done);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  if (incomplete.length > 0 && incomplete.every((a) => a.tbd && isBefore(a.tbd, today))) {
+    return "Ignored";
+  }
+
+  // Use inferred start date for TBD vs In Progress
+  if (!startDate) return "Backlog";
   if (isAfter(startDate, now)) return "TBD";
   return "In Progress";
 }

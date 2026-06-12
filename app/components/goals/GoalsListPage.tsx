@@ -43,18 +43,24 @@ export default function GoalsListPage() {
       call().then(res => {
         const data = res?.goals ?? [];
   
+        const parseProject = (p: any) => ({
+          id: p.id,
+          title: p.title,
+          startDate: p.startDate ? parseDateOnly(p.startDate) : undefined,
+          endDate: p.endDate ? parseDateOnly(p.endDate) : undefined,
+          done: Array.isArray(p.actions) && p.actions.length > 0 && p.actions.every((a: Action) => a.done),
+        });
         const parsed = data.map((goal: any) => ({
           ...goal,
           startDate: goal.startDate ? parseDateOnly(goal.startDate) : undefined,
           endDate: goal.endDate ? parseDateOnly(goal.endDate) : undefined,
           milestones: (goal.milestones ?? []).map((m: any) => ({ id: m.id, title: m.title })),
-          projects: (goal.projects ?? []).map((p: any) => ({
-            id: p.id,
-            title: p.title,
-            startDate: p.startDate ? parseDateOnly(p.startDate) : undefined,
-            endDate: p.endDate ? parseDateOnly(p.endDate) : undefined,
-            done: Array.isArray(p.actions) && p.actions.length > 0 && p.actions.every((a: Action) => a.done),
-          })),
+          projects: [
+            ...(goal.projects ?? []).map(parseProject),
+            ...(goal.milestones ?? []).flatMap((m: any) =>
+              (m.projects ?? []).map(parseProject)
+            ),
+          ],
         }));
   
         setGoals(parsed);

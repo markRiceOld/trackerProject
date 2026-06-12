@@ -234,6 +234,13 @@ export const GET_GOALS = `
         doa
         predictionDate
         childGoals { id title isGoalGroup }
+        projects {
+          id
+          title
+          startDate
+          endDate
+          actions { done }
+        }
       }
       childGoals { id title isGoalGroup }
       projects {
