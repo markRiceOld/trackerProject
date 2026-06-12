@@ -397,7 +397,7 @@ export default function PreDayWizard({
 
   return (
     <main className="mx-auto max-w-2xl space-y-8 p-6">
-      <h1 className="text-2xl font-bold tracking-tight">{t("wizard.preDayTitle")}</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t("wizard.organizeTitle")}</h1>
 
       <div className="flex gap-2 overflow-x-auto pb-2" aria-label={t("wizard.wizardStepsAria")}>
         {steps.map((label, i) => {

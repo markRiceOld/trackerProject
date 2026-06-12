@@ -4,14 +4,13 @@ import { Input } from "~/components/ui/input";
 import ActionPreview from "~/components/actions/ActionPreview";
 import AfterDayWizard from "./AfterDayWizard";
 import PreDayWizard from "./PreDayWizard";
-import UnderConstruction from "../UnderConstruction";
 import { useState, useEffect, useCallback } from "react";
 import { useApi } from "~/api/useApi";
 import {
   GET_TODAY_ACTIONS,
-  GET_DAY_STATE,
   GET_PRE_DAY_STATUS,
   ADD_ACTION,
+  RUN_ACTION_GATHERING,
 } from "~/api/queries";
 import { toLocalDateString } from "~/utils/dateUtils";
 import { Moon, Pencil, Sun, Plus } from "lucide-react";
@@ -20,12 +19,11 @@ import { useTranslation } from "react-i18next";
 export default function TodayPage() {
   const { t } = useTranslation();
   const todayKey = toLocalDateString(new Date());
-  const [dayState, setDayState] = useState<{ preDayCompletedAt?: string | null } | null>(null);
   const [preDayStatus, setPreDayStatus] = useState<{ afterDayRequired?: boolean } | null>(null);
-  const [dayStateLoading, setDayStateLoading] = useState(true);
   const [showAfterDay, setShowAfterDay] = useState(false);
   const [showPreDay, setShowPreDay] = useState(false);
   const [todayActions, setTodayActions] = useState<any[] | null>(null);
+  const [gatherRunning, setGatherRunning] = useState(false);
   const [addInput, setAddInput] = useState("");
   const [addDate, setAddDate] = useState(todayKey);
   const [addEstimatedMin, setAddEstimatedMin] = useState<string>("");
@@ -41,48 +39,41 @@ export default function TodayPage() {
     addEstimatedNum >= 0 &&
     (!addDateIsToday || addTimeOfDay.length > 0);
 
-  const refetchDayState = useCallback(() => {
-    call({ query: GET_DAY_STATE, variables: { date: todayKey } }).then((res: any) => {
-      setDayState(res?.dayState ?? null);
-    });
-    call({ query: GET_PRE_DAY_STATUS, variables: { date: todayKey } }).then((res: any) => {
-      setPreDayStatus(res?.preDayStatus ?? null);
-    });
-  }, [call, todayKey]);
-
-  // Initial load: only re-run when date changes to avoid loop from unstable `call` reference
-  useEffect(() => {
-    let cancelled = false;
-    setDayStateLoading(true);
-    call({ query: GET_DAY_STATE, variables: { date: todayKey } })
-      .then((res: any) => {
-        if (!cancelled) setDayState(res?.dayState ?? null);
-      })
-      .finally(() => {
-        if (!cancelled) setDayStateLoading(false);
-      });
-    call({ query: GET_PRE_DAY_STATUS, variables: { date: todayKey } }).then((res: any) => {
-      if (!cancelled) setPreDayStatus(res?.preDayStatus ?? null);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [todayKey]);
-
   const refetchTodayActions = useCallback(() => {
     call({ query: GET_TODAY_ACTIONS, variables: { date: todayKey } }).then((res: any) =>
       setTodayActions(res?.todayActions ?? [])
     );
   }, [call, todayKey]);
 
-  // Initial load of today actions: only when date changes
+  // Initial load: fetch actions + preDayStatus + run gather in background
   useEffect(() => {
-    call({ query: GET_TODAY_ACTIONS, variables: { date: todayKey } }).then((res: any) =>
-      setTodayActions(res?.todayActions ?? [])
-    );
+    let cancelled = false;
+
+    call({ query: GET_TODAY_ACTIONS, variables: { date: todayKey } }).then((res: any) => {
+      if (!cancelled) setTodayActions(res?.todayActions ?? []);
+    });
+
+    call({ query: GET_PRE_DAY_STATUS, variables: { date: todayKey } }).then((res: any) => {
+      if (!cancelled) setPreDayStatus(res?.preDayStatus ?? null);
+    });
+
+    // Run gather silently; if actions were empty (gap scenario), refetch will populate them
+    setGatherRunning(true);
+    call({ query: RUN_ACTION_GATHERING, variables: { todayDate: todayKey } })
+      .then(() => call({ query: GET_TODAY_ACTIONS, variables: { date: todayKey } }))
+      .then((res: any) => {
+        if (!cancelled) setTodayActions(res?.todayActions ?? []);
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!cancelled) setGatherRunning(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [todayKey]);
 
-  const preDayDone = Boolean(dayState?.preDayCompletedAt);
   const afterDayRequired = preDayStatus?.afterDayRequired === true;
 
   if (showAfterDay) {
@@ -91,7 +82,7 @@ export default function TodayPage() {
         dateKeyToClose={todayKey}
         onClose={() => {
           setShowAfterDay(false);
-          refetchDayState();
+          refetchTodayActions();
         }}
       />
     );
@@ -104,22 +95,10 @@ export default function TodayPage() {
         afterDayRequired={afterDayRequired}
         onClose={() => setShowPreDay(false)}
         onComplete={() => {
-          refetchDayState();
           setShowPreDay(false);
+          refetchTodayActions();
         }}
       />
-    );
-  }
-
-  if (!dayStateLoading && !preDayDone) {
-    return (
-      <main className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-6 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">{t("today.goodMorning")}</h1>
-        <Button onClick={() => setShowPreDay(true)} className="gap-2">
-          <Sun className="h-4 w-4" />
-          {t("today.start")}
-        </Button>
-      </main>
     );
   }
 
@@ -150,131 +129,136 @@ export default function TodayPage() {
     });
   };
 
+  // Gap scenario: actions loaded but empty while gather is still running
+  const showGatheringState = todayActions !== null && todayActions.length === 0 && gatherRunning;
+
   return (
     <main className="space-y-8 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight">{t("today.title")}</h1>
-        <Button
-          variant="outline"
-          onClick={() => setShowAfterDay(true)}
-          className="gap-2"
-        >
-          <Moon className="h-4 w-4" />
-          {t("today.afterDay")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowPreDay(true)} className="gap-2">
+            <Sun className="h-4 w-4" />
+            {t("today.organize")}
+          </Button>
+          <Button variant="outline" onClick={() => setShowAfterDay(true)} className="gap-2">
+            <Moon className="h-4 w-4" />
+            {t("today.review")}
+          </Button>
+        </div>
       </div>
 
-      {/* Section 1: Linked Actions */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-muted-foreground">{t("today.linkedActions")}</h2>
-        {todayActions === null ? (
-          <>
-            <Skeleton className="h-16 w-full rounded-md" />
-            <Skeleton className="h-16 w-full rounded-md" />
-          </>
-        ) : !linkedActions.length ? (
-          <p className="text-muted-foreground">{t("today.noLinkedActions")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {linkedActions.map((action: any) => (
-              <ActionPreview
-                key={action.id}
-                action={action}
-                showTodayOptions
-                onRefetch={refetchTodayActions}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Section 2: Standalone Actions */}
-      <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-muted-foreground">{t("today.standaloneActions")}</h2>
-        <div className="space-y-3">
-          <div className="flex gap-2 items-center">
-            <label htmlFor="today-add-action-title" className="flex items-center gap-2 shrink-0 text-muted-foreground">
-              <Pencil className="h-4 w-4" aria-hidden />
-            </label>
-            <Input
-              id="today-add-action-title"
-              placeholder={t("today.addActionPlaceholder")}
-              value={addInput}
-              onChange={(e) => setAddInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && (showAddFields ? canSubmitAdd && handleAddStandalone() : false)}
-            />
-            <Button onClick={handleAddStandalone} size="icon" variant="default" disabled={showAddFields && !canSubmitAdd}>
-              <Plus className="h-4 w-4" />
-            </Button>
-          </div>
-          {showAddFields && (
-            <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
-              <div className="space-y-1.5">
-                <label htmlFor="today-add-date" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                </label>
-                <Input
-                  id="today-add-date"
-                  type="date"
-                  min={todayKey}
-                  value={addDate}
-                  onChange={(e) => setAddDate(e.target.value)}
-                  required
-                />
-              </div>
-              <div className="space-y-1.5">
-                <label htmlFor="today-add-estimated" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  {t("today.estimatedTimeMin")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                </label>
-                <Input
-                  id="today-add-estimated"
-                  type="number"
-                  min={0}
-                  placeholder={t("intervals.estimatedPlaceholder")}
-                  value={addEstimatedMin}
-                  onChange={(e) => setAddEstimatedMin(e.target.value)}
-                  required
-                />
-              </div>
-              {addDateIsToday && (
-                <div className="space-y-1.5 sm:col-span-2">
-                  <label htmlFor="today-add-time" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                    {t("today.timeToDo")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
-                  </label>
-                  <Input
-                    id="today-add-time"
-                    type="time"
-                    value={addTimeOfDay}
-                    onChange={(e) => setAddTimeOfDay(e.target.value)}
+      {showGatheringState ? (
+        <p className="text-muted-foreground">{t("today.gatheringActions")}</p>
+      ) : (
+        <>
+          {/* Section 1: Linked Actions */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-muted-foreground">{t("today.linkedActions")}</h2>
+            {todayActions === null ? (
+              <>
+                <Skeleton className="h-16 w-full rounded-md" />
+                <Skeleton className="h-16 w-full rounded-md" />
+              </>
+            ) : !linkedActions.length ? (
+              <p className="text-muted-foreground">{t("today.noLinkedActions")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {linkedActions.map((action: any) => (
+                  <ActionPreview
+                    key={action.id}
+                    action={action}
+                    showTodayOptions
+                    onRefetch={refetchTodayActions}
                   />
+                ))}
+              </ul>
+            )}
+          </section>
+
+          {/* Section 2: Standalone Actions */}
+          <section className="space-y-4">
+            <h2 className="text-lg font-semibold text-muted-foreground">{t("today.standaloneActions")}</h2>
+            <div className="space-y-3">
+              <div className="flex gap-2 items-center">
+                <label htmlFor="today-add-action-title" className="flex items-center gap-2 shrink-0 text-muted-foreground">
+                  <Pencil className="h-4 w-4" aria-hidden />
+                </label>
+                <Input
+                  id="today-add-action-title"
+                  placeholder={t("today.addActionPlaceholder")}
+                  value={addInput}
+                  onChange={(e) => setAddInput(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && (showAddFields ? canSubmitAdd && handleAddStandalone() : false)}
+                />
+                <Button onClick={handleAddStandalone} size="icon" variant="default" disabled={showAddFields && !canSubmitAdd}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              {showAddFields && (
+                <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
+                  <div className="space-y-1.5">
+                    <label htmlFor="today-add-date" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                      {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    </label>
+                    <Input
+                      id="today-add-date"
+                      type="date"
+                      min={todayKey}
+                      value={addDate}
+                      onChange={(e) => setAddDate(e.target.value)}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-1.5">
+                    <label htmlFor="today-add-estimated" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                      {t("today.estimatedTimeMin")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    </label>
+                    <Input
+                      id="today-add-estimated"
+                      type="number"
+                      min={0}
+                      placeholder={t("intervals.estimatedPlaceholder")}
+                      value={addEstimatedMin}
+                      onChange={(e) => setAddEstimatedMin(e.target.value)}
+                      required
+                    />
+                  </div>
+                  {addDateIsToday && (
+                    <div className="space-y-1.5 sm:col-span-2">
+                      <label htmlFor="today-add-time" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
+                        {t("today.timeToDo")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                      </label>
+                      <Input
+                        id="today-add-time"
+                        type="time"
+                        value={addTimeOfDay}
+                        onChange={(e) => setAddTimeOfDay(e.target.value)}
+                      />
+                    </div>
+                  )}
                 </div>
               )}
             </div>
-          )}
-        </div>
-        {todayActions === null ? (
-          <Skeleton className="h-16 w-full rounded-md" />
-        ) : !standaloneActions.length ? (
-          <p className="text-muted-foreground">{t("today.noStandaloneActions")}</p>
-        ) : (
-          <ul className="space-y-2">
-            {standaloneActions.map((action: any) => (
-              <ActionPreview
-                key={action.id}
-                action={action}
-                showTodayOptions
-                onRefetch={refetchTodayActions}
-              />
-            ))}
-          </ul>
-        )}
-      </section>
-
-      {/* Focus Mode Button Skeleton */}
-      {/* <section className="space-y-4"> */}
-        {/* <Skeleton className="h-12 w-full rounded-full" /> */}
-        {/* <UnderConstruction title="Focus mode" /> */}
-      {/* </section> */}
+            {todayActions === null ? (
+              <Skeleton className="h-16 w-full rounded-md" />
+            ) : !standaloneActions.length ? (
+              <p className="text-muted-foreground">{t("today.noStandaloneActions")}</p>
+            ) : (
+              <ul className="space-y-2">
+                {standaloneActions.map((action: any) => (
+                  <ActionPreview
+                    key={action.id}
+                    action={action}
+                    showTodayOptions
+                    onRefetch={refetchTodayActions}
+                  />
+                ))}
+              </ul>
+            )}
+          </section>
+        </>
+      )}
     </main>
   );
 }

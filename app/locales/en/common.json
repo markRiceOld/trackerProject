@@ -298,9 +298,9 @@
   },
   "today": {
     "title": "Today",
-    "goodMorning": "Good morning",
-    "start": "Start",
-    "afterDay": "After day",
+    "organize": "Organize",
+    "review": "Review",
+    "gatheringActions": "We're gathering your actions for today, please wait.",
     "linkedActions": "Linked Actions",
     "standaloneActions": "Standalone Actions",
     "noLinkedActions": "No linked actions for today.",
@@ -472,7 +472,7 @@
     "joinDiscord": "Join Discord"
   },
   "wizard": {
-    "preDayTitle": "Pre-day",
+    "organizeTitle": "Organize",
     "afterDayTitle": "After day",
     "loading": "Loading…",
     "loadingAfterDay": "Loading after-day review…",
