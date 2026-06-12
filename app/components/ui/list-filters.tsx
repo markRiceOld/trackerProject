@@ -1,4 +1,5 @@
 import { Button } from "~/components/ui/button";
+import { useTranslation } from "react-i18next";
 
 type FilterOption = {
   id: string;
@@ -31,17 +32,18 @@ export default function ListFilters({
   linkOptions,
   statusOptions,
 }: ListFiltersProps) {
+  const { t } = useTranslation();
   return (
     <>
       <div className="flex flex-wrap items-center gap-2">
         <Button type="button" variant="outline" size="sm" onClick={onToggleLinks}>
-          Links: {linksLabel}
+          {t("filters.links")}: {linksLabel}
         </Button>
         <Button type="button" variant="outline" size="sm" onClick={onToggleStatus}>
-          Status: {statusLabel}
+          {t("filters.status")}: {statusLabel}
         </Button>
         <Button type="button" variant="ghost" size="sm" onClick={onReset}>
-          Reset
+          {t("filters.reset")}
         </Button>
       </div>
 

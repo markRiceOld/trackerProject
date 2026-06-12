@@ -5,10 +5,12 @@ import { useAuth } from "./AuthContext";
 import { Link, useLocation, useNavigate } from "react-router";
 import { useApi } from "~/api/useApi";
 import { REGISTER_MUTATION } from "~/api/queries";
+import { useTranslation } from "react-i18next";
 
 
 
 export default function RegisterPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -24,7 +26,7 @@ export default function RegisterPage() {
     setError("");
 
     if (password !== confirmPassword) {
-      setError("Passwords do not match.");
+      setError(t("auth.errors.passwordMismatch"));
       return;
     }
 
@@ -32,7 +34,7 @@ export default function RegisterPage() {
       const res = await call({ variables: { email, password } });
 
       if (!res?.register) {
-        setError(getLastError() || "Registration failed. Please try again.");
+        setError(getLastError() || t("auth.errors.registrationFailed"));
         return;
       }
 
@@ -40,18 +42,18 @@ export default function RegisterPage() {
       login(token);
       navigate(fromPath, { replace: true });
     } catch (err: any) {
-      setError(err?.message || "Registration failed. Please try again.");
+      setError(err?.message || t("auth.errors.registrationFailed"));
       console.error(err);
     }
   };
 
   return (
     <main className="p-6 max-w-sm mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">Register</h1>
+      <h1 className="text-2xl font-bold">{t("auth.register")}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
           type="email"
-          placeholder="Email"
+          placeholder={t("auth.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
@@ -59,7 +61,7 @@ export default function RegisterPage() {
         />
         <Input
           type="password"
-          placeholder="Password"
+          placeholder={t("auth.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
@@ -68,7 +70,7 @@ export default function RegisterPage() {
         />
         <Input
           type="password"
-          placeholder="Confirm Password"
+          placeholder={t("auth.confirmPassword")}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
           required
@@ -77,11 +79,11 @@ export default function RegisterPage() {
         />
         {error && <div className="text-sm text-red-500">{error}</div>}
         <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? "Registering…" : "Register"}
+          {loading ? t("auth.registering") : t("auth.register")}
         </Button>
       </form>
       <Button variant="link" className="text-yellow-700">
-        <Link to="/login">Log In</Link>
+        <Link to="/login">{t("auth.logIn")}</Link>
       </Button>
     </main>
   );

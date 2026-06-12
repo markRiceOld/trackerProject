@@ -15,6 +15,7 @@ type BottomBarNavItem = {
   id: string;
   icon: ReactNode;
   href: string;
+  title?: string;
 };
 
 type ResponsiveNavigationProps = {
@@ -45,11 +46,12 @@ export default function ResponsiveNavigation({
 
       {/* Bottom Bar Navigation (mobile) - hidden on internal pages */}
       {!hideBottomBar && (
-        <nav className="fixed bottom-0 left-0 right-0 z-50 flex justify-around border-t bg-white p-2 md:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-50 flex justify-around border-t bg-white p-2 md:hidden">
           {bottomBarItems.map((item) => (
             <Link
               key={item.id}
               to={item.href}
+              aria-label={item.title}
               className={cn(
                 "flex flex-col items-center text-sm text-muted-foreground",
                 location.pathname === item.href && "text-primary"
@@ -81,7 +83,7 @@ function SidebarItem({ item, currentPath }: { item: SidebarNavItem; currentPath:
         <span>{item.title}</span>
       </Link>
       {item.children && (
-        <div className="ml-6 mt-1 space-y-1">
+        <div className="ms-6 mt-1 space-y-1">
           {item.children.map((child) => (
             <SidebarItem key={child.id} item={child} currentPath={currentPath} />
           ))}

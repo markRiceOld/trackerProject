@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
@@ -13,6 +14,7 @@ type ScheduleItem =
   | { kind: "routine"; data: RoutinePreviewProps };
 
 export default function IntervalsListPage() {
+  const { t } = useTranslation();
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
   const navigate = useNavigate();
   const { call } = useApi();
@@ -34,19 +36,19 @@ export default function IntervalsListPage() {
     setItems((prev) => prev?.filter((x) => x.kind !== kind || x.data.id !== id) ?? []);
   };
 
-  if (!items) return <p className="p-6">Loading...</p>;
+  if (!items) return <p className="p-6">{t("common.loading")}</p>;
 
   return (
     <InternalPageLayout
-      backLink={{ to: "/activities", label: "← Back to Activities" }}
-      title="Intervals and Routines"
+      backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
+      title={t("intervalsList.title")}
       actions={
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => navigate("/activities/interval")}>
-            <Plus className="h-4 w-4 mr-2" /> Add Interval
+            <Plus className="h-4 w-4 mr-2" /> {t("intervalsList.addInterval")}
           </Button>
           <Button size="sm" variant="outline" onClick={() => navigate("/activities/routine")}>
-            <Plus className="h-4 w-4 mr-2" /> Add Routine
+            <Plus className="h-4 w-4 mr-2" /> {t("intervalsList.addRoutine")}
           </Button>
         </div>
       }
@@ -54,7 +56,7 @@ export default function IntervalsListPage() {
       <div className="space-y-4">
         {items.length === 0 ? (
           <p className="text-muted-foreground text-sm">
-            No intervals or routines yet. Add one to get started.
+            {t("intervalsList.noIntervals")}
           </p>
         ) : (
           items.map((item, i) =>

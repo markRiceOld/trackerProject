@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { InlineEdit } from "~/components/ui/inline-edit";
 import { useLocation, useNavigate, useParams, useSearchParams } from "react-router";
 import { Button } from "~/components/ui/button";
@@ -17,6 +18,7 @@ import { cn } from "~/lib/utils";
 type GoalOption = { id: string; title: string; milestones: { id: string; title: string }[] };
 
 export default function ProjectForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
   const { id } = useParams();
@@ -174,7 +176,7 @@ export default function ProjectForm() {
 
       const res = await call({ variables, query });
       if (!res) {
-        setSubmitError(getLastError() || "Failed to save project. Please try again.");
+        setSubmitError(getLastError() || t("projects.saveError"));
         return;
       }
 
@@ -199,7 +201,7 @@ export default function ProjectForm() {
         const editResults = await Promise.all(editCalls);
         const failed = editResults.some((r) => r == null);
         if (failed) {
-          setSubmitError(getLastError() || "Failed to update some actions.");
+          setSubmitError(getLastError() || t("projects.updateActionsError"));
           return;
         }
       }
@@ -207,7 +209,7 @@ export default function ProjectForm() {
       navigate(returnGoalId ? `/activities/goal/${returnGoalId}` : "/activities/projects");
     } catch (err) {
       console.error("Failed to submit project", err);
-      setSubmitError("Something went wrong. Please try again.");
+      setSubmitError(t("projects.somethingWrong"));
     }
   };
 
@@ -246,8 +248,8 @@ export default function ProjectForm() {
   const cancelTo = returnGoalId ? `/activities/goal/${returnGoalId}` : "/activities/projects";
   return (
     <InternalPageLayout
-      backLink={{ to: cancelTo, label: returnGoalId ? "← Back to Goal" : "← Back to Projects" }}
-      title={isEdit ? "Edit Project" : "New Project"}
+      backLink={{ to: cancelTo, label: returnGoalId ? `← ${t("goalManage.backToGoal")}` : `← ${t("projects.backToProjects")}` }}
+      title={isEdit ? t("projects.editProject") : t("projects.newProject")}
       actions={
         isEdit ? (
           <Button
@@ -256,8 +258,8 @@ export default function ProjectForm() {
             variant="ghost"
             className="h-8 w-8 text-destructive hover:text-destructive ml-2"
             onClick={() => setDeleteConfirmOpen(true)}
-            title="Delete project"
-            aria-label="Delete project"
+            title={t("projects.deleteProject")}
+            aria-label={t("projects.deleteProject")}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -288,30 +290,30 @@ export default function ProjectForm() {
               displayAs="p"
               displayClassName="text-muted-foreground"
               inputClassName="flex-1 min-w-0"
-              placeholder="Definition of Done (optional)"
-              emptyDisplay="Click to add definition of done"
+              placeholder={t("goalManage.dodPlaceholder")}
+              emptyDisplay={t("goalManage.dodEmptyDisplay")}
             />
           </div>
         ) : (
           <>
             <div className="space-y-2">
               <Label htmlFor="project-title" className="flex items-center gap-2">
-                Project title <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                {t("projects.projectTitle")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <Input
                 id="project-title"
-                placeholder="Project Title"
+                placeholder={t("projects.projectTitle")}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
             <div className="space-y-2">
               <Label htmlFor="project-dod" className="flex items-center gap-2">
-                Definition of Done (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                {t("goalManage.dodPlaceholder")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <Input
                 id="project-dod"
-                placeholder="Definition of Done (optional)"
+                placeholder={t("goalManage.dodPlaceholder")}
                 value={dod}
                 onChange={(e) => setDod(e.target.value)}
               />
@@ -321,7 +323,7 @@ export default function ProjectForm() {
 
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <div className="space-y-1">
-            <Label htmlFor="goal" className="sr-only">Goal (optional)</Label>
+            <Label htmlFor="goal" className="sr-only">{t("projects.goalOptional")}</Label>
             <select
               id="goal"
               value={goalId ?? ""}
@@ -335,7 +337,7 @@ export default function ProjectForm() {
                 "focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[2px]"
               )}
             >
-              <option value="">— Goal (optional) —</option>
+              <option value="">{t("projects.goalOptional")}</option>
               {goals.map((g) => (
                 <option key={g.id} value={g.id}>
                   {g.title}
@@ -344,7 +346,7 @@ export default function ProjectForm() {
             </select>
           </div>
           <div className="space-y-1">
-            <Label htmlFor="milestone" className="sr-only">Milestone (optional)</Label>
+            <Label htmlFor="milestone" className="sr-only">{t("projects.milestoneOptional")}</Label>
             <select
               id="milestone"
               value={milestoneId ?? ""}
@@ -356,7 +358,7 @@ export default function ProjectForm() {
                 !selectedGoal && "opacity-60 cursor-not-allowed"
               )}
             >
-              <option value="">— Milestone (optional) —</option>
+              <option value="">{t("projects.milestoneOptional")}</option>
               {milestoneOptions.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.title}
@@ -366,7 +368,7 @@ export default function ProjectForm() {
           </div>
           {goalId && (
             <span className="text-muted-foreground">
-              Selected goal: <span className="font-medium text-foreground">{goalTitle ?? "—"}</span>
+              {t("projects.selectedGoal")} <span className="font-medium text-foreground">{goalTitle ?? "—"}</span>
             </span>
           )}
         </div>
@@ -400,12 +402,12 @@ export default function ProjectForm() {
           />
         ) : (
           <Button type="button" variant="outline" onClick={() => setAddingAction(true)}>
-            Add Action
+            {t("projects.addAction")}
           </Button>
         )}
 
         <div className="space-y-1 pt-4 text-sm text-muted-foreground">
-          <div>Status: {actions.length === 0 ? "Backlog" : "Depends on actions"}</div>
+          <div>{t("filters.status")}: {actions.length === 0 ? t("projects.statusBacklog") : t("projects.statusDependsOnActions")}</div>
           {/* <div>Type: Individual</div> */}
         </div>
 
@@ -415,9 +417,9 @@ export default function ProjectForm() {
           </p>
         )}
         <div className="flex gap-2 pt-2">
-          <Button type="submit">Submit</Button>
+          <Button type="submit">{t("common.submit")}</Button>
           <Button type="button" variant="ghost" onClick={() => navigate(cancelTo)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </form>
@@ -426,9 +428,9 @@ export default function ProjectForm() {
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
-          title="Delete this project?"
-          description="This cannot be undone. All actions in this project will be unlinked."
-          confirmLabel="Delete"
+          title={t("projects.deleteProjectConfirm")}
+          description={t("projects.deleteProjectDescription")}
+          confirmLabel={t("common.delete")}
           variant="destructive"
           onConfirm={handleDeleteConfirm}
         />

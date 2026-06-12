@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams, useSearchParams } from "react-router";
 import { format } from "date-fns";
 import {
@@ -35,41 +36,11 @@ import {
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { cn } from "~/lib/utils";
 
-const REPEAT_UNITS = [
-  { value: "minute", label: "Minute(s)" },
-  { value: "hour", label: "Hour(s)" },
-  { value: "day", label: "Day(s)" },
-  { value: "week", label: "Week(s)" },
-  { value: "month", label: "Month(s)" },
-  { value: "year", label: "Year(s)" },
-] as const;
+const REPEAT_UNIT_KEYS = ["minute", "hour", "day", "week", "month", "year"] as const;
+const DAY_LABEL_KEYS = ["dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat", "daySun"] as const;
+const MONTH_LABEL_KEYS = ["monthJan", "monthFeb", "monthMar", "monthApr", "monthMay", "monthJun", "monthJul", "monthAug", "monthSep", "monthOct", "monthNov", "monthDec"] as const;
 
 const MAX_ESTIMATED_MINUTES = 24 * 60; // 24 hours
-
-const DAYS_OF_WEEK = [
-  { value: 1, label: "Mon" },
-  { value: 2, label: "Tue" },
-  { value: 3, label: "Wed" },
-  { value: 4, label: "Thu" },
-  { value: 5, label: "Fri" },
-  { value: 6, label: "Sat" },
-  { value: 7, label: "Sun" },
-] as const;
-
-const MONTHS = [
-  { value: 1, label: "Jan" },
-  { value: 2, label: "Feb" },
-  { value: 3, label: "Mar" },
-  { value: 4, label: "Apr" },
-  { value: 5, label: "May" },
-  { value: 6, label: "Jun" },
-  { value: 7, label: "Jul" },
-  { value: 8, label: "Aug" },
-  { value: 9, label: "Sep" },
-  { value: 10, label: "Oct" },
-  { value: 11, label: "Nov" },
-  { value: 12, label: "Dec" },
-] as const;
 
 /** Format Date or ISO string for input[type="datetime-local"] (local time) */
 function toDateTimeLocal(isoOrDate: string | Date | null | undefined): string {
@@ -133,6 +104,7 @@ function StepRow({
   onAddNext?: () => void;
   inputRef?: React.RefObject<HTMLInputElement | null>;
 }) {
+  const { t } = useTranslation();
   const id = `step-${index}`;
   const {
     attributes,
@@ -168,25 +140,25 @@ function StepRow({
         {...attributes}
         {...listeners}
         className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none py-1"
-        title="Drag to reorder"
+        title={t("intervals.dragReorder")}
       >
         <GripVertical className="h-4 w-4" />
       </span>
       <span className="text-muted-foreground text-sm w-6">{index + 1}.</span>
       <Label htmlFor={`interval-step-${index}`} className="sr-only flex items-center gap-2">
-        Step title <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+        {t("intervals.stepTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
       </Label>
       <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
       <Input
         id={`interval-step-${index}`}
         ref={inputRef}
-        placeholder="Step title"
+        placeholder={t("intervals.stepTitle")}
         value={step.title}
         onChange={(e) => onTitleChange(e.target.value)}
         onKeyDown={handleKeyDown}
         className="flex-1"
       />
-      <Button type="button" variant="ghost" size="icon" onClick={onRemove} aria-label="Remove step">
+      <Button type="button" variant="ghost" size="icon" onClick={onRemove} aria-label={t("intervals.removeStep")}>
         <Trash2 className="h-4 w-4" />
       </Button>
     </div>
@@ -196,6 +168,7 @@ function StepRow({
 export type ScheduleFormMode = "interval" | "routine";
 
 export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id } = useParams();
   const [searchParams] = useSearchParams();
@@ -373,27 +346,25 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
     setStepsError(null);
     setEstimatedTimeError(null);
     if (!title.trim()) {
-      setTitleError("Title is required.");
+      setTitleError(t("intervals.errors.titleRequired"));
       return;
     }
     const estStr = estimatedTimeMinutes.trim();
     const estNum = estStr === "" ? null : parseInt(estStr, 10);
     if (estStr === "" || !Number.isFinite(estNum)) {
-      setEstimatedTimeError("Estimated time (minutes) is required.");
+      setEstimatedTimeError(t("intervals.errors.estimatedRequired"));
       return;
     }
     if (estNum! < 0 || estNum! > MAX_ESTIMATED_MINUTES) {
-      setEstimatedTimeError(
-        `Estimated time must be between 0 and ${MAX_ESTIMATED_MINUTES} minutes (24 hours).`
-      );
+      setEstimatedTimeError(t("intervals.errors.estimatedRange"));
       return;
     }
     if (mode === "interval" && !hasAtLeastOneRepeat) {
-      setRepeatError("Add at least one repeat: recurrence, custom dates, or custom interval.");
+      setRepeatError(t("intervals.errors.repeatRequired"));
       return;
     }
     if (validStepsCount === 0) {
-      setStepsError("Add at least one step.");
+      setStepsError(t("intervals.errors.stepRequired"));
       return;
     }
 
@@ -444,7 +415,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
     if (mode === "interval") {
       const onlyOne = [scope.goalId, scope.milestoneId, scope.projectId].filter(Boolean);
       if (onlyOne.length > 1) {
-        setScopeError("Link to only one of Goal, Milestone, or Project.");
+        setScopeError(t("intervals.errors.scopeOnlyOne"));
         return;
       }
       setScopeError(null);
@@ -593,15 +564,15 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
   const pageTitle = isEdit
     ? mode === "interval"
-      ? "Edit Interval"
-      : "Edit Routine"
+      ? t("intervals.editInterval")
+      : t("intervals.editRoutine")
     : mode === "interval"
-      ? "Add Interval"
-      : "Add Routine";
+      ? t("intervals.addInterval")
+      : t("intervals.addRoutine");
 
   return (
     <InternalPageLayout
-      backLink={{ to: "/activities/intervals", label: "← Back to Intervals and Routines" }}
+      backLink={{ to: "/activities/intervals", label: `← ${t("intervals.backToIntervals")}` }}
       title={pageTitle}
       maxWidth="max-w-2xl"
       actions={
@@ -612,8 +583,8 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
             variant="ghost"
             className="h-8 w-8 text-destructive hover:text-destructive ml-2"
             onClick={() => setDeleteConfirmOpen(true)}
-            title={mode === "interval" ? "Delete interval" : "Delete routine"}
-            aria-label={mode === "interval" ? "Delete interval" : "Delete routine"}
+            title={mode === "interval" ? t("intervals.deleteInterval") : t("intervals.deleteRoutine")}
+            aria-label={mode === "interval" ? t("intervals.deleteInterval") : t("intervals.deleteRoutine")}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -622,7 +593,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
     >
       {!isEdit && (
         <div className="flex items-center gap-2 p-3 rounded-md border bg-muted/30">
-          <span className="text-sm font-medium">Type:</span>
+          <span className="text-sm font-medium">{t("intervals.typeLabel")}</span>
           <div className="flex rounded-md border overflow-hidden">
             <button
               type="button"
@@ -634,7 +605,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                   : "bg-background hover:bg-muted/50"
               )}
             >
-              Interval
+              {t("intervals.interval")}
             </button>
             <button
               type="button"
@@ -646,7 +617,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                   : "bg-background hover:bg-muted/50"
               )}
             >
-              Routine
+              {t("intervals.routine")}
             </button>
           </div>
         </div>
@@ -655,11 +626,11 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title" className="flex items-center gap-2">
-            Title <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("intervals.title")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="title"
-            placeholder={mode === "interval" ? "Interval title" : "Routine title"}
+            placeholder={mode === "interval" ? t("intervals.intervalTitlePlaceholder") : t("intervals.routineTitlePlaceholder")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             aria-invalid={Boolean(titleError)}
@@ -674,7 +645,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
         <div className="space-y-2">
           <Label htmlFor="estimatedTimeMinutes" className="flex items-center gap-2">
-            Estimated time (minutes) <span className="text-destructive">*</span>
+            {t("intervals.estimatedTimeMinutes")} <span className="text-destructive">*</span>
             <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
@@ -682,7 +653,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
             type="number"
             min={0}
             max={MAX_ESTIMATED_MINUTES}
-            placeholder="e.g. 30"
+            placeholder={t("intervals.estimatedPlaceholder")}
             value={estimatedTimeMinutes}
             onChange={(e) => {
               setEstimatedTimeMinutes(e.target.value);
@@ -696,7 +667,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
             }
           />
           <p className="text-xs text-muted-foreground">
-            How long this takes. Max 24 hours (1440 min).
+            {t("intervals.estimatedHelp")}
           </p>
           {estimatedTimeError && (
             <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
@@ -708,14 +679,14 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         {mode === "routine" && (
           <div className="space-y-2">
             <Label htmlFor="timeOfDayBlock-0" className="flex items-center gap-2">
-              Time of day blocks <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+              {t("intervals.timeBlocks")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
             </Label>
             <p className="text-xs text-muted-foreground">
-              Add one or more times per day (e.g. 09:00, 14:00, 20:00). The routine runs at each block.
+              {t("intervals.timeBlocksRoutineHelp")}
             </p>
             {timeOfDayBlocks.map((block, i) => (
               <div key={i} className="flex gap-2 items-center">
-                <Label htmlFor={`timeOfDayBlock-${i}`} className="sr-only">Time block {i + 1}</Label>
+                <Label htmlFor={`timeOfDayBlock-${i}`} className="sr-only">{t("intervals.timeBlockLabel", { n: i + 1 })}</Label>
                 <Input
                   id={`timeOfDayBlock-${i}`}
                   type="time"
@@ -731,7 +702,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                   variant="ghost"
                   size="icon"
                   onClick={() => setTimeOfDayBlocks((prev) => prev.filter((_, j) => j !== i))}
-                  aria-label="Remove time block"
+                  aria-label={t("intervals.removeTimeBlock")}
                 >
                   <Trash2 className="h-4 w-4" />
                 </Button>
@@ -743,26 +714,26 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
               size="sm"
               onClick={() => setTimeOfDayBlocks((prev) => [...prev, "09:00"])}
             >
-              <Plus className="h-4 w-4 mr-2" /> Add time block
+              <Plus className="h-4 w-4 mr-2" /> {t("intervals.addTimeBlock")}
             </Button>
           </div>
         )}
 
         <div className="flex items-center gap-3">
-          <Label htmlFor="status" className="text-sm font-medium">Status</Label>
+          <Label htmlFor="status" className="text-sm font-medium">{t("intervals.status")}</Label>
           <Switch
             id="status"
             checked={status === "active"}
             onCheckedChange={(checked) => setStatus(checked ? "active" : "inactive")}
           />
           <span className="text-sm text-muted-foreground">
-            {status === "active" ? "Active" : "Inactive"}
+            {status === "active" ? t("intervals.active") : t("intervals.inactive")}
           </span>
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="endTime" className="flex items-center gap-2">
-            End date (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("intervals.endDateOptional")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="endTime"
@@ -777,10 +748,10 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         {mode === "interval" && (
           <div className="space-y-2">
             <Label htmlFor="predictedToDoTime" className="flex items-center gap-2">
-              Default to-do time (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+              {t("intervals.defaultTodoTimeOptional")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
             </Label>
             <p className="text-xs text-muted-foreground">
-              When this interval creates actions, use this time as the default start time (e.g. 09:00).
+              {t("intervals.defaultTodoTimeHelp")}
             </p>
             <Input
               id="predictedToDoTime"
@@ -799,14 +770,14 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         )}
         {mode === "interval" && (
         <AccordionSection
-          title="Repeats"
+          title={t("intervals.repeats")}
           open={repeatsOpen}
           onToggle={() => setRepeatsOpen((o) => !o)}
         >
           <div className="space-y-4">
             <div className="space-y-2">
               <Label htmlFor="repeatValue" className="flex items-center gap-2">
-                Every <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                {t("intervals.every")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <div className="flex flex-wrap items-center gap-2">
                 <Input
@@ -834,9 +805,9 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                     "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                   )}
                 >
-                  {REPEAT_UNITS.map((u) => (
-                    <option key={u.value} value={u.value}>
-                      {u.label}
+                  {REPEAT_UNIT_KEYS.map((key) => (
+                    <option key={key} value={key}>
+                      {t(`intervals.repeatUnit${key.charAt(0).toUpperCase() + key.slice(1)}`)}
                     </option>
                   ))}
                 </select>
@@ -845,19 +816,20 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
             {repeatUnit === "week" && (
               <div className="space-y-2">
-                <Label>On days of week (optional)</Label>
+                <Label>{t("intervals.onDaysOfWeek")}</Label>
                 <div className="flex flex-wrap gap-2">
-                  {DAYS_OF_WEEK.map((d) => {
-                    const selected = customRepeatRuleDaysOfWeek.includes(d.value);
+                  {DAY_LABEL_KEYS.map((key, i) => {
+                    const value = i + 1;
+                    const selected = customRepeatRuleDaysOfWeek.includes(value);
                     return (
                       <button
-                        key={d.value}
+                        key={value}
                         type="button"
                         onClick={() => {
                           setCustomRepeatRuleDaysOfWeek((prev) =>
                             selected
-                              ? prev.filter((x) => x !== d.value)
-                              : [...prev, d.value].sort((a, b) => a - b)
+                              ? prev.filter((x) => x !== value)
+                              : [...prev, value].sort((a, b) => a - b)
                           );
                         }}
                         className={cn(
@@ -867,7 +839,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                             : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
                         )}
                       >
-                        {d.label}
+                        {t(`intervals.${key}`)}
                       </button>
                     );
                   })}
@@ -877,7 +849,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
             {repeatUnit === "month" && (
               <div className="space-y-2">
-                <Label>On days of month (optional)</Label>
+                <Label>{t("intervals.onDaysOfMonth")}</Label>
                 <div className="flex flex-wrap gap-1.5 max-w-md">
                   {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
                     const selected = customRepeatRuleDaysOfMonth.includes(day);
@@ -910,19 +882,20 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
             {repeatUnit === "year" && (
               <>
                 <div className="space-y-2">
-                  <Label>In months (optional)</Label>
+                  <Label>{t("intervals.inMonths")}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {MONTHS.map((m) => {
-                      const selected = customRepeatRuleMonths.includes(m.value);
+                    {MONTH_LABEL_KEYS.map((key, i) => {
+                      const value = i + 1;
+                      const selected = customRepeatRuleMonths.includes(value);
                       return (
                         <button
-                          key={m.value}
+                          key={value}
                           type="button"
                           onClick={() => {
                             setCustomRepeatRuleMonths((prev) =>
                               selected
-                                ? prev.filter((x) => x !== m.value)
-                                : [...prev, m.value].sort((a, b) => a - b)
+                                ? prev.filter((x) => x !== value)
+                                : [...prev, value].sort((a, b) => a - b)
                             );
                           }}
                           className={cn(
@@ -932,14 +905,14 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                               : "bg-muted/60 text-muted-foreground hover:bg-muted hover:text-foreground"
                           )}
                         >
-                          {m.label}
+                          {t(`intervals.${key}`)}
                         </button>
                       );
                     })}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label>On days of month (optional)</Label>
+                  <Label>{t("intervals.onDaysOfMonth")}</Label>
                   <div className="flex flex-wrap gap-1.5 max-w-md">
                     {Array.from({ length: 31 }, (_, i) => i + 1).map((day) => {
                       const selected = customRepeatRuleYearDaysOfMonth.includes(day);
@@ -972,14 +945,14 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
             <div className="space-y-2 pt-2 border-t">
               <Label htmlFor="intervalTimeBlock-0" className="flex items-center gap-2">
-                Time of day blocks (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                {t("intervals.timeOfDayBlocksOptional")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <p className="text-xs text-muted-foreground">
-                Add one or more times for each repeat day (e.g. 09:00 and 18:00).
+                {t("intervals.timeBlocksRepeatHelp")}
               </p>
               {timeOfDayBlocks.map((block, i) => (
                 <div key={i} className="flex gap-2 items-center">
-                  <Label htmlFor={`intervalTimeBlock-${i}`} className="sr-only">Time block {i + 1}</Label>
+                  <Label htmlFor={`intervalTimeBlock-${i}`} className="sr-only">{t("intervals.timeBlockLabel", { n: i + 1 })}</Label>
                   <Input
                     id={`intervalTimeBlock-${i}`}
                     type="time"
@@ -995,7 +968,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                     variant="ghost"
                     size="icon"
                     onClick={() => setTimeOfDayBlocks((prev) => prev.filter((_, j) => j !== i))}
-                    aria-label="Remove time block"
+                    aria-label={t("intervals.removeTimeBlock")}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
@@ -1007,20 +980,20 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                 size="sm"
                 onClick={() => setTimeOfDayBlocks((prev) => [...prev, "09:00"])}
               >
-                <Plus className="h-4 w-4 mr-2" /> Add time block
+                <Plus className="h-4 w-4 mr-2" /> {t("intervals.addTimeBlock")}
               </Button>
             </div>
 
             <div className="space-y-2 pt-2 border-t">
               <Label htmlFor="customRepeatDate-0" className="flex items-center gap-2">
-                Specific dates (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                {t("intervals.specificDatesOptional")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <p className="text-xs text-muted-foreground">
-                Add specific date-times in addition to the recurrence above.
+                {t("intervals.specificDatesHelp")}
               </p>
               {customRepeatDates.map((iso, i) => (
                 <div key={i} className="flex gap-2 items-center">
-                  <Label htmlFor={`customRepeatDate-${i}`} className="sr-only">Date {i + 1}</Label>
+                  <Label htmlFor={`customRepeatDate-${i}`} className="sr-only">{t("intervals.dateLabel", { n: i + 1 })}</Label>
                   <Input
                     id={`customRepeatDate-${i}`}
                     type="datetime-local"
@@ -1034,14 +1007,14 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                     variant="ghost"
                     size="icon"
                     onClick={() => removeCustomDate(i)}
-                    aria-label="Remove date"
+                    aria-label={t("intervals.removeDate")}
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>
               ))}
               <Button type="button" variant="outline" size="sm" onClick={addCustomDate}>
-                <Plus className="h-4 w-4 mr-2" /> Add date
+                <Plus className="h-4 w-4 mr-2" /> {t("intervals.addDate")}
               </Button>
             </div>
           </div>
@@ -1054,14 +1027,14 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
           </p>
         )}
         <AccordionSection
-          title="Steps"
+          title={t("intervals.steps")}
           open={stepsOpen}
           onToggle={() => setStepsOpen((o) => !o)}
         >
           <p className="text-xs text-muted-foreground">
             {mode === "interval"
-              ? "Steps to complete each repetition of this interval. Drag the handle to reorder."
-              : "Steps to complete this routine. Drag the handle to reorder."}
+              ? t("intervals.stepsIntervalHelp")
+              : t("intervals.stepsRoutineHelp")}
           </p>
           <DndContext collisionDetection={closestCenter} onDragEnd={handleStepsDragEnd}>
             <SortableContext items={steps.map((_, i) => `step-${i}`)} strategy={verticalListSortingStrategy}>
@@ -1079,13 +1052,13 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
             </SortableContext>
           </DndContext>
           <Button type="button" variant="outline" size="sm" onClick={addStep}>
-            <Plus className="h-4 w-4 mr-2" /> Add step
+            <Plus className="h-4 w-4 mr-2" /> {t("intervals.addStep")}
           </Button>
         </AccordionSection>
 
         {mode === "interval" && (
         <div className="space-y-2 pt-2">
-          <Label>Link to (optional)</Label>
+          <Label>{t("intervals.linkToOptional")}</Label>
           {scopeError && (
             <Alert variant="destructive">
               <AlertDescription>{scopeError}</AlertDescription>
@@ -1107,10 +1080,10 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                 projectId && "opacity-60 cursor-not-allowed"
               )}
             >
-              <option value="">— Goal —</option>
+              <option value="">{t("intervals.selectGoal")}</option>
               {goals.map((g) => (
                 <option key={g.id} value={g.id}>
-                  {g.title}{g.isGoalGroup ? " (Goal group)" : ""}
+                  {g.title}{g.isGoalGroup ? t("intervals.goalGroupSuffix") : ""}
                 </option>
               ))}
             </select>
@@ -1127,7 +1100,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                 (!selectedGoal || projectId) && "opacity-60 cursor-not-allowed"
               )}
             >
-              <option value="">— Milestone —</option>
+              <option value="">{t("intervals.selectMilestone")}</option>
               {milestoneOptions.map((m) => (
                 <option key={m.id} value={m.id}>
                   {m.title}
@@ -1148,7 +1121,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
                 (goalId || milestoneId) && "opacity-60 cursor-not-allowed"
               )}
             >
-              <option value="">— Project —</option>
+              <option value="">{t("intervals.selectProject")}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title}
@@ -1160,9 +1133,9 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         )}
 
         <div className="flex gap-2 pt-4">
-          <Button type="submit">Save</Button>
+          <Button type="submit">{t("intervals.save")}</Button>
           <Button type="button" variant="ghost" onClick={() => navigate("/activities/intervals")}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </form>
@@ -1171,9 +1144,9 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
-          title={mode === "interval" ? "Delete this interval?" : "Delete this routine?"}
-          description="This cannot be undone."
-          confirmLabel="Delete"
+          title={mode === "interval" ? t("intervals.deleteIntervalTitle") : t("intervals.deleteRoutineTitle")}
+          description={t("intervals.cannotBeUndone")}
+          confirmLabel={t("intervals.delete")}
           variant="destructive"
           onConfirm={handleDeleteConfirm}
         />

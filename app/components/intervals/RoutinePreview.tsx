@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -35,6 +36,7 @@ function formatTimeOfDayBlocks(blocks: string[] | null | undefined): string {
 }
 
 export default function RoutinePreview(props: RoutinePreviewProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { id, title, status, timeOfDayBlocks, steps, showControls, onManage, onDelete } = props;
   const stepCount = steps?.length ?? 0;
@@ -61,9 +63,9 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="font-semibold text-sm line-clamp-1 flex-1 min-w-0">{title}</h2>
         <div className="flex items-center gap-1.5">
-          <Badge variant="secondary">Routine</Badge>
+          <Badge variant="secondary">{t("intervals.routine")}</Badge>
           <Badge variant={status === "active" ? "default" : "secondary"}>
-            {status === "active" ? "Active" : "Inactive"}
+            {status === "active" ? t("intervals.active") : t("intervals.inactive")}
           </Badge>
         </div>
       </div>
@@ -84,7 +86,7 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
               variant="ghost"
               className="h-7 w-7"
               onClick={handleManage}
-              title="Manage"
+              title={t("goalManage.manage")}
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
@@ -94,7 +96,7 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
                 variant="ghost"
                 className="h-7 w-7 text-destructive hover:text-destructive"
                 onClick={() => setDeleteConfirmOpen(true)}
-                title="Delete"
+                title={t("common.delete")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -106,9 +108,9 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
-        title="Delete this routine?"
-        description="Are you sure you want to delete this routine? This cannot be undone."
-        confirmLabel="Delete"
+        title={t("intervals.deleteRoutineTitle")}
+        description={t("intervals.deleteRoutineDescription")}
+        confirmLabel={t("intervals.delete")}
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />

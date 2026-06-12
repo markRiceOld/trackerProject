@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -34,13 +35,6 @@ type NotDoneData = {
   standalone: ActionItem[];
 };
 
-const STEPS = [
-  "Review mandatory linked actions",
-  "Review standalone actions",
-  "Day That Passed",
-  "Tomorrow review",
-] as const;
-
 type StepIndex = 0 | 1 | 2 | 3;
 
 type AfterDayWizardProps = {
@@ -52,6 +46,13 @@ type AfterDayWizardProps = {
 };
 
 export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: AfterDayWizardProps) {
+  const { t } = useTranslation();
+  const STEPS = [
+    t("wizard.stepReviewLinked"),
+    t("wizard.stepReviewStandalone"),
+    t("wizard.stepDayThatPassed"),
+    t("wizard.stepTomorrowReview"),
+  ] as const;
   const todayKeyForGathering = toLocalDateString(new Date());
   const dayBeforeKey = addDaysToDateKey(dateKeyToClose, -1);
   const tomorrowKey = addDaysToDateKey(dateKeyToClose, 1);
@@ -201,9 +202,9 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           query: OUTSOURCE_ACTION,
           variables: {
             id: actionId,
-            doOutsourcingTitle: extra.doTitle || "Do outsourcing",
+            doOutsourcingTitle: extra.doTitle || t("wizard.doOutsourcingDefault"),
             doOutsourcingDate: extra.doDate,
-            ensureDoneTitle: extra.ensureTitle || "Ensure done",
+            ensureDoneTitle: extra.ensureTitle || t("wizard.ensureDoneDefault"),
             ensureDoneDate: extra.ensureDate,
           },
         });
@@ -240,9 +241,9 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           query: OUTSOURCE_ACTION,
           variables: {
             id: actionId,
-            doOutsourcingTitle: extra.doTitle || "Do outsourcing",
+            doOutsourcingTitle: extra.doTitle || t("wizard.doOutsourcingDefault"),
             doOutsourcingDate: extra.doDate,
-            ensureDoneTitle: extra.ensureTitle || "Ensure done",
+            ensureDoneTitle: extra.ensureTitle || t("wizard.ensureDoneDefault"),
             ensureDoneDate: extra.ensureDate,
           },
         });
@@ -277,7 +278,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
   if (loading && step === 0) {
     return (
       <main className="p-6">
-        <p className="text-muted-foreground">Loading after-day review…</p>
+        <p className="text-muted-foreground">{t("wizard.loadingAfterDay")}</p>
       </main>
     );
   }
@@ -285,7 +286,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
   return (
     <main className="mx-auto max-w-2xl space-y-8 p-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold tracking-tight">After day</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("wizard.afterDayTitle")}</h1>
         <div className="flex items-center gap-3">
           {onComplete && (
             <button
@@ -293,16 +294,16 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
               onClick={onClose}
               className="text-sm text-muted-foreground underline hover:no-underline"
             >
-              Back
+              {t("wizard.back")}
             </button>
           )}
           <span className="text-muted-foreground">
-            Closing: {format(new Date(dateKeyToClose + "T12:00:00"), "EEEE, MMM d")}
+            {t("wizard.closing", { date: format(new Date(dateKeyToClose + "T12:00:00"), "EEEE, MMM d") })}
           </span>
         </div>
       </div>
 
-      <div className="flex gap-2 overflow-x-auto pb-2" aria-label="Wizard steps">
+      <div className="flex gap-2 overflow-x-auto pb-2" aria-label={t("wizard.wizardStepsAria")}>
         {STEPS.map((label, i) => {
           if (i === 0 && !showStep0) return null;
           if (i === 1 && !showStep1) return null;
@@ -326,11 +327,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
       {step === 0 && (
         <section className="space-y-6">
           <p className="text-muted-foreground">
-            Each linked action needs one response: Postpone, Outsource, Not important, or Pass.
+            {t("wizard.linkedIntro")}
           </p>
           {linkedList.length === 0 ? (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No mandatory linked actions to review.
+              {t("wizard.noLinkedToReview")}
             </p>
           ) : (
           <ul className="space-y-4">
@@ -339,7 +340,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                   <div className="mb-3 font-medium">{action.title}</div>
                   {linkedResponses[action.id] ? (
                     <span className="text-sm text-muted-foreground">
-                      Chosen: {linkedResponses[action.id]}
+                      {t("wizard.chosen", {
+                        value: linkedResponses[action.id] === "not_important"
+                          ? t("wizard.notImportant")
+                          : t(`wizard.${linkedResponses[action.id]}`),
+                      })}
                     </span>
                   ) : (
                     <div className="flex flex-wrap gap-2">
@@ -348,7 +353,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                         size="sm"
                         onClick={() => setLinkedResponses((p) => ({ ...p, [action.id]: "postpone" }))}
                       >
-                        Postpone
+                        {t("wizard.postpone")}
                       </Button>
                       <Button
                         variant="outline"
@@ -358,28 +363,28 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                           setOutsourceOpen(action.id);
                         }}
                       >
-                        Outsource
+                        {t("wizard.outsource")}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => applyLinkedChoice(action.id, "not_important")}
                       >
-                        Not important
+                        {t("wizard.notImportant")}
                       </Button>
                       <Button
                         variant="outline"
                         size="sm"
                         onClick={() => applyLinkedChoice(action.id, "pass")}
                       >
-                        Pass
+                        {t("wizard.pass")}
                       </Button>
                     </div>
                   )}
                   {linkedResponses[action.id] === "postpone" && (
                     <div className="mt-3 flex flex-wrap items-center gap-2">
                       <Label htmlFor={`after-postpone-${action.id}`} className="sr-only flex items-center gap-2">
-                        New date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                        {t("wizard.newDate")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                       </Label>
                       <Input
                         id={`after-postpone-${action.id}`}
@@ -398,7 +403,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                         }
                         disabled={!postponeDate[action.id]}
                       >
-                        Set date
+                        {t("wizard.setDate")}
                       </Button>
                     </div>
                   )}
@@ -407,11 +412,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                       <div className="grid gap-2 sm:grid-cols-2">
                         <div>
                           <Label htmlFor={`after-outsource-do-title-${action.id}`} className="flex items-center gap-2">
-                            Do outsourcing (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.doOutsourcingTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`after-outsource-do-title-${action.id}`}
-                            placeholder="e.g. Delegate to X"
+                            placeholder={t("wizard.delegatePlaceholder")}
                             value={outsourceForm.doTitle}
                             onChange={(e) =>
                               setOutsourceForm((p) => ({ ...p, doTitle: e.target.value }))
@@ -420,7 +425,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                         </div>
                         <div>
                           <Label htmlFor={`after-outsource-do-date-${action.id}`} className="flex items-center gap-2">
-                            Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`after-outsource-do-date-${action.id}`}
@@ -434,11 +439,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                         </div>
                         <div>
                           <Label htmlFor={`after-outsource-ensure-title-${action.id}`} className="flex items-center gap-2">
-                            Ensure done (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.ensureDoneTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`after-outsource-ensure-title-${action.id}`}
-                            placeholder="e.g. Confirm with X"
+                            placeholder={t("wizard.confirmPlaceholder")}
                             value={outsourceForm.ensureTitle}
                             onChange={(e) =>
                               setOutsourceForm((p) => ({ ...p, ensureTitle: e.target.value }))
@@ -447,7 +452,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                         </div>
                         <div>
                           <Label htmlFor={`after-outsource-ensure-date-${action.id}`} className="flex items-center gap-2">
-                            Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`after-outsource-ensure-date-${action.id}`}
@@ -473,7 +478,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                           }
                           disabled={!outsourceForm.doDate || !outsourceForm.ensureDate}
                         >
-                          Confirm outsource
+                          {t("wizard.confirmOutsource")}
                         </Button>
                         <Button
                           variant="ghost"
@@ -483,7 +488,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                             setLinkedResponses((p) => ({ ...p, [action.id]: undefined! }));
                           }}
                         >
-                          Cancel
+                          {t("common.cancel")}
                         </Button>
                       </div>
                     </div>
@@ -494,7 +499,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           )}
           <div className="flex justify-end">
             <Button onClick={() => setStep(1)} disabled={!canAdvanceFromStep0}>
-              Next: Review standalone actions
+              {t("wizard.nextReviewStandalone")}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -505,19 +510,19 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
       {step === 1 && (
         <section className="space-y-8">
           <p className="text-muted-foreground">
-            Optional: Postpone, Outsource, Ignore (bucket list), or Delete. Unhandled standalones may
-            become bucket list after the third after-day.
+            {t("wizard.standaloneIntro")}
           </p>
           {standaloneList.length > 0 && (
             <div>
               <h2 className="mb-3 text-lg font-semibold">
-                {format(new Date(dateKeyToClose + "T12:00:00"), "EEEE, MMM d")} — standalone
+                {format(new Date(dateKeyToClose + "T12:00:00"), "EEEE, MMM d")} {t("wizard.standalone")}
               </h2>
               <ul className="space-y-3">
                 {standaloneList.map((action) => (
                   <StandaloneRow
                     key={action.id}
                     action={action}
+                    minDate={minDate}
                     onPostpone={(newDate) => applyStandaloneChoice(action.id, "postpone", { newDate })}
                     onOutsource={(extra) => applyStandaloneChoice(action.id, "outsource", extra)}
                     onIgnore={() => applyStandaloneChoice(action.id, "ignore")}
@@ -530,13 +535,14 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           {dayBeforeStandalone.length > 0 && (
             <div>
               <h2 className="mb-3 text-lg font-semibold">
-                {format(new Date(dayBeforeKey + "T12:00:00"), "EEEE, MMM d")} — standalone (if any)
+                {format(new Date(dayBeforeKey + "T12:00:00"), "EEEE, MMM d")} {t("wizard.standaloneIfAny")}
               </h2>
               <ul className="space-y-3">
                 {dayBeforeStandalone.map((action) => (
                   <StandaloneRow
                     key={action.id}
                     action={action}
+                    minDate={minDate}
                     onPostpone={(newDate) => applyStandaloneChoice(action.id, "postpone", { newDate })}
                     onOutsource={(extra) => applyStandaloneChoice(action.id, "outsource", extra)}
                     onIgnore={() => applyStandaloneChoice(action.id, "ignore")}
@@ -548,12 +554,12 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           )}
           {standaloneList.length === 0 && dayBeforeStandalone.length === 0 && (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No standalone actions to review.
+              {t("wizard.noStandaloneToReview")}
             </p>
           )}
           <div className="flex justify-end">
             <Button onClick={() => setStep(2)}>
-              Next: Day That Passed
+              {t("wizard.nextDayThatPassed")}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -563,10 +569,10 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
       {/* Step 2: Day That Passed */}
       {step === 2 && (
         <section className="space-y-6">
-          <p className="text-muted-foreground">Overview of tasks you completed for that day.</p>
+          <p className="text-muted-foreground">{t("wizard.dayPassedIntro")}</p>
           {doneActions.length === 0 ? (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No completed tasks recorded for that day.
+              {t("wizard.noCompletedRecorded")}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -584,17 +590,17 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           <div className="flex flex-wrap gap-3">
             {embeddedInPreDay ? (
               <Button onClick={finishFlow} disabled={finishing} className="gap-2">
-                Continue to day review
+                {t("wizard.continueToDayReview")}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
               <>
                 <Button onClick={finishFlow} disabled={finishing} className="gap-2">
                   <Moon className="h-4 w-4" />
-                  Good night
+                  {t("wizard.goodNight")}
                 </Button>
                 <Button variant="outline" onClick={() => setStep(3)}>
-                  Next: Tomorrow review
+                  {t("wizard.nextTomorrowReview")}
                   <ChevronRight className="ml-1 h-4 w-4" />
                 </Button>
               </>
@@ -607,12 +613,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
       {step === 3 && !embeddedInPreDay && (
         <section className="space-y-6">
           <p className="text-muted-foreground">
-            Preview of tomorrow’s tasks (read-only). Hidden/gathered tasks are shown here but cannot
-            be edited or checked yet.
+            {t("wizard.tomorrowIntro")}
           </p>
           {tomorrowActions.length === 0 ? (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No tasks for tomorrow yet.
+              {t("wizard.noTasksTomorrow")}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -622,7 +627,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                   className="flex items-center gap-2 rounded-md border bg-muted/50 px-3 py-2 text-muted-foreground"
                 >
                   {a.isGathered && (
-                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs">Gathered</span>
+                    <span className="rounded bg-muted px-1.5 py-0.5 text-xs">{t("wizard.gathered")}</span>
                   )}
                   <span>{a.title}</span>
                   {a.startTimeOfDay && (
@@ -635,7 +640,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           <div className="flex justify-end">
             <Button onClick={finishFlow} disabled={finishing} className="gap-2">
               <Sun className="h-4 w-4" />
-              Done
+              {t("wizard.done")}
             </Button>
           </div>
         </section>
@@ -646,12 +651,14 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
 
 function StandaloneRow({
   action,
+  minDate,
   onPostpone,
   onOutsource,
   onIgnore,
   onDelete,
 }: {
   action: ActionItem;
+  minDate: string;
   onPostpone: (newDate: string) => void;
   onOutsource: (extra: {
     doTitle?: string;
@@ -662,6 +669,7 @@ function StandaloneRow({
   onIgnore: () => void;
   onDelete: () => void;
 }) {
+  const { t } = useTranslation();
   const [showPostpone, setShowPostpone] = useState(false);
   const [showOutsource, setShowOutsource] = useState(false);
   const [postponeDate, setPostponeDate] = useState("");
@@ -680,16 +688,16 @@ function StandaloneRow({
           size="sm"
           onClick={() => setShowPostpone((p) => !p)}
         >
-          Postpone
+          {t("wizard.postpone")}
         </Button>
         <Button variant="outline" size="sm" onClick={() => setShowOutsource((p) => !p)}>
-          Outsource
+          {t("wizard.outsource")}
         </Button>
         <Button variant="outline" size="sm" onClick={onIgnore}>
-          Ignore
+          {t("wizard.ignore")}
         </Button>
         <Button variant="destructive" size="sm" onClick={onDelete}>
-          Delete
+          {t("wizard.delete")}
         </Button>
       </div>
       {showPostpone && (
@@ -715,7 +723,7 @@ function StandaloneRow({
             }}
             disabled={!postponeDate}
           >
-            Set date
+            {t("wizard.setDate")}
           </Button>
         </div>
       )}
@@ -723,48 +731,48 @@ function StandaloneRow({
         <div className="mt-2 space-y-2 rounded border p-2">
           <div>
             <Label htmlFor="after-wizard-do-title" className="text-xs flex items-center gap-2">
-              Do outsourcing (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t("wizard.doOutsourcingTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Label>
             <Input
               id="after-wizard-do-title"
-              placeholder="Do outsourcing title"
+              placeholder={t("wizard.doOutsourcingPlaceholder")}
               value={outsourceForm.doTitle}
               onChange={(e) => setOutsourceForm((p) => ({ ...p, doTitle: e.target.value }))}
             />
           </div>
           <div>
             <Label htmlFor="after-wizard-do-date" className="text-xs flex items-center gap-2">
-              Do date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t("wizard.doDate")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Label>
             <Input
               id="after-wizard-do-date"
               type="date"
               min={minDate}
-              placeholder="Do date"
+              placeholder={t("wizard.doDatePlaceholder")}
               value={outsourceForm.doDate}
               onChange={(e) => setOutsourceForm((p) => ({ ...p, doDate: e.target.value }))}
             />
           </div>
           <div>
             <Label htmlFor="after-wizard-ensure-title" className="text-xs flex items-center gap-2">
-              Ensure done (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t("wizard.ensureDoneTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Label>
             <Input
               id="after-wizard-ensure-title"
-              placeholder="Ensure done title"
+              placeholder={t("wizard.ensureDonePlaceholder")}
               value={outsourceForm.ensureTitle}
               onChange={(e) => setOutsourceForm((p) => ({ ...p, ensureTitle: e.target.value }))}
             />
           </div>
           <div>
             <Label htmlFor="after-wizard-ensure-date" className="text-xs flex items-center gap-2">
-              Ensure date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t("wizard.ensureDate")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Label>
             <Input
               id="after-wizard-ensure-date"
               type="date"
               min={minDate}
-              placeholder="Ensure date"
+              placeholder={t("wizard.ensureDatePlaceholder")}
               value={outsourceForm.ensureDate}
               onChange={(e) => setOutsourceForm((p) => ({ ...p, ensureDate: e.target.value }))}
             />
@@ -778,7 +786,7 @@ function StandaloneRow({
               setOutsourceForm({ doTitle: "", doDate: "", ensureTitle: "", ensureDate: "" });
             }}
           >
-            Confirm outsource
+            {t("wizard.confirmOutsource")}
           </Button>
         </div>
       )}

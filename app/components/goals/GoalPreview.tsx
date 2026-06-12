@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Badge } from "~/components/ui/badge";
 import { isBefore, isAfter } from "date-fns";
@@ -77,6 +78,7 @@ function getCurrentProject(
 }
 
 export default function GoalPreview(props: GoalPreviewProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     title,
@@ -89,8 +91,10 @@ export default function GoalPreview(props: GoalPreviewProps) {
     isGoalGroup,
   } = props;
 
-  const status = getGoalStatus(props);
-  const statusColor = getStatusColor(status);
+  const statusRaw = getGoalStatus(props);
+  const statusColor = getStatusColor(statusRaw);
+  const statusKey = statusRaw === "Done" ? "statusDone" : statusRaw === "In Progress" ? "statusInProgress" : statusRaw === "Backlog" ? "statusBacklog" : statusRaw === "TBD" ? "statusTbd" : "statusIgnored";
+  const status = t(`goalManage.${statusKey}`);
   const currentProject = getCurrentProject(projects);
   const nextProject = firstTbdProject;
   const nextMilestone = milestones?.length ? milestones[0] : undefined;
@@ -102,11 +106,11 @@ export default function GoalPreview(props: GoalPreviewProps) {
 
   const currentOrNextLine =
     currentProject
-      ? `Current: ${currentProject.title}`
+      ? t("goalsList.current", { title: currentProject.title })
       : nextProject
-        ? `Next: ${nextProject.title}`
+        ? t("goalsList.next", { title: nextProject.title })
         : nextMilestone
-          ? `Next milestone: ${nextMilestone.title}`
+          ? t("goalsList.nextMilestone", { title: nextMilestone.title })
           : null;
 
   return (
@@ -116,7 +120,7 @@ export default function GoalPreview(props: GoalPreviewProps) {
           <h2 className="font-semibold text-sm line-clamp-1">{title}</h2>
           <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-muted-foreground">
             {isGoalGroup && (
-              <Badge variant="secondary" className="text-xs">Goal group</Badge>
+              <Badge variant="secondary" className="text-xs">{t("goalsList.goalGroup")}</Badge>
             )}
             {!isGoalGroup && <Badge className={statusColor}>{status}</Badge>}
             {!isGoalGroup && currentOrNextLine && (
@@ -129,7 +133,7 @@ export default function GoalPreview(props: GoalPreviewProps) {
             variant="ghost"
             size="icon"
             onClick={handleManage}
-            aria-label="Manage goal"
+            aria-label={t("goalManage.manage")}
             className="shrink-0"
           >
             <Settings className="h-4 w-4" />

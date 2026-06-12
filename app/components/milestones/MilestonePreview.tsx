@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Progress } from "~/components/ui/progress";
 import ProjectPreview, { type ProjectPreviewProps } from "../projects/ProjectPreview";
@@ -50,6 +51,7 @@ export default function MilestonePreview({
   otherMilestones,
   onActionAdded,
 }: MilestonePreviewProps) {
+  const { t } = useTranslation();
   const [showDeleteChoices, setShowDeleteChoices] = useState(false);
   const [moveToMilestoneId, setMoveToMilestoneId] = useState("");
 
@@ -103,28 +105,28 @@ export default function MilestonePreview({
           variant="ghost"
           className="h-8 w-8 text-destructive hover:text-destructive"
           onClick={() => setShowDeleteChoices((v) => !v)}
-          title="Delete milestone"
+          title={t("milestones.deleteMilestone")}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
       </div>
       {showDeleteChoices && (
         <div className="px-3 py-2 border-t bg-muted/30 space-y-2 text-sm">
-          <p className="font-medium text-foreground">Delete this milestone. What about its projects?</p>
+          <p className="font-medium text-foreground">{t("milestones.deleteMilestoneWhatAbout")}</p>
           <div className="flex flex-wrap gap-2">
             <Button
               size="sm"
               variant="destructive"
               onClick={() => handleDeleteChoice("delete-projects")}
             >
-              Delete projects
+              {t("milestones.deleteProjects")}
             </Button>
             <Button
               size="sm"
               variant="secondary"
               onClick={() => handleDeleteChoice("move-to-goal")}
             >
-              Move to goal
+              {t("milestones.moveToGoal")}
             </Button>
             {otherMilestones.length > 0 ? (
               <div className="flex items-center gap-2">
@@ -133,7 +135,7 @@ export default function MilestonePreview({
                   onChange={(e) => setMoveToMilestoneId(e.target.value)}
                   className="h-8 rounded-md border border-input bg-background px-2 text-sm"
                 >
-                  <option value="">— Another milestone —</option>
+                  <option value="">{t("milestones.anotherMilestone")}</option>
                   {otherMilestones.map((m) => (
                     <option key={m.id} value={m.id}>
                       {m.title}
@@ -146,13 +148,13 @@ export default function MilestonePreview({
                   onClick={() => handleDeleteChoice("move-to-milestone")}
                   disabled={!moveToMilestoneId}
                 >
-                  Move
+                  {t("milestones.move")}
                 </Button>
               </div>
             ) : null}
           </div>
           <Button size="sm" variant="ghost" onClick={() => setShowDeleteChoices(false)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       )}
@@ -166,7 +168,7 @@ export default function MilestonePreview({
         <div className="p-3 space-y-3 border-t">
           {projects.length === 0 ? (
             <p className="text-sm text-muted-foreground">
-              No projects in this milestone. Use the + button to add one.
+              {t("milestones.noProjectsInMilestone")}
             </p>
           ) : (
             projects.map((p) => (

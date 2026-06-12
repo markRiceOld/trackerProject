@@ -3,11 +3,11 @@ import ReactDOM from "react-dom/client";
 import { AuthProvider } from "./components/auth/AuthContext";
 import { RouterProvider, createBrowserRouter } from "react-router";
 import { ProtectedAppLayout } from "./root";
-import TodayPage from "./components/today/TodayPage";
 import LoginPage from "./components/auth/LoginPage";
 import RegisterPage from "./components/auth/RegisterPage";
 import protectedRoutes from "./protectedRoutes";
 import { ApolloClient, InMemoryCache, ApolloProvider } from '@apollo/client'
+import "./i18n/config";
 
 const root = document.getElementById("root")!;
 // const { ApolloClient, InMemoryCache, ApolloProvider } = await import("@apollo/client");

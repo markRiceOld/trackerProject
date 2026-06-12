@@ -13,6 +13,7 @@ import { InlineEdit } from "~/components/ui/inline-edit";
 import { Pencil, Trash2 } from "lucide-react";
 import { useApi } from "~/api/useApi";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
+import { useTranslation } from "react-i18next";
 
 const MAX_ESTIMATED_MINUTES = 24 * 60; // 24 hours
 
@@ -42,21 +43,22 @@ function getActionFormReturnPath(state: unknown): string {
   return "/activities/actions";
 }
 
-function getActionFormBackLabel(state: unknown): string {
+function getActionFormBackLabel(state: unknown, t: (k: string) => string): string {
   if (state && typeof state === "object" && "from" in state) {
     const s = state as ActionFormReturnState;
-    if (s.from === "project") return "← Back to Project";
-    if (s.from === "goal") return "← Back to Goal";
+    if (s.from === "project") return `← ${t("actions.backToProject")}`;
+    if (s.from === "goal") return `← ${t("actions.backToGoal")}`;
   }
-  return "← Back to Actions";
+  return `← ${t("actions.backToActions")}`;
 }
 
 export default function ActionForm() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const location = useLocation();
   const [searchParams] = useSearchParams();
   const returnTo = getActionFormReturnPath(location.state);
-  const backLabel = getActionFormBackLabel(location.state);
+  const backLabel = getActionFormBackLabel(location.state, t);
   const stateProjectId =
     location.state &&
     typeof location.state === "object" &&
@@ -119,23 +121,23 @@ export default function ActionForm() {
     };
   }, [isEdit, id, call, initialProjectId]);
 
-  function getStatus(): string {
-    if (!tbd) return "Backlog";
-    if (isToday(tbd)) return "In Progress";
-    if (isBefore(tbd, new Date())) return "Ignored";
-    if (isAfter(tbd, new Date())) return "TBD";
+  function getStatusKey(): "statusBacklog" | "statusInProgress" | "statusIgnored" | "statusTbd" | "" {
+    if (!tbd) return "statusBacklog";
+    if (isToday(tbd)) return "statusInProgress";
+    if (isBefore(tbd, new Date())) return "statusIgnored";
+    if (isAfter(tbd, new Date())) return "statusTbd";
     return "";
   }
 
-  function getStatusColor(status: string): string {
-    switch (status) {
-      case "Backlog":
+  function getStatusColor(statusKey: string): string {
+    switch (statusKey) {
+      case "statusBacklog":
         return "bg-gray-100 text-gray-800";
-      case "In Progress":
+      case "statusInProgress":
         return "bg-blue-100 text-blue-800";
-      case "Ignored":
+      case "statusIgnored":
         return "bg-yellow-100 text-yellow-800";
-      case "TBD":
+      case "statusTbd":
         return "bg-purple-100 text-purple-800";
       default:
         return "";
@@ -175,22 +177,22 @@ export default function ActionForm() {
 
     if (hasDueDate) {
       if (estStr === "" || !Number.isFinite(estNum)) {
-        setEstimatedTimeError("Estimated time is required when a due date is set.");
+        setEstimatedTimeError(t("actions.errors.estimatedRequiredWithDueDate"));
         return;
       }
       if (estNum! < 0 || estNum! > MAX_ESTIMATED_MINUTES) {
-        setEstimatedTimeError(`Estimated time must be between 0 and ${MAX_ESTIMATED_MINUTES} minutes (24 hours).`);
+        setEstimatedTimeError(t("actions.errors.estimatedRange"));
         return;
       }
     } else if (estStr !== "" && (estNum === null || !Number.isFinite(estNum) || estNum < 0 || estNum > MAX_ESTIMATED_MINUTES)) {
-      setEstimatedTimeError(`Estimated time must be between 0 and ${MAX_ESTIMATED_MINUTES} minutes (24 hours).`);
+      setEstimatedTimeError(t("actions.errors.estimatedRange"));
       return;
     }
 
     if (tbdIsToday) {
       const timeStr = startTimeOfDay.trim();
       if (!timeStr || !isValidTime(timeStr)) {
-        setTimeOfDayError("Time is required when the date is today (use HH:mm).");
+        setTimeOfDayError(t("actions.errors.timeRequiredToday"));
         return;
       }
     }
@@ -232,8 +234,9 @@ export default function ActionForm() {
     navigate(returnTo);
   }
 
-  const status = getStatus();
-  const statusColor = getStatusColor(status);
+  const statusKey = getStatusKey();
+  const status = statusKey ? t(`actions.${statusKey}`) : "";
+  const statusColor = getStatusColor(statusKey);
 
   const selectedProject = projects.find((p) => p.id === projectId);
 
@@ -248,16 +251,16 @@ export default function ActionForm() {
     return (
       <InternalPageLayout
         backLink={{ to: returnTo, label: backLabel }}
-        title="Edit Action"
+        title={t("actions.editTitle")}
         actions={
           <Button
             type="button"
             size="icon"
             variant="ghost"
-            className="h-8 w-8 text-destructive hover:text-destructive ml-2"
+            className="h-8 w-8 text-destructive hover:text-destructive ms-2"
             onClick={() => setDeleteConfirmOpen(true)}
-            title="Delete action"
-            aria-label="Delete action"
+            title={t("actions.deleteAction")}
+            aria-label={t("actions.deleteAction")}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -273,8 +276,8 @@ export default function ActionForm() {
                 displayAs="h2"
                 displayClassName="text-lg font-medium flex-1 min-w-0 truncate"
                 inputClassName="text-lg font-medium flex-1"
-                placeholder="Action title"
-                emptyDisplay="Click to add title"
+                placeholder={t("actions.titlePlaceholder")}
+                emptyDisplay={t("actions.clickToAddTitle")}
               />
               <Badge className={statusColor}>{status}</Badge>
             </div>
@@ -301,7 +304,7 @@ export default function ActionForm() {
                   size="sm"
                   onClick={() => setEditingTbd(false)}
                 >
-                  Done
+                  {t("actions.done")}
                 </Button>
               </div>
             ) : (
@@ -312,7 +315,7 @@ export default function ActionForm() {
                   setTempTbd(tbd);
                 }}
               >
-                {tbd ? format(tbd, "MMM d, yyyy") : "Click to set TBD date"}
+                {tbd ? format(tbd, "MMM d, yyyy") : t("actions.clickToSetTbdDate")}
               </p>
             )}
           </div>
@@ -320,7 +323,7 @@ export default function ActionForm() {
           {tbdIsToday && (
             <div className="space-y-2">
               <Label htmlFor="startTimeOfDay" className="flex items-center gap-2">
-                Time to do <span className="text-destructive">*</span>
+                {t("actions.timeToDo")} <span className="text-destructive">*</span>
                 <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <Input
@@ -344,7 +347,7 @@ export default function ActionForm() {
 
           <div className="space-y-2">
             <Label htmlFor="estimatedTimeMinutes" className="flex items-center gap-2">
-              Estimated time (minutes) {tbd ? <span className="text-destructive">*</span> : "(optional)"}
+              {t("actions.estimatedTimeMinutes")} {tbd ? <span className="text-destructive">*</span> : `(${t("actions.optional")})`}
               <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
             </Label>
             <Input
@@ -352,7 +355,7 @@ export default function ActionForm() {
               type="number"
               min={0}
               max={MAX_ESTIMATED_MINUTES}
-              placeholder="e.g. 30"
+              placeholder={t("intervals.estimatedPlaceholder")}
               value={estimatedTimeMinutes}
               onChange={(e) => {
                 setEstimatedTimeMinutes(e.target.value);
@@ -362,7 +365,7 @@ export default function ActionForm() {
               className={estimatedTimeError ? "border-red-500 focus-visible:ring-red-500/30" : undefined}
             />
             <p className="text-xs text-muted-foreground">
-              Max 24 hours (1440 min). Required when a due date is set.
+              {t("actions.maxTimeHelp")}
             </p>
             {estimatedTimeError && (
               <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
@@ -373,7 +376,7 @@ export default function ActionForm() {
 
           <div className="space-y-2">
             <Label htmlFor="projectId" className="flex items-center gap-2">
-              Linked project (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+              {t("actions.linkedProject")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
             </Label>
             <select
               id="projectId"
@@ -381,7 +384,7 @@ export default function ActionForm() {
               onChange={(e) => setProjectId(e.target.value)}
               className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
             >
-              <option value="">— No project —</option>
+              <option value="">— {t("actions.noProject")} —</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.title}
@@ -392,20 +395,20 @@ export default function ActionForm() {
 
           {selectedProject && (
             <div className="flex flex-wrap items-center gap-2 rounded-md border bg-muted/40 px-3 py-2">
-              <Badge variant="secondary">Project: {selectedProject.title}</Badge>
+              <Badge variant="secondary">{t("actions.projectBadge", { title: selectedProject.title })}</Badge>
               {selectedProject.goal?.title && (
-                <Badge variant="outline">Goal: {selectedProject.goal.title}</Badge>
+                <Badge variant="outline">{t("actions.goalBadge", { title: selectedProject.goal.title })}</Badge>
               )}
               {selectedProject.milestone?.title && (
-                <Badge variant="outline">Milestone: {selectedProject.milestone.title}</Badge>
+                <Badge variant="outline">{t("actions.milestoneBadge", { title: selectedProject.milestone.title })}</Badge>
               )}
             </div>
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit">Update Action</Button>
+            <Button type="submit">{t("actions.update")}</Button>
             <Button type="button" variant="outline" onClick={handleCancel}>
-              Cancel
+              {t("actions.cancel")}
             </Button>
           </div>
         </form>
@@ -413,9 +416,9 @@ export default function ActionForm() {
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
-          title="Delete this action?"
-          description="This cannot be undone."
-          confirmLabel="Delete"
+          title={t("actions.deleteActionTitle")}
+          description={t("actions.cannotUndo")}
+          confirmLabel={t("actions.delete")}
           variant="destructive"
           onConfirm={handleDeleteConfirm}
         />
@@ -426,23 +429,23 @@ export default function ActionForm() {
   return (
     <InternalPageLayout
       backLink={{ to: returnTo, label: backLabel }}
-      title="Add Action"
+      title={t("actions.addTitle")}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="title" className="flex items-center gap-2">
-            Title <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("actions.titleLabel")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Action title"
+            placeholder={t("actions.titlePlaceholder")}
           />
         </div>
 
         <div className="space-y-2">
-          <Label>TBD Date</Label>
+          <Label>{t("actions.tbdDate")}</Label>
           <Calendar
             mode="single"
             selected={tbd}
@@ -455,7 +458,7 @@ export default function ActionForm() {
         {tbdIsToday && (
           <div className="space-y-2">
             <Label htmlFor="startTimeOfDay" className="flex items-center gap-2">
-              Time to do <span className="text-destructive">*</span>
+              {t("actions.timeToDo")} <span className="text-destructive">*</span>
               <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
             </Label>
             <Input
@@ -479,7 +482,7 @@ export default function ActionForm() {
 
         <div className="space-y-2">
           <Label htmlFor="estimatedTimeMinutes" className="flex items-center gap-2">
-            Estimated time (minutes) {tbd ? <span className="text-destructive">*</span> : "(optional)"}
+            {t("actions.estimatedTimeMinutes")} {tbd ? <span className="text-destructive">*</span> : `(${t("actions.optional")})`}
             <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
@@ -487,7 +490,7 @@ export default function ActionForm() {
             type="number"
             min={0}
             max={MAX_ESTIMATED_MINUTES}
-            placeholder="e.g. 30"
+            placeholder={t("intervals.estimatedPlaceholder")}
             value={estimatedTimeMinutes}
             onChange={(e) => {
               setEstimatedTimeMinutes(e.target.value);
@@ -508,7 +511,7 @@ export default function ActionForm() {
 
         <div className="space-y-2">
           <Label htmlFor="projectId" className="flex items-center gap-2">
-            Linked project (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("actions.linkedProject")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <select
             id="projectId"
@@ -516,7 +519,7 @@ export default function ActionForm() {
             onChange={(e) => setProjectId(e.target.value)}
             className="flex h-9 w-full min-w-0 rounded-md border border-input bg-transparent px-2 py-1 text-sm"
           >
-            <option value="">— No project —</option>
+            <option value="">— {t("actions.noProject")} —</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.title}
@@ -526,17 +529,17 @@ export default function ActionForm() {
         </div>
 
         <div className="space-y-1">
-          <Label>Status</Label>
+          <Label>{t("actions.status")}</Label>
           <div className="text-sm text-muted-foreground flex items-center gap-2">
-            {tbd ? format(tbd, "MMM d, yyyy") : "No Date"}
+            {tbd ? format(tbd, "MMM d, yyyy") : t("actions.statusNoDate")}
             <Badge className={statusColor}>{status}</Badge>
           </div>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit">Create Action</Button>
+          <Button type="submit">{t("actions.create")}</Button>
           <Button type="button" variant="outline" onClick={handleCancel}>
-            Cancel
+            {t("actions.cancel")}
           </Button>
         </div>
       </form>

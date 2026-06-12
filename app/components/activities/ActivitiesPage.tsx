@@ -1,6 +1,7 @@
 import ActivityPanel from "~/components/activities/ActivityPanel";
 import ActionPreview from "../actions/ActionPreview";
 import { useEffect, useState, type ReactNode, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import ProjectPreview, { type Project } from "../projects/ProjectPreview";
 import { type Action } from "../actions/ActionsListPage";
 import type { Goal } from "../goals/GoalPreview";
@@ -10,6 +11,7 @@ import { GET_ACTIONS, GET_GOALS, GET_PROJECTS, GET_INTERVALS } from "~/api/queri
 import { useApi } from "~/api/useApi";
 
 export default function ActivitiesPage() {
+  const { t } = useTranslation();
   const [actions, setActions] = useState<Action[]>([]);
   const [projects, setProjects] = useState<Project[]>([]);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -130,13 +132,13 @@ export default function ActivitiesPage() {
 
   return (
     <main className="space-y-6 p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Activities</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t("activities.title")}</h1>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <ActivityPanel type="goal" title="Goals" {...renderGoalPreviews()} />
-        <ActivityPanel type="project" title="Projects" {...renderProjectPreviews()} />
-        <ActivityPanel type="interval" title="Intervals and Routines" {...renderIntervalPreviews()} />
-        <ActivityPanel type="action" title="Actions" {...renderActionPreviews()} />
+        <ActivityPanel type="goal" title={t("activities.goals")} {...renderGoalPreviews()} />
+        <ActivityPanel type="project" title={t("activities.projects")} {...renderProjectPreviews()} />
+        <ActivityPanel type="interval" title={t("activities.intervalsAndRoutines")} {...renderIntervalPreviews()} />
+        <ActivityPanel type="action" title={t("activities.actions")} {...renderActionPreviews()} />
       </div>
     </main>
   );

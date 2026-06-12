@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
@@ -48,6 +49,7 @@ function todayMinDate(): string {
 }
 
 export default function TodayActionRow({ action, onRefetch }: Props) {
+  const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [postponeDate, setPostponeDate] = useState("");
   const [showOutsource, setShowOutsource] = useState(false);
@@ -162,7 +164,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
           {/* Postpone */}
           <div className="flex flex-wrap items-center gap-2">
             <Label htmlFor="today-row-postpone-date" className="sr-only flex items-center gap-2">
-              Postpone to date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              {t("wizard.postponeToDate")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
             </Label>
             <Input
               id="today-row-postpone-date"
@@ -173,7 +175,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
               className="w-40"
             />
             <Button size="sm" variant="outline" onClick={handlePostpone} disabled={!postponeDate}>
-              Postpone
+              {t("wizard.postpone")}
             </Button>
           </div>
 
@@ -184,19 +186,19 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
               variant="outline"
               onClick={() => setShowOutsource(true)}
             >
-              Outsource…
+              {t("wizard.outsource")}…
             </Button>
           ) : (
             <div className="rounded border p-3 space-y-2">
-              <div className="text-sm font-medium">Outsource: set dates for follow-up tasks</div>
+              <div className="text-sm font-medium">{t("wizard.outsourceSetDatesIntro")}</div>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="today-row-outsource-do-title" className="text-xs flex items-center gap-2">
-                    Do outsourcing (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("wizard.doOutsourcingTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="today-row-outsource-do-title"
-                    placeholder="e.g. Delegate to X"
+                    placeholder={t("wizard.delegatePlaceholder")}
                     value={outsourceForm.doTitle}
                     onChange={(e) =>
                       setOutsourceForm((p) => ({ ...p, doTitle: e.target.value }))
@@ -205,7 +207,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
                 </div>
                 <div>
                   <Label htmlFor="today-row-outsource-do-date" className="text-xs flex items-center gap-2">
-                    Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="today-row-outsource-do-date"
@@ -219,11 +221,11 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
                 </div>
                 <div>
                   <Label htmlFor="today-row-outsource-ensure-title" className="text-xs flex items-center gap-2">
-                    Ensure done (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("wizard.ensureDoneTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="today-row-outsource-ensure-title"
-                    placeholder="e.g. Confirm with X"
+                    placeholder={t("wizard.confirmPlaceholder")}
                     value={outsourceForm.ensureTitle}
                     onChange={(e) =>
                       setOutsourceForm((p) => ({ ...p, ensureTitle: e.target.value }))
@@ -232,7 +234,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
                 </div>
                 <div>
                   <Label htmlFor="today-row-outsource-ensure-date" className="text-xs flex items-center gap-2">
-                    Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="today-row-outsource-ensure-date"
@@ -251,7 +253,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
                   onClick={handleOutsource}
                   disabled={!outsourceForm.doDate || !outsourceForm.ensureDate}
                 >
-                  Confirm outsource
+                  {t("wizard.confirmOutsource")}
                 </Button>
                 <Button
                   size="sm"
@@ -266,7 +268,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
                     });
                   }}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
@@ -275,14 +277,14 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
           {/* Ignore (bucket list) - if available */}
           {canIgnore(action) && (
             <Button size="sm" variant="outline" onClick={handleIgnore}>
-              Ignore (bucket list)
+              {t("wizard.ignoreBucketList")}
             </Button>
           )}
 
           {/* Pass - if available */}
           {canPass(action) && (
             <Button size="sm" variant="outline" onClick={handlePass}>
-              Pass
+              {t("wizard.pass")}
             </Button>
           )}
         </div>

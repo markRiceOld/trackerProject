@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { isToday } from "date-fns";
 import TrackerCalendar from "./TrackerCalendar";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -30,6 +31,7 @@ type ApiGoal = {
 };
 
 export default function CalendarPage() {
+  const { t } = useTranslation();
   const { call } = useApi();
   const [mode, setMode] = useState<CalendarMode>("view");
   const [filters, setFilters] = useState<CalendarFilters>(DEFAULT_CALENDAR_FILTERS);
@@ -122,7 +124,7 @@ export default function CalendarPage() {
     const time = timePrompt.timeOfDay.trim();
     if (!/^\d{2}:\d{2}$/.test(time)) {
       setTimePrompt((prev) =>
-        prev ? { ...prev, error: "Please provide time in HH:mm format." } : prev
+        prev ? { ...prev, error: t("calendarPage.timeFormatError") } : prev
       );
       return;
     }
@@ -173,7 +175,7 @@ export default function CalendarPage() {
   return (
     <main className="flex flex-col h-full">
       <div className="flex items-center justify-between gap-3 px-4 py-2 shrink-0">
-        <h1 className="text-2xl font-bold">Calendar</h1>
+        <h1 className="text-2xl font-bold">{t("calendarPage.title")}</h1>
         <div className="inline-flex items-center rounded-md border border-border/60 p-1">
           <button
             type="button"
@@ -182,7 +184,7 @@ export default function CalendarPage() {
               mode === "view" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
             }`}
           >
-            View
+            {t("calendarPage.view")}
           </button>
           <button
             type="button"
@@ -191,58 +193,58 @@ export default function CalendarPage() {
               mode === "manage" ? "bg-primary text-primary-foreground" : "text-muted-foreground"
             }`}
           >
-            Manage
+            {t("calendarPage.manage")}
           </button>
         </div>
       </div>
 
       <div className="sticky top-0 z-10 px-4 py-2 flex flex-wrap items-center gap-4 shrink-0 border-b border-border/60 bg-background">
-        <span className="text-sm font-medium text-muted-foreground">Show:</span>
+        <span className="text-sm font-medium text-muted-foreground">{t("calendarPage.show")}:</span>
         <label className="flex items-center gap-2 cursor-pointer">
           <Checkbox
             checked={filters.goalsMilestones}
             onCheckedChange={() => toggle("goalsMilestones")}
-            aria-label="Goals and milestones"
+            aria-label={t("calendarPage.goalsMilestones")}
           />
-          <Label className="text-sm cursor-pointer">Goals / Milestones</Label>
+          <Label className="text-sm cursor-pointer">{t("calendarPage.goalsMilestones")}</Label>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <Checkbox
             checked={filters.actions}
             onCheckedChange={() => toggle("actions")}
-            aria-label="Actions"
+            aria-label={t("calendarPage.actions")}
           />
-          <Label className="text-sm cursor-pointer">Actions</Label>
+          <Label className="text-sm cursor-pointer">{t("calendarPage.actions")}</Label>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <Checkbox
             checked={filters.intervals}
             onCheckedChange={() => toggle("intervals")}
-            aria-label="Intervals"
+            aria-label={t("calendarPage.intervals")}
           />
-          <Label className="text-sm cursor-pointer">Intervals</Label>
+          <Label className="text-sm cursor-pointer">{t("calendarPage.intervals")}</Label>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <Checkbox
             checked={filters.routines}
             onCheckedChange={() => toggle("routines")}
-            aria-label="Routines"
+            aria-label={t("calendarPage.routines")}
           />
-          <Label className="text-sm cursor-pointer">Routines</Label>
+          <Label className="text-sm cursor-pointer">{t("calendarPage.routines")}</Label>
         </label>
       </div>
 
       {mode === "manage" && (
         <div className="px-4 py-3 border-b border-border/60">
           <div className="mb-2 flex items-center justify-between gap-2">
-            <h2 className="text-sm font-medium">Action queue</h2>
+            <h2 className="text-sm font-medium">{t("calendarPage.actionQueue")}</h2>
             <Button size="sm" onClick={() => setManageModalOpen(true)}>
-              Add
+              {t("calendarPage.add")}
             </Button>
           </div>
           <div className="max-h-32 space-y-2 overflow-y-auto rounded-md border p-2">
             {managedActionOptions.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No actions added yet.</p>
+              <p className="text-sm text-muted-foreground">{t("calendarPage.noActionsYet")}</p>
             ) : (
               managedActionOptions.map((action) => (
                 <div
@@ -256,8 +258,8 @@ export default function CalendarPage() {
                     onClick={() =>
                       setQueueActionIds((prev) => prev.filter((id) => id !== action.id))
                     }
-                    aria-label={`Remove ${action.title}`}
-                    title="Remove"
+                    aria-label={t("calendarPage.remove")}
+                    title={t("calendarPage.remove")}
                   >
                     x
                   </button>
@@ -302,9 +304,9 @@ export default function CalendarPage() {
             className="w-full max-w-sm rounded-lg border bg-card p-4 shadow-lg"
             onClick={(e) => e.stopPropagation()}
           >
-            <h3 className="mb-1 font-medium">Set time for today</h3>
+            <h3 className="mb-1 font-medium">{t("calendarPage.setTimeForToday")}</h3>
             <p className="mb-3 text-sm text-muted-foreground">
-              This action is being assigned to today. Choose a time first.
+              {t("calendarPage.setTimeForTodayHelp")}
             </p>
             <Input
               type="time"
@@ -327,10 +329,10 @@ export default function CalendarPage() {
                 disabled={timePrompt.submitting}
                 onClick={() => setTimePrompt(null)}
               >
-                Cancel
+                {t("calendarPage.cancel")}
               </Button>
               <Button disabled={timePrompt.submitting} onClick={submitTodayAssignment}>
-                {timePrompt.submitting ? "Saving..." : "Save"}
+                {timePrompt.submitting ? t("calendarPage.saving") : t("calendarPage.save")}
               </Button>
             </div>
           </div>

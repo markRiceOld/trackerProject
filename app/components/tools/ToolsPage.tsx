@@ -9,6 +9,7 @@ import {
   GET_TODAY_ACTIONS,
   UPDATE_ACTION,
 } from "~/api/queries";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
@@ -66,6 +67,7 @@ function dateRangeDays(startDate: string, dayCount: number): string[] {
 }
 
 export default function ToolsPage() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { call } = useApi();
   const [step, setStep] = useState<ToolStep>(1);
@@ -369,19 +371,19 @@ export default function ToolsPage() {
               ? format(parseISO(`${day}T00:00:00`), "EEE, MMM d")
               : format(parseISO(`${day}T00:00:00`), "EEE, MMM d, yyyy")}
           </p>
-          <Badge variant="secondary">{assigned.length} planned</Badge>
+          <Badge variant="secondary">{t("calendar.plannedCount", { count: assigned.length })}</Badge>
         </div>
 
         {(intervalActions.length > 0 || routineActions.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {intervalActions.map((title, index) => (
               <Badge key={`interval-${day}-${index}`} variant="secondary">
-                Interval: {title}
+                {t("tools.intervalLabel", { title })}
               </Badge>
             ))}
             {routineActions.map((title, index) => (
               <Badge key={`routine-${day}-${index}`} variant="secondary">
-                Routine: {title}
+                {t("tools.routineLabel", { title })}
               </Badge>
             ))}
           </div>
@@ -389,7 +391,7 @@ export default function ToolsPage() {
 
         <div className="space-y-1.5">
           {assigned.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No actions assigned.</p>
+            <p className="text-sm text-muted-foreground">{t("tools.noActionsAssigned")}</p>
           ) : (
             <div className="flex flex-wrap gap-1.5">
               {assigned.map((actionId) => {
@@ -406,8 +408,8 @@ export default function ToolsPage() {
                       className="rounded px-1 text-muted-foreground hover:bg-background hover:text-foreground disabled:opacity-50"
                       disabled={savingActionIds.has(actionId)}
                       onClick={() => removeActionFromDay(day, actionId)}
-                      aria-label={`Clear date for ${action.title}`}
-                      title="Clear date"
+                      aria-label={t("tools.clearDate")}
+                      title={t("tools.clearDate")}
                     >
                       {savingActionIds.has(actionId) ? "…" : "×"}
                     </button>
@@ -429,7 +431,7 @@ export default function ToolsPage() {
               }
               disabled={queueActionIds.length === 0 && addPickerOpenDay !== day}
             >
-              {addPickerOpenDay === day ? "Close" : "+ Add"}
+              {addPickerOpenDay === day ? t("tools.close") : t("tools.add")}
             </Button>
             {addPickerOpenDay === day && (
               <div className="flex flex-col gap-2">
@@ -444,7 +446,7 @@ export default function ToolsPage() {
                     void assignActionToDay(day, selectedId);
                   }}
                 >
-                  <option value="">Select action</option>
+                  <option value="">{t("tools.selectActionToAdd")}</option>
                   {queueActionIds.map((actionId) => {
                     const action = actionById.get(actionId);
                     if (!action) return null;
@@ -467,7 +469,7 @@ export default function ToolsPage() {
                 setDayPickerValue((prev) => ({ ...prev, [day]: e.target.value }))
               }
             >
-              <option value="">Select action to add</option>
+              <option value="">{t("tools.selectActionToAdd")}</option>
               {queueActionIds.map((actionId) => {
                 const action = actionById.get(actionId);
                 if (!action) return null;
@@ -489,7 +491,7 @@ export default function ToolsPage() {
                 void assignActionToDay(day, chosenId);
               }}
             >
-              Add to day
+              {t("tools.addToDay")}
             </Button>
           </div>
         )}
@@ -500,16 +502,16 @@ export default function ToolsPage() {
   return (
     <main className="space-y-8 p-6">
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl font-bold tracking-tight">Time Map</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("tools.title")}</h1>
         <Button variant="outline" onClick={() => navigate("/tools")}>
-          Back to Tools
+          {t("tools.backToTools")}
         </Button>
       </div>
 
       <section className="space-y-4 rounded-lg bg-card">
         <div className="space-y-1">
           <p className="text-sm text-muted-foreground">
-            Plan selected actions into a date range from a start date.
+            {t("tools.subtitle")}
           </p>
         </div>
 
@@ -521,7 +523,7 @@ export default function ToolsPage() {
               step === 1 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             }`}
           >
-            1. Choose period and scope
+            {t("tools.stepOne")}
           </button>
           <button
             type="button"
@@ -531,21 +533,21 @@ export default function ToolsPage() {
               step === 2 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
             } disabled:cursor-not-allowed disabled:opacity-50`}
           >
-            2. Organize actions
+            {t("tools.stepTwo")}
           </button>
         </div>
 
         {step === 1 && (
           <section className="space-y-6">
             {loading ? (
-              <p className="text-muted-foreground">Loading data…</p>
+              <p className="text-muted-foreground">{t("tools.loadingData")}</p>
             ) : (
               <>
                 <div className="space-y-3">
-                  <h3 className="font-medium">Date range</h3>
+                  <h3 className="font-medium">{t("tools.dateRange")}</h3>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <Label htmlFor="period-start">Start date</Label>
+                      <Label htmlFor="period-start">{t("tools.startDate")}</Label>
                       <Input
                         id="period-start"
                         type="date"
@@ -555,7 +557,7 @@ export default function ToolsPage() {
                       />
                     </div>
                     <div className="space-y-1.5">
-                      <Label htmlFor="period-days">Number of days (inclusive)</Label>
+                      <Label htmlFor="period-days">{t("tools.dayCount")}</Label>
                       <Input
                         id="period-days"
                         type="number"
@@ -567,22 +569,22 @@ export default function ToolsPage() {
                     </div>
                   </div>
                   <p className="text-sm text-muted-foreground">
-                    End date:{" "}
+                    {t("tools.endDate")}:{" "}
                     <span className="font-medium text-foreground">
                       {computedEndDate
                         ? format(parseISO(`${computedEndDate}T00:00:00`), "EEE, MMM d, yyyy")
-                        : "Select start date and valid number of days"}
+                        : t("tools.selectStart")}
                     </span>
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    Start date must be tomorrow or later.
+                    {t("tools.startDateRule")}
                   </p>
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="font-medium">Select goals / milestones / projects / actions</h3>
+                  <h3 className="font-medium">{t("tools.selectScope")}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Selecting a higher-level entity includes actions under it.
+                    {t("tools.scopeHelp")}
                   </p>
 
                   <div className="max-h-[380px] space-y-3 overflow-y-auto rounded-md">
@@ -599,7 +601,7 @@ export default function ToolsPage() {
                               onCheckedChange={() => toggleGoal(goal.id)}
                             />
                             {goal.title}
-                            <Badge variant="secondary">Goal</Badge>
+                            <Badge variant="secondary">{t("tools.entityGoal")}</Badge>
                           </label>
 
                           {goal.milestones?.map((milestone) => {
@@ -615,7 +617,7 @@ export default function ToolsPage() {
                                     onCheckedChange={() => toggleMilestone(milestone.id)}
                                   />
                                   {milestone.title}
-                                  <Badge variant="secondary">Milestone</Badge>
+                                  <Badge variant="secondary">{t("tools.entityMilestone")}</Badge>
                                 </label>
 
                                 {milestoneProjects.map((project) => (
@@ -626,7 +628,7 @@ export default function ToolsPage() {
                                         onCheckedChange={() => toggleProject(project.id)}
                                       />
                                       {project.title}
-                                      <Badge variant="secondary">Project</Badge>
+                                      <Badge variant="secondary">{t("tools.entityProject")}</Badge>
                                     </label>
                                     <div className="ml-4 space-y-1">
                                       {(project.actions ?? [])
@@ -660,7 +662,7 @@ export default function ToolsPage() {
                                     onCheckedChange={() => toggleProject(project.id)}
                                   />
                                   {project.title}
-                                  <Badge variant="secondary">Project</Badge>
+                                  <Badge variant="secondary">{t("tools.entityProject")}</Badge>
                                 </label>
                                 <div className="ml-4 space-y-1">
                                   {(project.actions ?? [])
@@ -686,7 +688,7 @@ export default function ToolsPage() {
 
                     {standaloneActions.length > 0 && (
                       <div className="space-y-2 rounded-md border p-3">
-                        <p className="text-sm font-medium">Standalone actions</p>
+                        <p className="text-sm font-medium">{t("tools.standaloneActions")}</p>
                         {standaloneActions.map((action) => (
                           <label key={action.id} className="flex items-center gap-2 text-sm">
                             <Checkbox
@@ -703,10 +705,10 @@ export default function ToolsPage() {
 
                 <div className="flex items-center justify-between gap-3">
                   <p className="text-sm text-muted-foreground">
-                    Selected actions: <span className="font-medium text-foreground">{selectedActionCount}</span>
+                    {t("tools.selectedActionsCount", { count: selectedActionCount })}
                   </p>
                   <Button onClick={() => canMoveToStep2 && setStep(2)} disabled={!canMoveToStep2}>
-                    Next: Organize
+                    {t("tools.nextOrganize")}
                   </Button>
                 </div>
               </>
@@ -717,10 +719,10 @@ export default function ToolsPage() {
         {step === 2 && (
           <section className="space-y-4">
             <div className="space-y-2">
-              <h3 className="font-medium">Action queue</h3>
+              <h3 className="font-medium">{t("tools.actionQueue")}</h3>
               <div className="max-h-40 space-y-2 overflow-y-auto rounded-md border p-2">
                 {queueActionIds.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No actions in queue.</p>
+                  <p className="text-sm text-muted-foreground">{t("tools.queueEmpty")}</p>
                 ) : (
                   queueActionIds.map((actionId) => {
                     const action = actionById.get(actionId);
@@ -737,7 +739,7 @@ export default function ToolsPage() {
                           size="sm"
                           onClick={() => removeFromQueue(action.id)}
                         >
-                          Remove
+                          {t("tools.remove")}
                         </Button>
                       </div>
                     );
@@ -748,7 +750,7 @@ export default function ToolsPage() {
 
             <div className="space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <h3 className="font-medium">Days in selected range</h3>
+                <h3 className="font-medium">{t("tools.daysInRange")}</h3>
                 <div className="flex items-center gap-1 rounded-md border bg-muted/30 p-1">
                   <Button
                     type="button"
@@ -756,7 +758,7 @@ export default function ToolsPage() {
                     size="sm"
                     onClick={() => setOrganizeViewMode("list")}
                   >
-                    List
+                    {t("tools.listMode")}
                   </Button>
                   <Button
                     type="button"
@@ -764,7 +766,7 @@ export default function ToolsPage() {
                     size="sm"
                     onClick={() => setOrganizeViewMode("week")}
                   >
-                    Days
+                    {t("tools.daysMode")}
                   </Button>
                 </div>
               </div>
@@ -789,7 +791,7 @@ export default function ToolsPage() {
                     ))}
                   </div>
                   {days.length === 0 && (
-                    <p className="text-sm text-muted-foreground">No days to display.</p>
+                    <p className="text-sm text-muted-foreground">{t("tools.noDays")}</p>
                   )}
                 </div>
               )}
@@ -802,8 +804,8 @@ export default function ToolsPage() {
                 onClick={() => navigate("/tools")}
               >
                 {queueActionIds.length > 0
-                  ? `Done (${queueActionIds.length} queued left)`
-                  : "Done (all assigned)"}
+                  ? t("tools.doneWithQueued", { count: queueActionIds.length })
+                  : t("tools.doneAllAssigned")}
               </Button>
             </div>
           </section>

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { Button } from "~/components/ui/button";
 import { Progress } from "~/components/ui/progress";
@@ -69,6 +70,7 @@ function SortableMilestoneRow({
   milestone: ParsedMilestone;
   onSetLast: () => void;
 }) {
+  const { t } = useTranslation();
   const {
     attributes,
     listeners,
@@ -96,7 +98,7 @@ function SortableMilestoneRow({
         {...attributes}
         {...listeners}
         className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground touch-none py-1"
-        title="Drag to reorder"
+        title={t("goalManage.dragToReorder")}
       >
         <GripVertical className="h-4 w-4" />
       </span>
@@ -105,21 +107,22 @@ function SortableMilestoneRow({
         size="sm"
         variant={milestone.isLast ? "default" : "outline"}
         onClick={onSetLast}
-        title="Mark as last milestone"
+        title={t("goalManage.markAsLastMilestone")}
       >
         <Star className={cn("h-4 w-4", milestone.isLast && "fill-current")} />
-        {milestone.isLast ? " Last" : " Set last"}
+        {milestone.isLast ? ` ${t("goalManage.last")}` : ` ${t("goalManage.setLast")}`}
       </Button>
     </div>
   );
 }
 
 export default function ManageGoalPage() {
+  const { t } = useTranslation();
   const { id } = useParams();
   const navigate = useNavigate();
 
   const [goal, setGoal] = useState<any>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<"errorNotFound" | "errorParse" | "errorLoad" | null>(null);
   const [openMilestoneIds, setOpenMilestoneIds] = useState<Set<string>>(new Set());
   const [reorderMode, setReorderMode] = useState(false);
   const [confirmState, setConfirmState] = useState<
@@ -148,7 +151,7 @@ export default function ManageGoalPage() {
       try {
         setGoal(parseGoal(data));
       } catch {
-        setLoadError("Failed to parse goal.");
+        setLoadError("errorParse");
       }
     });
   };
@@ -194,18 +197,18 @@ export default function ManageGoalPage() {
       .then((res) => {
         const data = res?.goal;
         if (!data) {
-          setLoadError(getLastError() || "Goal not found or error loading.");
+          setLoadError("errorNotFound");
           return;
         }
         try {
           const parsed = parseGoal(data);
           setGoal(parsed);
-        } catch (err) {
-          setLoadError(err instanceof Error ? err.message : "Failed to parse goal.");
+        } catch {
+          setLoadError("errorParse");
         }
       })
       .catch(() => {
-        setLoadError("Failed to load goal.");
+        setLoadError("errorLoad");
       });
   }, [id]);
 
@@ -446,8 +449,8 @@ export default function ManageGoalPage() {
     refetchGoal();
   };
 
-  if (loadError) return <p className="p-6 text-destructive">{loadError}</p>;
-  if (!goal) return <p className="p-6">Loading...</p>;
+  if (loadError) return <p className="p-6 text-destructive">{t(`goalManage.${loadError}`)}</p>;
+  if (!goal) return <p className="p-6">{t("goalManage.loading")}</p>;
 
   const allProjects = [
     ...goal.projects,
@@ -455,7 +458,9 @@ export default function ManageGoalPage() {
   ];
   const total = allProjects.length;
   const done = allProjects.filter((p) => isProjectDoneForGoal(p)).length;
-  const status = getGoalStatus({ ...goal, projects: allProjects });
+  const statusRaw = getGoalStatus({ ...goal, projects: allProjects });
+  const statusKey = statusRaw === "Done" ? "statusDone" : statusRaw === "In Progress" ? "statusInProgress" : statusRaw === "Backlog" ? "statusBacklog" : statusRaw === "TBD" ? "statusTbd" : "statusIgnored";
+  const status = t(`goalManage.${statusKey}`);
 
   const storyItems: StoryItem[] = [
     ...goal.projects.map((p: ParsedProject) => ({
@@ -511,8 +516,8 @@ export default function ManageGoalPage() {
           variant="ghost"
           className="h-8 w-8 text-destructive hover:text-destructive shrink-0"
           onClick={() => setDeleteGoalConfirmOpen(true)}
-          title="Delete goal"
-          aria-label="Delete goal"
+          title={t("goalManage.deleteGoal")}
+          aria-label={t("goalManage.deleteGoal")}
         >
           <Trash2 className="h-4 w-4" />
         </Button>
@@ -521,42 +526,42 @@ export default function ManageGoalPage() {
       <div className="flex flex-col sm:flex-row sm:flex-wrap items-stretch sm:items-center gap-2 text-base font-normal">
         {!isGoalGroup && (
           <Button size="sm" className="justify-start sm:justify-center" onClick={() => navigate(`/activities/project?goalId=${id}`, { state: goalState })}>
-            + Add project
+            {t("goalManage.addProject")}
           </Button>
         )}
         {!isGoalGroup && (
           <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={openLinkProjectToGoal}>
-            Link existing project
+            {t("goalManage.linkExistingProject")}
           </Button>
         )}
         {isGoalGroup && (
           <>
             <Button size="sm" className="justify-start sm:justify-center" onClick={() => navigate(`/activities/goal?parentGoalId=${id}`)}>
-              + Add goal (new)
+              {t("goalManage.addGoal")}
             </Button>
             <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={openLinkGoalToGoal}>
-              Link existing goal
+              {t("goalManage.linkExistingGoal")}
             </Button>
           </>
         )}
         <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={handleAddMilestone}>
-          + Add milestone
+          {t("goalManage.addMilestone")}
         </Button>
         <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={() => navigate(`/activities/interval?goalId=${id}`)}>
-          + Add interval
+          {t("goalManage.addInterval")}
         </Button>
         <Button size="sm" variant="outline" className="justify-start sm:justify-center" onClick={openLinkIntervalToGoal}>
-          Link interval
+          {t("goalManage.linkInterval")}
         </Button>
       </div>
     </div>
   );
 
   const backLink = goal.parentGoalId
-    ? { to: `/activities/goal/${goal.parentGoalId}`, label: "← Back to goal" }
+    ? { to: `/activities/goal/${goal.parentGoalId}`, label: `← ${t("goalManage.backToGoal")}` }
     : goal.parentMilestone?.goal
-      ? { to: `/activities/goal/${goal.parentMilestone.goal.id}`, label: "← Back to goal" }
-      : { to: "/activities/goals", label: "← Back to Goals" };
+      ? { to: `/activities/goal/${goal.parentMilestone.goal.id}`, label: `← ${t("goalManage.backToGoal")}` }
+      : { to: "/activities/goals", label: `← ${t("goalManage.backToGoals")}` };
 
   return (
     <InternalPageLayout
@@ -567,12 +572,12 @@ export default function ManageGoalPage() {
         <div className="flex flex-col sm:flex-row flex-wrap items-stretch sm:items-center gap-2 p-3 rounded-md border bg-muted/30">
           <span className="text-sm">
             {linkIntervalToGoal
-              ? "Link an existing interval to this goal:"
+              ? t("goalManage.linkIntervalHelp")
               : linkProjectToGoal
-                ? "Link an existing project to this goal:"
+                ? t("goalManage.linkProjectHelp")
               : linkGoalToMilestone
-                ? "Link a goal to this milestone:"
-                : "Link a goal to this goal group:"}
+                ? t("goalManage.linkGoalToMilestoneHelp")
+                : t("goalManage.linkGoalToGoalHelp")}
           </span>
           {linkIntervalToGoal ? (
             <select
@@ -580,7 +585,7 @@ export default function ManageGoalPage() {
               onChange={(e) => setSelectedIntervalToLink(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
             >
-              <option value="">— Select interval —</option>
+              <option value="">{t("goalManage.selectInterval")}</option>
               {linkableIntervals.map((iv) => (
                 <option key={iv.id} value={iv.id}>{iv.title}</option>
               ))}
@@ -591,7 +596,7 @@ export default function ManageGoalPage() {
               onChange={(e) => setSelectedProjectToLink(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
             >
-              <option value="">— Select project —</option>
+              <option value="">{t("goalManage.selectProject")}</option>
               {linkableProjects.map((p) => (
                 <option key={p.id} value={p.id}>{p.title}</option>
               ))}
@@ -602,7 +607,7 @@ export default function ManageGoalPage() {
               onChange={(e) => setSelectedGoalToLink(e.target.value)}
               className="h-9 rounded-md border border-input bg-background px-2 text-sm min-w-0 sm:min-w-[180px]"
             >
-              <option value="">— Select goal —</option>
+              <option value="">{t("goalManage.selectGoal")}</option>
               {linkableGoals.map((g) => (
                 <option key={g.id} value={g.id}>{g.title}</option>
               ))}
@@ -614,10 +619,10 @@ export default function ManageGoalPage() {
               onClick={linkIntervalToGoal ? handleLinkInterval : linkProjectToGoal ? handleLinkProject : handleLinkGoal}
               disabled={linkIntervalToGoal ? !selectedIntervalToLink : linkProjectToGoal ? !selectedProjectToLink : !selectedGoalToLink}
             >
-              Link
+              {t("goalManage.link")}
             </Button>
             <Button size="sm" variant="ghost" onClick={closeLinkPanels}>
-              Cancel
+              {t("goalManage.cancel")}
             </Button>
           </div>
         </div>
@@ -632,19 +637,20 @@ export default function ManageGoalPage() {
             displayAs="p"
             displayClassName="text-muted-foreground"
             inputClassName="flex-1 min-w-0"
-            placeholder="Definition of Done (optional)"
-            emptyDisplay="Click to add definition of done"
+            placeholder={t("goalManage.dodPlaceholder")}
+            emptyDisplay={t("goalManage.dodEmptyDisplay")}
           />
 
           {!isGoalGroup && (
             <>
               <p className="text-sm text-muted-foreground">
                 {goal.startDate && goal.endDate ? (
-                  <>
-                    From {goal.startDate.toDateString()} to {goal.endDate.toDateString()}
-                  </>
+                  t("goalManage.fromToDates", {
+                    from: goal.startDate.toDateString(),
+                    to: goal.endDate.toDateString(),
+                  })
                 ) : (
-                  <>No scheduled timeline</>
+                  t("goalManage.noScheduledTimeline")
                 )}
               </p>
               <Progress value={(done / Math.max(total, 1)) * 100} />
@@ -656,11 +662,11 @@ export default function ManageGoalPage() {
           <div className="space-y-3">
             <h2 className="text-lg font-semibold flex items-center gap-2">
               <Repeat className="h-5 w-5" />
-              Linked intervals
+              {t("goalManage.linkedIntervals")}
             </h2>
             {(goal.intervals ?? []).length > 0 && (
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground mb-1">This goal</h3>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">{t("goalManage.thisGoal")}</h3>
                 <ul className="space-y-1">
                   {(goal.intervals ?? []).map((iv: ParsedInterval) => (
                     <li key={iv.id} className="flex flex-wrap items-center gap-2 border rounded-md px-3 py-2 bg-muted/30">
@@ -669,7 +675,7 @@ export default function ManageGoalPage() {
                         {iv.status}
                       </Badge>
                       <Button size="sm" variant="ghost" onClick={() => navigate(`/activities/interval/${iv.id}`)}>
-                        Manage
+                        {t("goalManage.manage")}
                       </Button>
                     </li>
                   ))}
@@ -679,7 +685,7 @@ export default function ManageGoalPage() {
             {(goal.milestones ?? []).map((milestone: ParsedMilestone) =>
               (milestone.intervals ?? []).length > 0 ? (
                 <div key={milestone.id}>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-1">Milestone: {milestone.title}</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-1">{t("goalManage.milestonePrefix", { title: milestone.title })}</h3>
                   <ul className="space-y-1">
                     {(milestone.intervals ?? []).map((iv: ParsedInterval) => (
                       <li key={iv.id} className="flex items-center gap-2 border rounded-md px-3 py-2 bg-muted/30">
@@ -688,7 +694,7 @@ export default function ManageGoalPage() {
                           {iv.status}
                         </Badge>
                         <Button size="sm" variant="ghost" onClick={() => navigate(`/activities/interval/${iv.id}`)}>
-                          Manage
+                          {t("goalManage.manage")}
                         </Button>
                       </li>
                     ))}
@@ -700,13 +706,13 @@ export default function ManageGoalPage() {
         )}
 
         <div className="pt-4">
-          <h2 className="text-lg font-semibold mb-4">The Story</h2>
+          <h2 className="text-lg font-semibold mb-4">{t("goalManage.theStory")}</h2>
 
           {isGoalGroup ? (
             <div className="space-y-4">
               {(goal.childGoals ?? []).length > 0 && (
                 <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">Child goals</h3>
+                  <h3 className="text-sm font-medium text-muted-foreground mb-2">{t("goalManage.childGoals")}</h3>
                   <div className="space-y-2">
                     {(goal.childGoals ?? []).map((cg: ParsedChildGoal) => (
                       <div
@@ -719,7 +725,7 @@ export default function ManageGoalPage() {
                           variant="outline"
                           onClick={() => navigate(`/activities/goal/${cg.id}`)}
                         >
-                          Manage
+                          {t("goalManage.manage")}
                         </Button>
                       </div>
                     ))}
@@ -749,7 +755,7 @@ export default function ManageGoalPage() {
                         className="h-8"
                         onClick={() => navigate(`/activities/goal?parentMilestoneId=${milestone.id}&returnGoalId=${id}`)}
                       >
-                        + Add goal (new)
+                        {t("goalManage.addGoal")}
                       </Button>
                       <Button
                         size="sm"
@@ -757,7 +763,7 @@ export default function ManageGoalPage() {
                         className="h-8"
                         onClick={() => openLinkGoalToMilestone(milestone.id)}
                       >
-                        Link goal
+                        {t("goalManage.linkGoal")}
                       </Button>
                     </div>
                   </div>
@@ -774,19 +780,19 @@ export default function ManageGoalPage() {
                             variant="outline"
                             onClick={() => navigate(`/activities/goal/${cg.id}`)}
                           >
-                            Manage
+                            {t("goalManage.manage")}
                           </Button>
                         </div>
                       ))}
                     </div>
                   )}
                   {openMilestoneIds.has(milestone.id) && (!milestone.childGoals || milestone.childGoals.length === 0) && (
-                    <p className="p-3 text-sm text-muted-foreground border-t">No child goals in this milestone.</p>
+                    <p className="p-3 text-sm text-muted-foreground border-t">{t("goalManage.noChildGoalsInMilestone")}</p>
                   )}
                 </div>
               ))}
               {(goal.childGoals ?? []).length === 0 && (goal.milestones ?? []).length === 0 && (
-                <p className="text-muted-foreground">Add a goal or a milestone to get started.</p>
+                <p className="text-muted-foreground">{t("goalManage.addGoalOrMilestoneToStart")}</p>
               )}
             </div>
           ) : (
@@ -799,11 +805,11 @@ export default function ManageGoalPage() {
               className="shrink-0"
             >
               {reorderMode ? (
-                "Done"
+                t("goalManage.done")
               ) : (
                 <>
                   <ListOrdered className="h-4 w-4 mr-1" />
-                  Order
+                  {t("goalManage.order")}
                 </>
               )}
             </Button>
@@ -811,7 +817,7 @@ export default function ManageGoalPage() {
 
           {reorderMode ? (
             (goal?.milestones ?? []).length === 0 ? (
-              <p className="text-muted-foreground">No milestones yet. Add one to reorder.</p>
+              <p className="text-muted-foreground">{t("goalManage.noMilestonesYet")}</p>
             ) : (
               <DndContext collisionDetection={closestCenter} onDragEnd={handleMilestonesDragEnd}>
                 <SortableContext
@@ -831,7 +837,7 @@ export default function ManageGoalPage() {
               </DndContext>
             )
           ) : !hasAny ? (
-            <p className="text-muted-foreground">No projects yet. Add one or add a milestone to get started.</p>
+            <p className="text-muted-foreground">{t("goalManage.noProjectsYet")}</p>
           ) : (
             <div className="space-y-4">
               {storyItems.map((item) => {
@@ -893,31 +899,31 @@ export default function ManageGoalPage() {
       <ConfirmDialog
         open={confirmState?.type === "delete-project"}
         onOpenChange={(open) => !open && setConfirmState(null)}
-        title="Delete this project?"
-        confirmLabel="Delete"
+        title={t("goalManage.deleteProjectTitle")}
+        confirmLabel={t("goalManage.delete")}
         variant="destructive"
         onConfirm={handleDeleteProjectConfirm}
       />
       <ConfirmDialog
         open={confirmState?.type === "set-last"}
         onOpenChange={(open) => !open && setConfirmState(null)}
-        title="Set as last milestone"
+        title={t("goalManage.setLastMilestoneTitle")}
         description={
           confirmState?.type === "set-last"
-            ? `${confirmState.currentLastTitle} is currently the last milestone. Set this one as last instead?`
+            ? t("goalManage.setLastMilestoneConfirm", { title: confirmState.currentLastTitle })
             : undefined
         }
-        confirmLabel="Set as last"
+        confirmLabel={t("goalManage.setLast")}
         onConfirm={() => handleSetLastMilestoneConfirm()}
       />
       <ConfirmDialog
         open={deleteGoalConfirmOpen}
         onOpenChange={(open) => !open && setDeleteGoalConfirmOpen(false)}
-        title="Delete this goal?"
+        title={t("goalManage.deleteGoalTitle")}
         description={isGoalGroup
-          ? "This will delete the goal group and all its milestones. Child goals will be unlinked (not deleted). This cannot be undone."
-          : "This will delete the goal and all its milestones. Projects linked to the goal or its milestones will be unlinked. This cannot be undone."}
-        confirmLabel="Delete"
+          ? t("goalManage.deleteGoalDescriptionGroup")
+          : t("goalManage.deleteGoalDescriptionGoal")}
+        confirmLabel={t("goalManage.delete")}
         variant="destructive"
         onConfirm={handleDeleteGoalConfirm}
       />

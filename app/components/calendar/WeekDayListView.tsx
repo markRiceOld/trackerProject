@@ -2,6 +2,9 @@ import { format, startOfWeek, addDays, setHours, setMinutes } from "date-fns";
 import { useState } from "react";
 import type { CalendarItem } from "./calendarTypes";
 import CalendarEvent from "./CalendarEvent";
+import { useTranslation } from "react-i18next";
+import type { AppLanguage } from "~/i18n/config";
+import { getDateFnsLocale, getWeekStartsOn } from "~/i18n/dateLocale";
 
 const PERIOD_MINUTES = 90; /* 1.5 hours for day view */
 
@@ -38,11 +41,10 @@ function eventsInPeriod(events: CalendarItem[], day: Date, periodStart: Date, pe
   });
 }
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 interface WeekDayListViewProps {
   currentDate: Date;
   items: CalendarItem[];
+  language: AppLanguage;
   isDayView: boolean;
   manageMode?: boolean;
   managedActionOptions?: { id: string; title: string }[];
@@ -54,6 +56,7 @@ interface WeekDayListViewProps {
 export default function WeekDayListView({
   currentDate,
   items,
+  language,
   isDayView,
   manageMode = false,
   managedActionOptions = [],
@@ -61,9 +64,11 @@ export default function WeekDayListView({
   onReturnActionToQueue,
   assigningActionIds,
 }: WeekDayListViewProps) {
+  const { t } = useTranslation();
+  const dateLocale = getDateFnsLocale(language);
   const [dayPickerValue, setDayPickerValue] = useState<Record<string, string>>({});
   const todayKey = toDateKey(new Date());
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: getWeekStartsOn(language) });
   const days = isDayView
     ? [currentDate]
     : Array.from({ length: 7 }, (_, i) => addDays(weekStart, i));
@@ -79,7 +84,7 @@ export default function WeekDayListView({
       const endMin = startMin + PERIOD_MINUTES;
       const start = setMinutes(setHours(new Date(currentDate), Math.floor(startMin / 60)), startMin % 60);
       const end = setMinutes(setHours(new Date(currentDate), Math.floor(endMin / 60)), endMin % 60);
-      return { start, end, label: `${format(start, "HH:mm")} – ${format(end, "HH:mm")}` };
+      return { start, end, label: `${format(start, "HH:mm", { locale: dateLocale })} – ${format(end, "HH:mm", { locale: dateLocale })}` };
     });
 
     return (
@@ -104,7 +109,7 @@ export default function WeekDayListView({
                               <CalendarEvent event={ev} className="!text-xs" />
                             ) : (
                               <>
-                                <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm")}</span>
+                                <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm", { locale: dateLocale })}</span>
                                 <CalendarEvent event={ev} className="!text-xs inline-block" />
                               </>
                             )}
@@ -113,8 +118,8 @@ export default function WeekDayListView({
                               className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
                               onClick={() => onReturnActionToQueue?.(ev.entityId!)}
                               disabled={assigningActionIds?.has(ev.entityId)}
-                              aria-label={`Remove ${ev.title} from day`}
-                              title="Remove from day"
+                              aria-label={t("calendar.removeFromDay")}
+                              title={t("calendar.removeFromDay")}
                             >
                               {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
                             </button>
@@ -124,7 +129,7 @@ export default function WeekDayListView({
                             <CalendarEvent event={ev} className="!text-xs" />
                           ) : (
                             <>
-                              <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm")}</span>
+                              <span className="text-xs text-muted-foreground mr-1">{format(ev.start, "HH:mm", { locale: dateLocale })}</span>
                               <CalendarEvent event={ev} className="!text-xs inline-block" />
                             </>
                           )
@@ -139,7 +144,7 @@ export default function WeekDayListView({
         })}
         {untimed.length > 0 && (
           <div className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0 shrink-0">
-            <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">Untimed / all day</div>
+            <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">{t("calendar.untimed")}</div>
             <div className="p-2">
               <ul className="space-y-1">
                 {untimed.map((ev) => (
@@ -152,8 +157,8 @@ export default function WeekDayListView({
                           className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
                           onClick={() => onReturnActionToQueue?.(ev.entityId!)}
                           disabled={assigningActionIds?.has(ev.entityId)}
-                          aria-label={`Remove ${ev.title} from day`}
-                          title="Remove from day"
+                          aria-label={t("calendar.removeFromDay")}
+                          title={t("calendar.removeFromDay")}
                         >
                           {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
                         </button>
@@ -169,7 +174,7 @@ export default function WeekDayListView({
         )}
         {manageMode && (
           <div className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0 shrink-0">
-            <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">Assign action</div>
+            <div className="bg-muted/60 px-3 py-1.5 text-xs font-medium shrink-0">{t("calendar.assignAction")}</div>
             <div className="p-2">
               <select
                 className="h-8 w-full rounded-md border bg-background px-2 text-xs"
@@ -183,7 +188,7 @@ export default function WeekDayListView({
                 }}
                 disabled={!canAssign || managedActionOptions.length === 0}
               >
-                <option value="">Select Action...</option>
+                <option value="">{t("calendar.selectAction")}</option>
                 {managedActionOptions.map((action) => (
                   <option
                     key={`${toDateKey(currentDate)}-${action.id}`}
@@ -191,14 +196,14 @@ export default function WeekDayListView({
                     disabled={assigningActionIds?.has(action.id)}
                   >
                     {assigningActionIds?.has(action.id)
-                      ? `${action.title} (saving...)`
+                      ? `${action.title} (${t("calendar.saving")})`
                       : action.title}
                   </option>
                 ))}
               </select>
               {!canAssign && (
                 <p className="mt-1 text-[10px] text-muted-foreground">
-                  Assigning is only available from today onward.
+                  {t("calendar.assignFromTodayOnly")}
                 </p>
               )}
             </div>
@@ -222,7 +227,7 @@ export default function WeekDayListView({
         return (
           <div key={dayKey} className="border rounded-lg overflow-hidden bg-card flex flex-col min-w-0">
             <div className="bg-muted/60 px-3 py-2 text-sm font-medium shrink-0">
-              {DAY_LABELS[day.getDay()]}, {format(day, "MMM d")}
+              {format(day, "EEE, MMM d", { locale: dateLocale })}
             </div>
             <div className="p-2 space-y-2 overflow-auto flex-1 min-h-0">
               {timed.length > 0 && (
@@ -232,7 +237,7 @@ export default function WeekDayListView({
                       {manageMode && ev.type === "action" && ev.entityId ? (
                         <div className="inline-flex items-center gap-1">
                           <span className="text-xs text-muted-foreground mr-1">
-                            {format(ev.start, "HH:mm")}
+                            {format(ev.start, "HH:mm", { locale: dateLocale })}
                           </span>
                           <CalendarEvent event={ev} className="!text-xs inline-block" />
                           <button
@@ -240,8 +245,8 @@ export default function WeekDayListView({
                             className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
                             onClick={() => onReturnActionToQueue?.(ev.entityId!)}
                             disabled={assigningActionIds?.has(ev.entityId)}
-                            aria-label={`Remove ${ev.title} from day`}
-                            title="Remove from day"
+                            aria-label={t("calendar.removeFromDay")}
+                            title={t("calendar.removeFromDay")}
                           >
                             {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
                           </button>
@@ -249,7 +254,7 @@ export default function WeekDayListView({
                       ) : (
                         <>
                           <span className="text-xs text-muted-foreground mr-1">
-                            {format(ev.start, "HH:mm")}
+                            {format(ev.start, "HH:mm", { locale: dateLocale })}
                           </span>
                           <CalendarEvent event={ev} className="!text-xs inline-block" />
                         </>
@@ -273,8 +278,8 @@ export default function WeekDayListView({
                             className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
                             onClick={() => onReturnActionToQueue?.(ev.entityId!)}
                             disabled={assigningActionIds?.has(ev.entityId)}
-                            aria-label={`Remove ${ev.title} from day`}
-                            title="Remove from day"
+                            aria-label={t("calendar.removeFromDay")}
+                            title={t("calendar.removeFromDay")}
                           >
                             {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
                           </button>
@@ -287,7 +292,7 @@ export default function WeekDayListView({
                 </ul>
               )}
               {dayEvents.length === 0 && (
-                <p className="text-muted-foreground text-xs">No items</p>
+                <p className="text-muted-foreground text-xs">{t("calendar.noItems")}</p>
               )}
             </div>
             {manageMode && (
@@ -304,7 +309,7 @@ export default function WeekDayListView({
                   }}
                   disabled={!canAssign || managedActionOptions.length === 0}
                 >
-                  <option value="">Select Action...</option>
+                  <option value="">{t("calendar.selectAction")}</option>
                   {managedActionOptions.map((action) => (
                     <option
                       key={`${dayKey}-${action.id}`}
@@ -312,14 +317,14 @@ export default function WeekDayListView({
                       disabled={assigningActionIds?.has(action.id)}
                     >
                       {assigningActionIds?.has(action.id)
-                        ? `${action.title} (saving...)`
+                        ? `${action.title} (${t("calendar.saving")})`
                         : action.title}
                     </option>
                   ))}
                 </select>
                 {!canAssign && (
                   <p className="mt-1 text-[10px] text-muted-foreground">
-                    Assigning is only available from today onward.
+                    {t("calendar.assignFromTodayOnly")}
                   </p>
                 )}
               </div>

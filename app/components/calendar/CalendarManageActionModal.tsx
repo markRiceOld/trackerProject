@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
@@ -55,6 +56,7 @@ export default function CalendarManageActionModal({
   onClose,
   onApply,
 }: CalendarManageActionModalProps) {
+  const { t } = useTranslation();
   const [selectedGoalIds, setSelectedGoalIds] = useState<Set<string>>(new Set());
   const [selectedMilestoneIds, setSelectedMilestoneIds] = useState<Set<string>>(new Set());
   const [selectedProjectIds, setSelectedProjectIds] = useState<Set<string>>(new Set());
@@ -200,14 +202,14 @@ export default function CalendarManageActionModal({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-lg font-semibold">Add actions to manage queue</h2>
+          <h2 className="text-lg font-semibold">{t("calendarPage.addActionsToQueue")}</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Close
+            {t("calendarPage.close")}
           </Button>
         </div>
 
         <p className="mb-4 text-sm text-muted-foreground">
-          Select goals, milestones, projects, and/or individual actions.
+          {t("calendarPage.selectActionsHelp")}
         </p>
 
         <div className="max-h-[65vh] space-y-3 overflow-y-auto pr-1">
@@ -227,7 +229,7 @@ export default function CalendarManageActionModal({
                     }
                   />
                   {goal.title}
-                  <Badge variant="secondary">Goal</Badge>
+                  <Badge variant="secondary">{t("tools.entityGoal")}</Badge>
                 </label>
 
                 {goal.milestones?.map((milestone) => {
@@ -248,7 +250,7 @@ export default function CalendarManageActionModal({
                           }
                         />
                         {milestone.title}
-                        <Badge variant="secondary">Milestone</Badge>
+                        <Badge variant="secondary">{t("tools.entityMilestone")}</Badge>
                       </label>
 
                       {milestoneProjects.map((project) => (
@@ -263,7 +265,7 @@ export default function CalendarManageActionModal({
                               }
                             />
                             {project.title}
-                            <Badge variant="secondary">Project</Badge>
+                            <Badge variant="secondary">{t("tools.entityProject")}</Badge>
                           </label>
                           <div className="ml-4 space-y-1">
                             {(project.actions ?? [])
@@ -305,7 +307,7 @@ export default function CalendarManageActionModal({
                           }
                         />
                         {project.title}
-                        <Badge variant="secondary">Project</Badge>
+                        <Badge variant="secondary">{t("tools.entityProject")}</Badge>
                       </label>
                       <div className="ml-4 space-y-1">
                         {(project.actions ?? [])
@@ -335,7 +337,7 @@ export default function CalendarManageActionModal({
 
           {standaloneActions.length > 0 && (
             <div className="space-y-2 rounded-md border p-3">
-              <p className="text-sm font-medium">Standalone actions</p>
+              <p className="text-sm font-medium">{t("tools.standaloneActions")}</p>
               {standaloneActions.map((action) => (
                 <label key={action.id} className="flex items-center gap-2 text-sm">
                   <Checkbox
@@ -353,17 +355,14 @@ export default function CalendarManageActionModal({
 
         <div className="mt-4 flex items-center justify-between gap-3 border-t pt-4">
           <p className="text-sm text-muted-foreground">
-            Selected actions:{" "}
-            <span className="font-medium text-foreground">
-              {selectedActionsFromEntities.length}
-            </span>
+            {t("calendarPage.selectedActionsCount", { count: selectedActionsFromEntities.length })}
           </p>
           <div className="flex items-center gap-2">
             <Button variant="outline" onClick={onClose}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button onClick={() => onApply(selectedActionsFromEntities)}>
-              Add selected
+              {t("calendarPage.addSelected")}
             </Button>
           </div>
         </div>

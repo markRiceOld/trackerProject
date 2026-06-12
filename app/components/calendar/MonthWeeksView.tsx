@@ -3,10 +3,15 @@ import { useState } from "react";
 import type { CalendarItem } from "./calendarTypes";
 import CalendarEvent from "./CalendarEvent";
 import { Button } from "~/components/ui/button";
+import type { AppLanguage } from "~/i18n/config";
+import { getDateFnsLocale, getWeekStartsOn } from "~/i18n/dateLocale";
+import { useTranslation } from "react-i18next";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 interface MonthWeeksViewProps {
   currentDate: Date;
   items: CalendarItem[];
+  language: AppLanguage;
   onNavigate: (date: Date) => void;
   manageMode?: boolean;
   managedActionOptions?: { id: string; title: string }[];
@@ -16,13 +21,14 @@ interface MonthWeeksViewProps {
 }
 
 /** Get week blocks that touch the given month (weeks start Sunday). */
-function getWeekBlocksInMonth(month: Date): { start: Date; end: Date }[] {
+function getWeekBlocksInMonth(month: Date, language: AppLanguage): { start: Date; end: Date }[] {
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
   const blocks: { start: Date; end: Date }[] = [];
-  let weekStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  const weekStartsOn = getWeekStartsOn(language);
+  let weekStart = startOfWeek(monthStart, { weekStartsOn });
   while (weekStart.getTime() <= monthEnd.getTime()) {
-    const weekEnd = endOfWeek(weekStart, { weekStartsOn: 0 });
+    const weekEnd = endOfWeek(weekStart, { weekStartsOn });
     blocks.push({ start: weekStart, end: weekEnd });
     weekStart = addWeeks(weekStart, 1);
   }
@@ -42,11 +48,10 @@ function eventsOnDay(items: CalendarItem[], day: Date): CalendarItem[] {
   });
 }
 
-const DAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-
 export default function MonthWeeksView({
   currentDate,
   items,
+  language,
   onNavigate,
   manageMode = false,
   managedActionOptions = [],
@@ -54,9 +59,11 @@ export default function MonthWeeksView({
   onReturnActionToQueue,
   assigningActionIds,
 }: MonthWeeksViewProps) {
+  const { t } = useTranslation();
+  const dateLocale = getDateFnsLocale(language);
   const [dayPickerValue, setDayPickerValue] = useState<Record<string, string>>({});
   const monthStart = startOfMonth(currentDate);
-  const weekBlocks = getWeekBlocksInMonth(currentDate);
+  const weekBlocks = getWeekBlocksInMonth(currentDate, language);
   const todayKey = toDateKey(new Date());
 
   const handlePrev = () => {
@@ -75,13 +82,15 @@ export default function MonthWeeksView({
       <div className="flex items-center justify-between gap-4 mb-4">
         <div className="flex items-center gap-2">
           <Button variant="outline" size="sm" onClick={handlePrev}>
-            ← Prev
+            <ChevronLeft className="h-4 w-4" />
+            {t("calendar.previous")}
           </Button>
           <span className="font-semibold text-lg">
-            {format(monthStart, "MMMM yyyy")}
+            {format(monthStart, "MMMM yyyy", { locale: dateLocale })}
           </span>
           <Button variant="outline" size="sm" onClick={handleNext}>
-            Next →
+            {t("calendar.next")}
+            <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
       </div>
@@ -92,7 +101,9 @@ export default function MonthWeeksView({
             d.setDate(d.getDate() + i);
             return d;
           });
-          const weekLabel = `Week of ${format(block.start, "MMM d")}`;
+          const weekLabel = t("calendar.weekOf", {
+            date: format(block.start, "MMM d", { locale: dateLocale }),
+          });
           return (
             <div key={bi} className="border rounded-lg overflow-hidden bg-card">
               <div className="bg-muted/60 px-3 py-2 text-sm font-medium">
@@ -107,12 +118,12 @@ export default function MonthWeeksView({
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`border-r border-border last:border-r-0 p-2 min-w-0 flex flex-col ${
+                      className={`border-e border-border last:border-e-0 p-2 min-w-0 flex flex-col ${
                         inMonth ? "bg-background" : "bg-muted/30"
                       }`}
                     >
                       <div className="text-xs font-medium text-muted-foreground mb-1">
-                        {DAY_LABELS[day.getDay()]} {format(day, "d")}
+                        {format(day, "EEE d", { locale: dateLocale })}
                       </div>
                       <ul className="space-y-1 overflow-auto min-h-0">
                         {dayEvents.slice(0, 6).map((ev) => (
@@ -125,8 +136,8 @@ export default function MonthWeeksView({
                                   className="rounded px-1 text-xs text-muted-foreground hover:bg-muted"
                                   onClick={() => onReturnActionToQueue?.(ev.entityId!)}
                                   disabled={assigningActionIds?.has(ev.entityId)}
-                                  aria-label={`Remove ${ev.title} from day`}
-                                  title="Remove from day"
+                                  aria-label={t("calendar.removeFromDay")}
+                                  title={t("calendar.removeFromDay")}
                                 >
                                   {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
                                 </button>
@@ -154,7 +165,7 @@ export default function MonthWeeksView({
                             }}
                             disabled={!canAssign || managedActionOptions.length === 0}
                           >
-                            <option value="">Select Action...</option>
+                            <option value="">{t("calendar.selectAction")}</option>
                             {managedActionOptions.map((action) => (
                               <option
                                 key={`${dayKey}-${action.id}`}
@@ -162,14 +173,14 @@ export default function MonthWeeksView({
                                 disabled={assigningActionIds?.has(action.id)}
                               >
                                 {assigningActionIds?.has(action.id)
-                                  ? `${action.title} (saving...)`
+                                  ? `${action.title} (${t("calendar.saving")})`
                                   : action.title}
                               </option>
                             ))}
                           </select>
                           {!canAssign && (
                             <p className="mt-1 text-[10px] text-muted-foreground">
-                              Assigning is only available from today onward.
+                              {t("calendar.assignFromTodayOnly")}
                             </p>
                           )}
                         </div>

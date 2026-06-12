@@ -1,7 +1,7 @@
 import { useMemo, useState, useCallback, useEffect } from "react";
 import { Calendar, Views, type Components } from "react-big-calendar";
 import { format, startOfYear, endOfYear, addYears, addDays, addWeeks, startOfMonth, endOfMonth, startOfWeek } from "date-fns";
-import { localizer } from "~/lib/calendarLocalizer";
+import { getCalendarLocalizer } from "~/lib/calendarLocalizer";
 import "react-big-calendar/lib/css/react-big-calendar.css";
 import "./calendar-overrides.css";
 import { useCalendarItems } from "./useCalendarItems";
@@ -11,15 +11,19 @@ import CalendarToolbar from "./CalendarToolbar";
 import MonthWeeksView from "./MonthWeeksView";
 import WeekDayListView from "./WeekDayListView";
 import { Button } from "~/components/ui/button";
+import { useTranslation } from "react-i18next";
+import type { AppLanguage } from "~/i18n/config";
+import { getDateFnsLocale, getWeekStartsOn } from "~/i18n/dateLocale";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
 type ViewType = "year" | "month" | "month_weeks" | "week" | "day";
 
-const VIEW_OPTIONS: { value: ViewType; label: string }[] = [
-  { value: "year", label: "Year" },
-  { value: "month", label: "Month" },
+const VIEW_OPTIONS: ViewType[] = [
+  "year",
+  "month",
   // { value: "month_weeks", label: "Month/Weeks" }, // temporarily hidden
-  { value: "week", label: "Week" },
-  { value: "day", label: "Day" },
+  "week",
+  "day",
 ];
 
 const SMALL_SCREEN_BREAKPOINT = 768;
@@ -43,6 +47,10 @@ export default function TrackerCalendar({
   assigningActionIds,
   refreshKey,
 }: TrackerCalendarProps) {
+  const { t, i18n } = useTranslation();
+  const language = (i18n.language === "fa" ? "fa" : "en") as AppLanguage;
+  const dateLocale = useMemo(() => getDateFnsLocale(language), [language]);
+  const localizer = useMemo(() => getCalendarLocalizer(language), [language]);
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [view, setView] = useState<ViewType>(() =>
     typeof window !== "undefined" && window.innerWidth < SMALL_SCREEN_BREAKPOINT ? "day" : "month"
@@ -50,14 +58,14 @@ export default function TrackerCalendar({
 
   const activeViewOptions = useMemo(() => {
     if (mode === "manage") {
-      return VIEW_OPTIONS.filter((option) => option.value === "month" || option.value === "week");
+      return VIEW_OPTIONS.filter((option) => option === "month" || option === "week");
     }
     return VIEW_OPTIONS;
   }, [mode]);
 
   useEffect(() => {
-    if (activeViewOptions.some((option) => option.value === view)) return;
-    setView(activeViewOptions[0]?.value ?? "month");
+    if (activeViewOptions.some((option) => option === view)) return;
+    setView(activeViewOptions[0] ?? "month");
   }, [activeViewOptions, view]);
 
   const range = useMemo(() => {
@@ -112,7 +120,7 @@ export default function TrackerCalendar({
       const monthEvents = items.filter(
         (e) => e.start.getTime() <= end.getTime() && e.end.getTime() >= start.getTime()
       );
-      return { start, end, name: format(start, "MMMM"), events: monthEvents };
+      return { start, end, name: format(start, "MMMM", { locale: dateLocale }), events: monthEvents };
     });
 
     return (
@@ -121,13 +129,15 @@ export default function TrackerCalendar({
           <span className="rbc-toolbar-label font-semibold text-lg shrink-0">{year}</span>
           <span className="rbc-btn-group flex flex-nowrap items-center gap-1 shrink-0">
             <Button variant="outline" size="sm" className="shrink-0" onClick={() => setCurrentDate(new Date())}>
-              Today
+              {t("calendar.today")}
             </Button>
             <Button variant="outline" size="sm" className="shrink-0" onClick={() => handleNavigateYear(-1)}>
-              ← Prev
+              <ChevronLeft className="h-4 w-4" />
+              {t("calendar.previous")}
             </Button>
             <Button variant="outline" size="sm" className="shrink-0" onClick={() => handleNavigateYear(1)}>
-              Next →
+              {t("calendar.next")}
+              <ChevronRight className="h-4 w-4" />
             </Button>
           </span>
         </div>
@@ -148,7 +158,7 @@ export default function TrackerCalendar({
                   <li className="text-muted-foreground">+{m.events.length - 8}</li>
                 )}
                 {m.events.length === 0 && (
-                  <li className="text-muted-foreground">No items</li>
+                  <li className="text-muted-foreground">{t("calendar.noItems")}</li>
                 )}
               </ul>
             </div>
@@ -157,15 +167,15 @@ export default function TrackerCalendar({
 
         {/* View controls — below calendar */}
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60 shrink-0 pb-12">
-          <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {activeViewOptions.map(({ value, label }) => (
+          <span className="text-sm font-medium text-muted-foreground">{t("calendar.view")}:</span>
+          {activeViewOptions.map((value) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
               size="sm"
               onClick={() => setView(value)}
             >
-              {label}
+              {t(`calendar.views.${value}`)}
             </Button>
           ))}
         </div>
@@ -181,6 +191,7 @@ export default function TrackerCalendar({
           <MonthWeeksView
             currentDate={currentDate}
             items={items}
+            language={language}
             onNavigate={setCurrentDate}
             manageMode={mode === "manage"}
             managedActionOptions={managedActionOptions}
@@ -190,15 +201,15 @@ export default function TrackerCalendar({
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 border-t border-border/60 shrink-0 pb-12">
-          <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {activeViewOptions.map(({ value, label }) => (
+          <span className="text-sm font-medium text-muted-foreground">{t("calendar.view")}:</span>
+          {activeViewOptions.map((value) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
               size="sm"
               onClick={() => setView(value)}
             >
-              {label}
+              {t(`calendar.views.${value}`)}
             </Button>
           ))}
         </div>
@@ -208,10 +219,10 @@ export default function TrackerCalendar({
 
   /* Week / Day: list view, no time column, untimed at end with separator */
   if (view === "week" || view === "day") {
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 0 });
+    const weekStart = startOfWeek(currentDate, { weekStartsOn: getWeekStartsOn(language) });
     const weekLabel = view === "day"
-      ? format(currentDate, "EEEE, MMM d, yyyy")
-      : `${format(weekStart, "MMM d")} – ${format(addDays(weekStart, 6), "MMM d, yyyy")}`;
+      ? format(currentDate, "EEEE, MMM d, yyyy", { locale: dateLocale })
+      : `${format(weekStart, "MMM d", { locale: dateLocale })} – ${format(addDays(weekStart, 6), "MMM d, yyyy", { locale: dateLocale })}`;
     return (
       <div className="flex flex-col flex-1 min-h-0 p-4">
         <div className="flex items-center justify-between gap-2 mb-2 shrink-0">
@@ -228,6 +239,7 @@ export default function TrackerCalendar({
           <WeekDayListView
             currentDate={currentDate}
             items={items}
+            language={language}
             isDayView={view === "day"}
             manageMode={mode === "manage"}
             managedActionOptions={managedActionOptions}
@@ -236,16 +248,16 @@ export default function TrackerCalendar({
             assigningActionIds={assigningActionIds}
           />
         </div>
-        <div className="sticky bottom-0 left-0 right-0 flex flex-wrap items-center gap-2 py-4 pt-4 mt-0 border-t border-border/60 shrink-0 bg-background pb-12">
-          <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {activeViewOptions.map(({ value, label }) => (
+        <div className="sticky inset-x-0 bottom-0 flex flex-wrap items-center gap-2 py-4 pt-4 mt-0 border-t border-border/60 shrink-0 bg-background pb-12">
+          <span className="text-sm font-medium text-muted-foreground">{t("calendar.view")}:</span>
+          {activeViewOptions.map((value) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
               size="sm"
               onClick={() => setView(value)}
             >
-              {label}
+              {t(`calendar.views.${value}`)}
             </Button>
           ))}
         </div>
@@ -260,6 +272,7 @@ export default function TrackerCalendar({
         <div className="flex-1 min-h-[400px]">
           <Calendar
             localizer={localizer}
+            culture={language}
             view={Views.MONTH}
             views={[Views.MONTH]}
             events={events}
@@ -272,15 +285,15 @@ export default function TrackerCalendar({
           />
         </div>
         <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 pb-12 border-t border-border/60 shrink-0">
-          <span className="text-sm font-medium text-muted-foreground">View:</span>
-          {activeViewOptions.map(({ value, label }) => (
+          <span className="text-sm font-medium text-muted-foreground">{t("calendar.view")}:</span>
+          {activeViewOptions.map((value) => (
             <Button
               key={value}
               variant={view === value ? "default" : "outline"}
               size="sm"
               onClick={() => setView(value)}
             >
-              {label}
+              {t(`calendar.views.${value}`)}
             </Button>
           ))}
         </div>
@@ -295,6 +308,7 @@ export default function TrackerCalendar({
         <MonthWeeksView
           currentDate={currentDate}
           items={items}
+          language={language}
           onNavigate={setCurrentDate}
           manageMode
           managedActionOptions={managedActionOptions}
@@ -304,15 +318,15 @@ export default function TrackerCalendar({
         />
       </div>
       <div className="flex flex-wrap items-center gap-2 mt-4 pt-4 pb-12 border-t border-border/60 shrink-0">
-        <span className="text-sm font-medium text-muted-foreground">View:</span>
-        {activeViewOptions.map(({ value, label }) => (
+        <span className="text-sm font-medium text-muted-foreground">{t("calendar.view")}:</span>
+        {activeViewOptions.map((value) => (
           <Button
             key={value}
             variant={view === value ? "default" : "outline"}
             size="sm"
             onClick={() => setView(value)}
           >
-            {label}
+            {t(`calendar.views.${value}`)}
           </Button>
         ))}
       </div>

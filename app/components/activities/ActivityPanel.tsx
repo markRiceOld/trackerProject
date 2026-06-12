@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Skeleton } from "~/components/ui/skeleton";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
@@ -11,13 +12,22 @@ interface ActivityPanelProps {
   preview2?: ReactNode;
 }
 
+const typeKeys: Record<ActivityPanelProps["type"], string> = {
+  goal: "activities.typeGoal",
+  project: "activities.typeProject",
+  action: "activities.typeAction",
+  interval: "activities.typeInterval",
+};
+
 export default function ActivityPanel({
   type,
   title,
   preview1,
   preview2,
 }: ActivityPanelProps) {
+  const { t } = useTranslation();
   const noPreview = !preview1 && !preview2;
+  const typeLabel = t(typeKeys[type]);
 
   return (
     <section className="space-y-4 rounded-xl border p-4 shadow-sm">
@@ -30,7 +40,7 @@ export default function ActivityPanel({
 
       {noPreview && (
         <div className="text-sm text-muted-foreground border rounded-md p-4 text-center">
-          There's no active {type}.
+          {t("activities.noActiveType", { type: typeLabel })}
         </div>
       )}
 
@@ -38,12 +48,12 @@ export default function ActivityPanel({
         <Link to={`/activities/${type}`}>
           <Button variant="outline" size="icon">
             <Plus className="h-4 w-4" />
-            <span className="sr-only">Add {title}</span>
+            <span className="sr-only">{t("activities.addTitle", { title })}</span>
           </Button>
         </Link>
 
         <Link to={`/activities/${type}s`} className="text-sm text-primary hover:underline">
-          View All
+          {t("activities.viewAll")}
         </Link>
       </div>
     </section>

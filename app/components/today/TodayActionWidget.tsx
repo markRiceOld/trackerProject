@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
@@ -14,6 +15,7 @@ export default function TodayActionWidget() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
   const { call } = useApi();
+  const { t } = useTranslation();
 
   const todayISO = toLocalDateString(new Date());
 
@@ -81,7 +83,7 @@ export default function TodayActionWidget() {
 
   }
 
-  if (loading) return <p className="p-6">Loading...</p>;
+  if (loading) return <p className="p-6">{t("common.loading")}</p>;
 
   return (
     <div className="space-y-4">
@@ -91,7 +93,7 @@ export default function TodayActionWidget() {
         </Label>
         <Input
           id="today-widget-add-title"
-          placeholder="Add a new action for today"
+          placeholder={t("today.addActionForToday")}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && handleAdd()}

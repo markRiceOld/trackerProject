@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useParams } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
@@ -14,6 +15,7 @@ import { format, isValid } from "date-fns";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
 
 export default function MilestoneForm() {
+  const { t } = useTranslation();
   const { goalId, milestoneId } = useParams<{ goalId: string; milestoneId?: string }>();
   const navigate = useNavigate();
   const { call } = useApi();
@@ -140,10 +142,10 @@ export default function MilestoneForm() {
 
   if (!goalId) {
     return (
-      <InternalPageLayout title="Milestone">
-        <p className="text-muted-foreground">Missing goal. Go back to a goal first.</p>
+      <InternalPageLayout title={t("milestones.title")}>
+        <p className="text-muted-foreground">{t("milestones.missingGoal")}</p>
         <Button variant="ghost" className="mt-2" onClick={() => navigate(-1)}>
-          Cancel
+          {t("common.cancel")}
         </Button>
       </InternalPageLayout>
     );
@@ -151,8 +153,8 @@ export default function MilestoneForm() {
 
   return (
     <InternalPageLayout
-      backLink={{ to: `/activities/goal/${goalId}`, label: "← Back to Goal" }}
-      title={isEdit ? "Edit milestone" : "New milestone"}
+      backLink={{ to: `/activities/goal/${goalId}`, label: `← ${t("goalManage.backToGoal")}` }}
+      title={isEdit ? t("milestones.editMilestone") : t("milestones.newMilestone")}
       maxWidth="max-w-xl"
       actions={
         isEdit ? (
@@ -162,8 +164,8 @@ export default function MilestoneForm() {
             variant="ghost"
             className="h-8 w-8 text-destructive hover:text-destructive ml-2"
             onClick={() => setDeleteConfirmOpen(true)}
-            title="Delete milestone"
-            aria-label="Delete milestone"
+            title={t("milestones.deleteMilestone")}
+            aria-label={t("milestones.deleteMilestone")}
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -172,37 +174,37 @@ export default function MilestoneForm() {
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
-          <Label>Goal</Label>
+          <Label>{t("milestones.goal")}</Label>
           <Input value={goalTitle} readOnly className="bg-muted" />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="milestone-title" className="flex items-center gap-2">
-            Milestone title <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("milestones.milestoneTitle")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="milestone-title"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            placeholder="Milestone title"
+            placeholder={t("milestones.milestoneTitle")}
             required
           />
         </div>
 
         <div className="space-y-2">
           <Label htmlFor="doa" className="flex items-center gap-2">
-            Definition of achieved (DOA) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("milestones.doa")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="doa"
             value={doa}
             onChange={(e) => setDoa(e.target.value)}
-            placeholder="What does success look like for this milestone?"
+            placeholder={t("milestones.doaPlaceholder")}
           />
         </div>
 
         <div className="space-y-2">
-          <Label>Prediction date</Label>
+          <Label>{t("milestones.predictionDate")}</Label>
           {showPredictionReadOnly && predictionDate && isValid(predictionDate) ? (
             <p className="text-sm text-muted-foreground py-2">
               {format(predictionDate, "MMM d, yyyy")}
@@ -225,18 +227,18 @@ export default function MilestoneForm() {
             onCheckedChange={(v) => handleIsLastChange(v === true)}
           />
           <Label htmlFor="is-last" className="font-normal cursor-pointer">
-            Last milestone (only one per goal; new milestones are added before it)
+            {t("milestones.lastMilestoneLabel")}
           </Label>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit">Submit</Button>
+          <Button type="submit">{t("common.submit")}</Button>
           <Button
             type="button"
             variant="ghost"
             onClick={() => navigate(`/activities/goal/${goalId}`)}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </form>
@@ -245,13 +247,13 @@ export default function MilestoneForm() {
         open={confirmSetLastOpen}
         onOpenChange={(open) => !open && setConfirmSetLastOpen(false)}
         onCancel={handleCancelSetLast}
-        title="Set as last milestone"
+        title={t("milestones.setLastTitle")}
         description={
           otherLastMilestoneTitle
-            ? `${otherLastMilestoneTitle} is currently the last milestone. Set this one as last instead?`
+            ? t("milestones.setLastConfirm", { title: otherLastMilestoneTitle })
             : undefined
         }
-        confirmLabel="Set as last"
+        confirmLabel={t("milestones.setLast")}
         onConfirm={handleConfirmSetLast}
       />
 
@@ -259,9 +261,9 @@ export default function MilestoneForm() {
         <ConfirmDialog
           open={deleteConfirmOpen}
           onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
-          title="Delete this milestone?"
-          description="Its projects will be moved to the goal. This cannot be undone."
-          confirmLabel="Delete"
+          title={t("milestones.deleteMilestoneConfirm")}
+          description={t("milestones.deleteMilestoneDescription")}
+          confirmLabel={t("common.delete")}
           variant="destructive"
           onConfirm={handleDeleteConfirm}
         />

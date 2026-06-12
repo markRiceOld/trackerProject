@@ -5,64 +5,49 @@ import {
   Sun,
   Wrench,
 } from "lucide-react";
+import type { TFunction } from "i18next";
 
-export const sidebarItems = [
+export function getSidebarItems(t: TFunction) {
+  return [
   {
     id: "today",
-    title: "Today",
+    title: t("nav.today"),
     href: "/today",
     icon: <Sun className="h-4 w-4" />,
   },
   {
     id: "calendar",
-    title: "Calendar",
+    title: t("nav.calendar"),
     href: "/calendar",
     icon: <Calendar className="h-4 w-4" />,
   },
   {
     id: "tools",
-    title: "Tools",
+    title: t("nav.tools"),
     href: "/tools",
     icon: <Wrench className="h-4 w-4" />,
   },
   {
     id: "activities",
-    title: "Activities",
+    title: t("nav.activities"),
     href: "/activities",
     icon: <FolderKanban className="h-4 w-4" />,
   },
   {
     id: "settings",
-    title: "Settings",
+    title: t("nav.settings"),
     href: "/settings",
     icon: <Settings className="h-4 w-4" />,
   },
 ];
+}
 
-export const bottomBarItems = [
-  {
-    id: "today",
-    href: "/today",
-    icon: <Sun className="h-5 w-5" />,
-  },
-  {
-    id: "calendar",
-    href: "/calendar",
-    icon: <Calendar className="h-5 w-5" />,
-  },
-  {
-    id: "tools",
-    href: "/tools",
-    icon: <Wrench className="h-5 w-5" />,
-  },
-  {
-    id: "activities",
-    href: "/activities",
-    icon: <FolderKanban className="h-5 w-5" />,
-  },
-  {
-    id: "settings",
-    href: "/settings",
-    icon: <Settings className="h-5 w-5" />,
-  },
-];
+export function getBottomBarItems(t: TFunction) {
+  return [
+    { id: "today", href: "/today", icon: <Sun className="h-5 w-5" />, title: t("nav.today") },
+    { id: "calendar", href: "/calendar", icon: <Calendar className="h-5 w-5" />, title: t("nav.calendar") },
+    { id: "tools", href: "/tools", icon: <Wrench className="h-5 w-5" />, title: t("nav.tools") },
+    { id: "activities", href: "/activities", icon: <FolderKanban className="h-5 w-5" />, title: t("nav.activities") },
+    { id: "settings", href: "/settings", icon: <Settings className="h-5 w-5" />, title: t("nav.settings") },
+  ];
+}

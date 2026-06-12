@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useTranslation } from "react-i18next";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Button } from "~/components/ui/button";
 import { Trash2, Plus } from "lucide-react";
@@ -25,6 +26,7 @@ export interface Action {
 
 
 export default function ActionsListPage() {
+  const { t } = useTranslation();
   const [actions, setActions] = useState<Action[] | null>(null);
   const [showLinksFilters, setShowLinksFilters] = useState(false);
   const [showStatusFilters, setShowStatusFilters] = useState(false);
@@ -138,27 +140,27 @@ export default function ActionsListPage() {
     statusFilters.done;
 
   const linksLabel = allLinksSelected
-    ? "All"
+    ? t("filters.all")
     : [
-        linkFilters.project ? "Project" : null,
-        linkFilters.milestones ? "Milestones" : null,
-        linkFilters.goals ? "Goals" : null,
+        linkFilters.project ? t("filters.project") : null,
+        linkFilters.milestones ? t("filters.milestones") : null,
+        linkFilters.goals ? t("filters.goals") : null,
       ]
         .filter(Boolean)
-        .join(", ") || "None";
+        .join(", ") || t("filters.none");
 
   const statusLabel = allStatusesSelected
-    ? "All"
+    ? t("filters.all")
     : [
-        statusFilters.backlog ? "Backlog" : null,
-        statusFilters.bucketList ? "Bucket list" : null,
-        statusFilters.tbd ? "TBD" : null,
-        statusFilters.inProgress ? "In Progress" : null,
-        statusFilters.ignored ? "Ignored" : null,
-        statusFilters.done ? "Done" : null,
+        statusFilters.backlog ? t("goalManage.statusBacklog") : null,
+        statusFilters.bucketList ? t("filters.bucketList") : null,
+        statusFilters.tbd ? t("goalManage.statusTbd") : null,
+        statusFilters.inProgress ? t("goalManage.statusInProgress") : null,
+        statusFilters.ignored ? t("goalManage.statusIgnored") : null,
+        statusFilters.done ? t("goalManage.statusDone") : null,
       ]
         .filter(Boolean)
-        .join(", ") || "None";
+        .join(", ") || t("filters.none");
 
   const matchesLinkFilter = (a: Action) => {
     const isProject = Boolean(a.project?.id);
@@ -215,47 +217,47 @@ export default function ActionsListPage() {
   const linkOptions = [
     {
       id: "all",
-      label: "All",
+      label: t("filters.all"),
       active: allLinksSelected,
       onClick: () => setLinkFilters({ project: true, milestones: true, goals: true }),
     },
     {
       id: "project",
-      label: "Project",
+      label: t("filters.project"),
       active: linkFilters.project,
       onClick: () => setLinkFilters((prev) => ({ ...prev, project: !prev.project })),
     },
     {
       id: "milestones",
-      label: "Milestones",
+      label: t("filters.milestones"),
       active: linkFilters.milestones,
       onClick: () => setLinkFilters((prev) => ({ ...prev, milestones: !prev.milestones })),
     },
     {
       id: "goals",
-      label: "Goals",
+      label: t("filters.goals"),
       active: linkFilters.goals,
       onClick: () => setLinkFilters((prev) => ({ ...prev, goals: !prev.goals })),
     },
     {
       id: "none",
-      label: "None",
+      label: t("filters.none"),
       alwaysMuted: true,
       onClick: () => setLinkFilters({ project: false, milestones: false, goals: false }),
     },
   ];
   const statusOptionDefs: [keyof typeof statusFilters, string][] = [
-    ["backlog", "Backlog"],
-    ["bucketList", "Bucket list"],
-    ["tbd", "TBD"],
-    ["inProgress", "In Progress"],
-    ["ignored", "Ignored"],
-    ["done", "Done"],
+    ["backlog", t("goalManage.statusBacklog")],
+    ["bucketList", t("filters.bucketList")],
+    ["tbd", t("goalManage.statusTbd")],
+    ["inProgress", t("goalManage.statusInProgress")],
+    ["ignored", t("goalManage.statusIgnored")],
+    ["done", t("goalManage.statusDone")],
   ];
   const statusOptions = [
     {
       id: "all",
-      label: "All",
+      label: t("filters.all"),
       active: allStatusesSelected,
       onClick: () =>
         setStatusFilters({
@@ -282,15 +284,15 @@ export default function ActionsListPage() {
     })),
   ];
 
-  if (!actions) return <p>Loading...</p>;
+  if (!actions) return <p>{t("common.loading")}</p>;
 
   return (
     <InternalPageLayout
-      backLink={{ to: "/activities", label: "← Back to Activities" }}
-      title="Actions"
+      backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
+      title={t("actionsList.title")}
       actions={
         <Button size="sm" onClick={() => navigate("/activities/action")}>
-          <Plus className="h-4 w-4 mr-2" /> Add Action
+          <Plus className="h-4 w-4 mr-2" /> {t("actionsList.addAction")}
         </Button>
       }
     >
@@ -355,7 +357,7 @@ export default function ActionsListPage() {
 
       <div className="space-y-4">
         {visible.length === 0 && (
-          <p className="text-sm text-muted-foreground">No actions match current filters.</p>
+          <p className="text-sm text-muted-foreground">{t("actionsList.noActionsMatch")}</p>
         )}
         {selectionMode ? (
           visible.map((action) => {

@@ -163,3 +163,12 @@
     font-size: 0.75rem;
   }
 }
+
+/* RTL: toolbar and nav buttons flow correctly when dir=rtl is set on document */
+[dir="rtl"] .rbc-toolbar .rbc-btn-group {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .rbc-toolbar {
+  flex-direction: row-reverse;
+}

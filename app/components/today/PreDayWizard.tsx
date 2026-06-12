@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -40,8 +41,6 @@ type ActionItem = {
   sourceId?: string | null;
 };
 
-const STEPS_PRE_ONLY = ["Day overview", "Set times for untimed tasks", "Day overview and begin"] as const;
-const STEPS_WITH_AFTER = ["After-day", "Day overview", "Set times for untimed tasks", "Day overview and begin"] as const;
 type StepIndex = 0 | 1 | 2 | 3;
 
 function timeToMinutes(s: string): number {
@@ -85,7 +84,10 @@ export default function PreDayWizard({
   onClose?: () => void;
   afterDayRequired?: boolean;
 }) {
+  const { t } = useTranslation();
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
+  const STEPS_PRE_ONLY = [t("wizard.stepDayOverview"), t("wizard.stepSetTimes"), t("wizard.stepDayOverviewBegin")] as const;
+  const STEPS_WITH_AFTER = [t("wizard.stepAfterDay"), t("wizard.stepDayOverview"), t("wizard.stepSetTimes"), t("wizard.stepDayOverviewBegin")] as const;
   const [step, setStep] = useState<StepIndex>(afterDayRequired ? 0 : 1);
   const [loading, setLoading] = useState(true);
   const [preDay, setPreDay] = useState<{
@@ -309,9 +311,9 @@ export default function PreDayWizard({
         query: OUTSOURCE_ACTION,
         variables: {
           id: actionId,
-          doOutsourcingTitle: doTitle || "Do outsourcing",
+          doOutsourcingTitle: doTitle || t("wizard.doOutsourcingDefault"),
           doOutsourcingDate: doDate,
-          ensureDoneTitle: ensureTitle || "Ensure done",
+          ensureDoneTitle: ensureTitle || t("wizard.ensureDoneDefault"),
           ensureDoneDate: ensureDate,
         },
       });
@@ -375,7 +377,7 @@ export default function PreDayWizard({
   if (loading) {
     return (
       <main className="p-6">
-        <p className="text-muted-foreground">Loading…</p>
+        <p className="text-muted-foreground">{t("wizard.loading")}</p>
       </main>
     );
   }
@@ -395,9 +397,9 @@ export default function PreDayWizard({
 
   return (
     <main className="mx-auto max-w-2xl space-y-8 p-6">
-      <h1 className="text-2xl font-bold tracking-tight">Pre-day</h1>
+      <h1 className="text-2xl font-bold tracking-tight">{t("wizard.preDayTitle")}</h1>
 
-      <div className="flex gap-2 overflow-x-auto pb-2" aria-label="Wizard steps">
+      <div className="flex gap-2 overflow-x-auto pb-2" aria-label={t("wizard.wizardStepsAria")}>
         {steps.map((label, i) => {
           const stepIndex = (afterDayRequired ? i : i + 1) as StepIndex;
           if (stepIndex === 1 && !showStep1Tab) return null;
@@ -422,7 +424,7 @@ export default function PreDayWizard({
         <section className="space-y-8">
           {overviewWithTimeOnly.length > 0 && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold">Day overview (ordered)</h2>
+              <h2 className="mb-3 text-lg font-semibold">{t("wizard.dayOverviewOrdered")}</h2>
               <ul className="space-y-2">
                 {overviewWithTimeOnly.map(({ action, overlapIds }) => (
                   <li
@@ -443,7 +445,7 @@ export default function PreDayWizard({
           )}
           {untimedList.length > 0 && (
             <div>
-              <h2 className="mb-3 text-lg font-semibold">Tasks without time</h2>
+              <h2 className="mb-3 text-lg font-semibold">{t("wizard.tasksWithoutTime")}</h2>
               <ul className="space-y-2">
                 {untimedList.map((a) => (
                   <li key={a.id} className="rounded-md border bg-card px-3 py-2">
@@ -460,12 +462,12 @@ export default function PreDayWizard({
           )}
           {overviewWithTimeOnly.length === 0 && untimedList.length === 0 && (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No actions for today yet.
+              {t("wizard.noActionsToday")}
             </p>
           )}
           <div className="flex justify-end">
             <Button onClick={() => setStep(2)}>
-              Next: Set times
+              {t("wizard.nextSetTimes")}
               <ChevronRight className="ml-1 h-4 w-4" />
             </Button>
           </div>
@@ -476,13 +478,11 @@ export default function PreDayWizard({
       {step === 2 && (
         <section className="space-y-6">
           <p className="text-muted-foreground">
-            Set a time for each task, or choose Postpone, Ignore (if available), Pass (if
-            available), or Outsource. Times are checked against already-set actions; overlaps
-            between new times are checked on Submit.
+            {t("wizard.setTimesIntro")}
           </p>
           {untimedList.length === 0 ? (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No untimed tasks.
+              {t("wizard.noUntimedTasks")}
             </p>
           ) : (
             <ul className="space-y-4">
@@ -514,18 +514,18 @@ export default function PreDayWizard({
                             postponeDate[a.id] && handlePostpone(a.id, postponeDate[a.id])
                           }
                         >
-                          Set date
+                          {t("wizard.setDate")}
                         </Button>
                       </div>
                     ) : disp === "outsource" || outsourceOpen === a.id ? (
                       <div className="mt-2 space-y-2 rounded border p-3">
                         <div>
                           <Label htmlFor={`preday-outsource-do-title-${a.id}`} className="text-xs flex items-center gap-2">
-                            Do outsourcing (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.doOutsourcingTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`preday-outsource-do-title-${a.id}`}
-                            placeholder="Do outsourcing title"
+                            placeholder={t("wizard.doOutsourcingPlaceholder")}
                             value={outsourceForm.doTitle}
                             onChange={(e) =>
                               setOutsourceForm((p) => ({ ...p, doTitle: e.target.value }))
@@ -534,13 +534,13 @@ export default function PreDayWizard({
                         </div>
                         <div>
                           <Label htmlFor={`preday-outsource-do-date-${a.id}`} className="text-xs flex items-center gap-2">
-                            Do date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.doDate")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`preday-outsource-do-date-${a.id}`}
                             type="date"
                             min={minDate}
-                            placeholder="Do date"
+                            placeholder={t("wizard.doDatePlaceholder")}
                             value={outsourceForm.doDate}
                             onChange={(e) =>
                               setOutsourceForm((p) => ({ ...p, doDate: e.target.value }))
@@ -549,11 +549,11 @@ export default function PreDayWizard({
                         </div>
                         <div>
                           <Label htmlFor={`preday-outsource-ensure-title-${a.id}`} className="text-xs flex items-center gap-2">
-                            Ensure done (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.ensureDoneTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`preday-outsource-ensure-title-${a.id}`}
-                            placeholder="Ensure done title"
+                            placeholder={t("wizard.ensureDonePlaceholder")}
                             value={outsourceForm.ensureTitle}
                             onChange={(e) =>
                               setOutsourceForm((p) => ({ ...p, ensureTitle: e.target.value }))
@@ -562,13 +562,13 @@ export default function PreDayWizard({
                         </div>
                         <div>
                           <Label htmlFor={`preday-outsource-ensure-date-${a.id}`} className="text-xs flex items-center gap-2">
-                            Ensure date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.ensureDate")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`preday-outsource-ensure-date-${a.id}`}
                             type="date"
                             min={minDate}
-                            placeholder="Ensure date"
+                            placeholder={t("wizard.ensureDatePlaceholder")}
                             value={outsourceForm.ensureDate}
                             onChange={(e) =>
                               setOutsourceForm((p) => ({ ...p, ensureDate: e.target.value }))
@@ -588,16 +588,16 @@ export default function PreDayWizard({
                             )
                           }
                         >
-                          Confirm outsource
+                          {t("wizard.confirmOutsource")}
                         </Button>
                       </div>
                     ) : disp ? (
-                      <span className="text-sm text-muted-foreground">Chosen: {disp}</span>
+                      <span className="text-sm text-muted-foreground">{t("wizard.chosen", { value: t(`wizard.${disp}`) })}</span>
                     ) : (
                       <>
                         <div className="flex flex-wrap items-center gap-2">
                           <Label htmlFor={`preday-start-time-${a.id}`} className="sr-only flex items-center gap-2">
-                            Start time <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                            {t("wizard.startTime")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                           </Label>
                           <Input
                             id={`preday-start-time-${a.id}`}
@@ -611,7 +611,7 @@ export default function PreDayWizard({
                           {reactiveWarn && (
                             <span className="flex items-center gap-1 text-sm text-amber-600">
                               <AlertTriangle className="h-4 w-4" />
-                              Overlaps with another task
+                              {t("wizard.overlapsWithTask")}
                             </span>
                           )}
                         </div>
@@ -623,7 +623,7 @@ export default function PreDayWizard({
                               setUntimedDisposition((p) => ({ ...p, [a.id]: "postpone" }))
                             }
                           >
-                            Postpone
+                            {t("wizard.postpone")}
                           </Button>
                           <Button
                             variant="outline"
@@ -633,7 +633,7 @@ export default function PreDayWizard({
                               setOutsourceOpen(a.id);
                             }}
                           >
-                            Outsource
+                            {t("wizard.outsource")}
                           </Button>
                           {canShowIgnore(a) && (
                             <Button
@@ -641,7 +641,7 @@ export default function PreDayWizard({
                               size="sm"
                               onClick={() => handleIgnore(a.id)}
                             >
-                              Ignore
+                              {t("wizard.ignore")}
                             </Button>
                           )}
                           {canShowPass(a) && (
@@ -650,7 +650,7 @@ export default function PreDayWizard({
                               size="sm"
                               onClick={() => handlePass(a.id)}
                             >
-                              Pass
+                              {t("wizard.pass")}
                             </Button>
                           )}
                         </div>
@@ -666,18 +666,18 @@ export default function PreDayWizard({
               <div className="flex flex-1 flex-wrap items-center gap-2 rounded-md border border-amber-500 bg-amber-50 p-3 dark:bg-amber-950/30">
                 <AlertTriangle className="h-5 w-5 text-amber-600" />
                 <span className="text-sm">
-                  Some tasks overlap in time. Confirm to save anyway?
+                  {t("wizard.overlapConfirm")}
                 </span>
                 <Button size="sm" variant="outline" onClick={() => setOverlapConfirmOpen(false)}>
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
                 <Button size="sm" onClick={applyStep2Times}>
-                  Confirm and continue
+                  {t("wizard.confirmAndContinue")}
                 </Button>
               </div>
             )}
             <Button onClick={handleStep2Submit} disabled={!isStep2Complete()}>
-              Submit times
+              {t("wizard.submitTimes")}
             </Button>
           </div>
         </section>
@@ -686,10 +686,10 @@ export default function PreDayWizard({
       {/* Step 3: Day overview and begin */}
       {step === 3 && (
         <section className="space-y-6">
-          <p className="text-muted-foreground">Final overview. Begin your day when ready.</p>
+          <p className="text-muted-foreground">{t("wizard.finalOverview")}</p>
           {orderedOverview.length === 0 ? (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">
-              No actions for today.
+              {t("wizard.noActionsTodayShort")}
             </p>
           ) : (
             <ul className="space-y-2">
@@ -712,7 +712,7 @@ export default function PreDayWizard({
           <div className="flex justify-end">
             <Button onClick={handleBegin} disabled={finishing} className="gap-2">
               <Sun className="h-4 w-4" />
-              Begin
+              {t("wizard.begin")}
             </Button>
           </div>
         </section>

@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate, useSearchParams } from "react-router";
 import { Input } from "~/components/ui/input";
 import { Button } from "~/components/ui/button";
@@ -10,6 +11,7 @@ import { useApi } from "~/api/useApi";
 import { ADD_GOAL } from "~/api/queries";
 
 export default function GoalForm() {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const parentGoalId = searchParams.get("parentGoalId") ?? undefined;
@@ -43,34 +45,34 @@ export default function GoalForm() {
   };
 
   const backTo = returnGoalId || parentGoalId
-    ? { to: returnGoalId ? `/activities/goal/${returnGoalId}` : `/activities/goal/${parentGoalId}`, label: "← Back to Goal" }
-    : { to: "/activities/goals", label: "← Back to Goals" };
+    ? { to: returnGoalId ? `/activities/goal/${returnGoalId}` : `/activities/goal/${parentGoalId}`, label: `← ${t("goalManage.backToGoal")}` }
+    : { to: "/activities/goals", label: `← ${t("goalManage.backToGoals")}` };
 
   return (
     <InternalPageLayout
       backLink={backTo}
-      title="New Goal"
+      title={t("goalsList.newGoal")}
       maxWidth="max-w-xl"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="goal-title" className="flex items-center gap-2">
-            Goal title <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("goalsList.goalTitle")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="goal-title"
-            placeholder="Goal Title"
+            placeholder={t("goalsList.goalTitle")}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
         </div>
         <div className="space-y-2">
           <Label htmlFor="goal-dod" className="flex items-center gap-2">
-            Definition of Done (optional) <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            {t("goalsList.dodOptional")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
           </Label>
           <Input
             id="goal-dod"
-            placeholder="Definition of Done (optional)"
+            placeholder={t("goalsList.dodOptional")}
             value={dod}
             onChange={(e) => setDod(e.target.value)}
           />
@@ -82,14 +84,14 @@ export default function GoalForm() {
             onCheckedChange={(v) => setIsGoalGroup(v === true)}
           />
           <Label htmlFor="isGoalGroup" className="text-sm font-normal cursor-pointer">
-            Goal group (contains child goals and milestones with child goals; no projects directly)
+            {t("goalsList.goalGroupLabel")}
           </Label>
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit">Submit</Button>
+          <Button type="submit">{t("common.submit")}</Button>
           <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
-            Cancel
+            {t("common.cancel")}
           </Button>
         </div>
       </form>

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { Badge } from "~/components/ui/badge";
 import { Button } from "~/components/ui/button";
@@ -60,6 +61,7 @@ function getNextEvent(props: {
 }
 
 export default function IntervalPreview(props: IntervalPreviewProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const {
     id,
@@ -106,9 +108,9 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
       <div className="flex items-center justify-between gap-2 flex-wrap">
         <h2 className="font-semibold text-sm line-clamp-1 flex-1 min-w-0">{title}</h2>
         <div className="flex items-center gap-1.5">
-          <Badge variant="secondary">Interval</Badge>
+          <Badge variant="secondary">{t("intervals.interval")}</Badge>
           <Badge variant={status === "active" ? "default" : "secondary"}>
-            {status === "active" ? "Active" : "Inactive"}
+            {status === "active" ? t("intervals.active") : t("intervals.inactive")}
           </Badge>
         </div>
       </div>
@@ -116,14 +118,14 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="text-xs text-muted-foreground space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
-            <span>Repeats: {repeatsLabel}</span>
-            {nextEvent && <span>Next: {nextEvent}</span>}
+            <span>{t("intervals.repeatsLabel")} {repeatsLabel}</span>
+            {nextEvent && <span>{t("intervals.nextLabel")} {nextEvent}</span>}
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
-            <span>{stepCount} step{stepCount !== 1 ? "s" : ""}</span>
+            <span>{stepCount === 1 ? t("intervals.stepCountOne") : t("intervals.stepCountOther", { count: stepCount })}</span>
             {linkLabel && (
               <span className="text-muted-foreground/80">
-                Linked: <span className="font-medium text-foreground/90">{linkLabel}</span>
+                {t("intervals.linkedLabel")} <span className="font-medium text-foreground/90">{linkLabel}</span>
               </span>
             )}
           </div>
@@ -135,7 +137,7 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
               variant="ghost"
               className="h-7 w-7"
               onClick={handleManage}
-              title="Manage"
+              title={t("goalManage.manage")}
             >
               <Pencil className="h-3.5 w-3.5" />
             </Button>
@@ -145,7 +147,7 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
                 variant="ghost"
                 className="h-7 w-7 text-destructive hover:text-destructive"
                 onClick={() => setDeleteConfirmOpen(true)}
-                title="Delete"
+                title={t("common.delete")}
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </Button>
@@ -157,9 +159,9 @@ export default function IntervalPreview(props: IntervalPreviewProps) {
       <ConfirmDialog
         open={deleteConfirmOpen}
         onOpenChange={(open) => !open && setDeleteConfirmOpen(false)}
-        title="Delete this interval?"
-        description="Are you sure you want to delete this interval? This cannot be undone."
-        confirmLabel="Delete"
+        title={t("intervals.deleteIntervalTitle")}
+        description={t("intervals.cannotBeUndone")}
+        confirmLabel={t("intervals.delete")}
         variant="destructive"
         onConfirm={handleDeleteConfirm}
       />

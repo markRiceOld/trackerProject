@@ -15,8 +15,10 @@ import {
 } from "~/api/queries";
 import { toLocalDateString } from "~/utils/dateUtils";
 import { Moon, Pencil, Sun, Plus } from "lucide-react";
+import { useTranslation } from "react-i18next";
 
 export default function TodayPage() {
+  const { t } = useTranslation();
   const todayKey = toLocalDateString(new Date());
   const [dayState, setDayState] = useState<{ preDayCompletedAt?: string | null } | null>(null);
   const [preDayStatus, setPreDayStatus] = useState<{ afterDayRequired?: boolean } | null>(null);
@@ -112,10 +114,10 @@ export default function TodayPage() {
   if (!dayStateLoading && !preDayDone) {
     return (
       <main className="flex min-h-[60vh] flex-col items-center justify-center gap-6 p-6 text-center">
-        <h1 className="text-3xl font-bold tracking-tight">Good morning</h1>
+        <h1 className="text-3xl font-bold tracking-tight">{t("today.goodMorning")}</h1>
         <Button onClick={() => setShowPreDay(true)} className="gap-2">
           <Sun className="h-4 w-4" />
-          Start
+          {t("today.start")}
         </Button>
       </main>
     );
@@ -151,27 +153,27 @@ export default function TodayPage() {
   return (
     <main className="space-y-8 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold tracking-tight">Today</h1>
+        <h1 className="text-2xl font-bold tracking-tight">{t("today.title")}</h1>
         <Button
           variant="outline"
           onClick={() => setShowAfterDay(true)}
           className="gap-2"
         >
           <Moon className="h-4 w-4" />
-          After day
+          {t("today.afterDay")}
         </Button>
       </div>
 
       {/* Section 1: Linked Actions */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-muted-foreground">Linked Actions</h2>
+        <h2 className="text-lg font-semibold text-muted-foreground">{t("today.linkedActions")}</h2>
         {todayActions === null ? (
           <>
             <Skeleton className="h-16 w-full rounded-md" />
             <Skeleton className="h-16 w-full rounded-md" />
           </>
         ) : !linkedActions.length ? (
-          <p className="text-muted-foreground">No linked actions for today.</p>
+          <p className="text-muted-foreground">{t("today.noLinkedActions")}</p>
         ) : (
           <ul className="space-y-2">
             {linkedActions.map((action: any) => (
@@ -188,7 +190,7 @@ export default function TodayPage() {
 
       {/* Section 2: Standalone Actions */}
       <section className="space-y-4">
-        <h2 className="text-lg font-semibold text-muted-foreground">Standalone Actions</h2>
+        <h2 className="text-lg font-semibold text-muted-foreground">{t("today.standaloneActions")}</h2>
         <div className="space-y-3">
           <div className="flex gap-2 items-center">
             <label htmlFor="today-add-action-title" className="flex items-center gap-2 shrink-0 text-muted-foreground">
@@ -196,7 +198,7 @@ export default function TodayPage() {
             </label>
             <Input
               id="today-add-action-title"
-              placeholder="Add a new action (title)"
+              placeholder={t("today.addActionPlaceholder")}
               value={addInput}
               onChange={(e) => setAddInput(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && (showAddFields ? canSubmitAdd && handleAddStandalone() : false)}
@@ -209,7 +211,7 @@ export default function TodayPage() {
             <div className="grid gap-3 rounded-lg border bg-muted/30 p-3 sm:grid-cols-2">
               <div className="space-y-1.5">
                 <label htmlFor="today-add-date" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 </label>
                 <Input
                   id="today-add-date"
@@ -222,13 +224,13 @@ export default function TodayPage() {
               </div>
               <div className="space-y-1.5">
                 <label htmlFor="today-add-estimated" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                  Estimated time (min) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  {t("today.estimatedTimeMin")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                 </label>
                 <Input
                   id="today-add-estimated"
                   type="number"
                   min={0}
-                  placeholder="e.g. 30"
+                  placeholder={t("intervals.estimatedPlaceholder")}
                   value={addEstimatedMin}
                   onChange={(e) => setAddEstimatedMin(e.target.value)}
                   required
@@ -237,7 +239,7 @@ export default function TodayPage() {
               {addDateIsToday && (
                 <div className="space-y-1.5 sm:col-span-2">
                   <label htmlFor="today-add-time" className="text-xs font-medium text-muted-foreground flex items-center gap-2">
-                    Time to do <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("today.timeToDo")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </label>
                   <Input
                     id="today-add-time"
@@ -253,7 +255,7 @@ export default function TodayPage() {
         {todayActions === null ? (
           <Skeleton className="h-16 w-full rounded-md" />
         ) : !standaloneActions.length ? (
-          <p className="text-muted-foreground">No standalone actions for today.</p>
+          <p className="text-muted-foreground">{t("today.noStandaloneActions")}</p>
         ) : (
           <ul className="space-y-2">
             {standaloneActions.map((action: any) => (

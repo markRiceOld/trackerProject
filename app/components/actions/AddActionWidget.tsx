@@ -1,3 +1,4 @@
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -37,6 +38,7 @@ export default function AddActionWidget({
   canAdd,
   addButtonSize = "default",
 }: AddActionWidgetProps) {
+  const { t } = useTranslation();
   const dateIsToday = date === todayKey;
 
   return (
@@ -51,11 +53,11 @@ export default function AddActionWidget({
     >
       <div className="space-y-1">
         <Label htmlFor="add-action-title" className="text-xs text-muted-foreground flex items-center gap-2">
-          Action title * <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {t("today.addActionTitle")} * <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Label>
         <Input
           id="add-action-title"
-          placeholder="Action title"
+          placeholder={t("today.addActionTitle")}
           value={title}
           onChange={(e) => onTitleChange(e.target.value)}
           className="w-full"
@@ -65,14 +67,14 @@ export default function AddActionWidget({
       </div>
       <div className="space-y-1">
         <Label htmlFor="add-action-est" className="text-xs text-muted-foreground flex items-center gap-2">
-          Est (min) * <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {t("today.addActionEst")} * <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Label>
         <Input
           id="add-action-est"
           type="number"
           min={0}
           max={1440}
-          placeholder="e.g. 30"
+          placeholder={t("intervals.estimatedPlaceholder")}
           value={estimatedMinutes}
           onChange={(e) => onEstimatedMinutesChange(e.target.value)}
           className="w-full max-w-xs"
@@ -81,7 +83,7 @@ export default function AddActionWidget({
       </div>
       <div className="space-y-1">
         <Label htmlFor="add-action-date" className="text-xs text-muted-foreground flex items-center gap-2">
-          Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+          {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
         </Label>
         <Input
           id="add-action-date"
@@ -95,7 +97,7 @@ export default function AddActionWidget({
       {dateIsToday && (
         <div className="space-y-1">
           <Label htmlFor="add-action-start" className="text-xs text-muted-foreground flex items-center gap-2">
-            Start <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+            {t("today.addActionStart")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
           </Label>
           <Input
             id="add-action-start"
@@ -113,20 +115,20 @@ export default function AddActionWidget({
           size={addButtonSize}
           onClick={onAdd}
           disabled={!canAdd}
-          title="Add action"
+          title={t("actionsList.addAction")}
         >
           <Plus className="h-4 w-4 mr-1.5" />
-          Add
+          {t("today.add")}
         </Button>
         <Button
           type="button"
           variant="ghost"
           size={addButtonSize}
           onClick={onCancel}
-          title="Cancel"
+          title={t("common.cancel")}
         >
           <X className="h-4 w-4 mr-1.5" />
-          Cancel
+          {t("common.cancel")}
         </Button>
       </div>
     </div>

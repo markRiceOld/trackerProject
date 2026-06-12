@@ -5,10 +5,12 @@ import { Button } from "~/components/ui/button";
 import { useAuth } from "./AuthContext";
 import { useApi } from "~/api/useApi";
 import { LOGIN_MUTATION } from "~/api/queries";
+import { useTranslation } from "react-i18next";
 
 
 
 export default function LoginPage() {
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -29,40 +31,40 @@ export default function LoginPage() {
       });
 
       if (!res?.login?.token) {
-        setError(getLastError() || "Login failed. Please try again.");
+        setError(getLastError() || t("auth.errors.loginFailed"));
         return;
       }
 
       login(res.login.token);
       navigate(from, { replace: true });
     } catch (err: any) {
-      setError(err?.message || "Something went wrong. Try again.");
+      setError(err?.message || t("auth.errors.somethingWrong"));
       console.error(err);
     }
   };
 
   return (
     <main className="p-6 max-w-sm mx-auto space-y-4">
-      <h1 className="text-2xl font-bold">Login</h1>
+      <h1 className="text-2xl font-bold">{t("auth.login")}</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         <Input
-          placeholder="Email"
+          placeholder={t("auth.email")}
           value={email}
           onChange={(e) => setEmail(e.target.value)}
         />
         <Input
           type="password"
-          placeholder="Password"
+          placeholder={t("auth.password")}
           value={password}
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <div className="text-sm text-red-500">{error}</div>}
         <Button type="submit" className="w-full">
-          Login
+          {t("auth.login")}
         </Button>
       </form>
       <Button variant="link" className="text-yellow-600">
-        <Link to="/register">Register</Link>
+        <Link to="/register">{t("auth.register")}</Link>
       </Button>
     </main>
   );

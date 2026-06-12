@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
@@ -16,6 +17,7 @@ function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPrev
 }
 
 export default function ProjectsListPage() {
+  const { t } = useTranslation();
   const [projects, setProjects] = useState<ProjectPreviewProps[] | null>(null);
   const [showLinksFilters, setShowLinksFilters] = useState(false);
   const [showStatusFilters, setShowStatusFilters] = useState(false);
@@ -54,7 +56,7 @@ export default function ProjectsListPage() {
     fetchProjects();
   }, []);
 
-  if (!projects) return <p className="p-6">Loading...</p>;
+  if (!projects) return <p className="p-6">{t("common.loading")}</p>;
 
   const allLinksSelected = linkFilters.milestones && linkFilters.goals;
   const allStatusesSelected =
@@ -65,25 +67,25 @@ export default function ProjectsListPage() {
     statusFilters.done;
 
   const linksLabel = allLinksSelected
-    ? "All"
+    ? t("filters.all")
     : [
-        linkFilters.milestones ? "Milestones" : null,
-        linkFilters.goals ? "Goals" : null,
+        linkFilters.milestones ? t("filters.milestones") : null,
+        linkFilters.goals ? t("filters.goals") : null,
       ]
         .filter(Boolean)
-        .join(", ") || "None";
+        .join(", ") || t("filters.none");
 
   const statusLabel = allStatusesSelected
-    ? "All"
+    ? t("filters.all")
     : [
-        statusFilters.backlog ? "Backlog" : null,
-        statusFilters.tbd ? "TBD" : null,
-        statusFilters.inProgress ? "In Progress" : null,
-        statusFilters.ignored ? "Ignored" : null,
-        statusFilters.done ? "Done" : null,
+        statusFilters.backlog ? t("goalManage.statusBacklog") : null,
+        statusFilters.tbd ? t("goalManage.statusTbd") : null,
+        statusFilters.inProgress ? t("goalManage.statusInProgress") : null,
+        statusFilters.ignored ? t("goalManage.statusIgnored") : null,
+        statusFilters.done ? t("goalManage.statusDone") : null,
       ]
         .filter(Boolean)
-        .join(", ") || "None";
+        .join(", ") || t("filters.none");
 
   const matchesLinkFilter = (p: ProjectPreviewProps) => {
     const isMilestone = Boolean(p.milestoneTitle);
@@ -140,41 +142,41 @@ export default function ProjectsListPage() {
   const linkOptions = [
     {
       id: "all",
-      label: "All",
+      label: t("filters.all"),
       active: allLinksSelected,
       onClick: () => setLinkFilters({ milestones: true, goals: true }),
     },
     {
       id: "milestones",
-      label: "Milestones",
+      label: t("filters.milestones"),
       active: linkFilters.milestones,
       onClick: () => setLinkFilters((prev) => ({ ...prev, milestones: !prev.milestones })),
     },
     {
       id: "goals",
-      label: "Goals",
+      label: t("filters.goals"),
       active: linkFilters.goals,
       onClick: () => setLinkFilters((prev) => ({ ...prev, goals: !prev.goals })),
     },
     {
       id: "none",
-      label: "None",
+      label: t("filters.none"),
       alwaysMuted: true,
       onClick: () => setLinkFilters({ milestones: false, goals: false }),
     },
   ];
 
   const statusOptionDefs: [keyof typeof statusFilters, string][] = [
-    ["backlog", "Backlog"],
-    ["tbd", "TBD"],
-    ["inProgress", "In Progress"],
-    ["ignored", "Ignored"],
-    ["done", "Done"],
+    ["backlog", t("goalManage.statusBacklog")],
+    ["tbd", t("goalManage.statusTbd")],
+    ["inProgress", t("goalManage.statusInProgress")],
+    ["ignored", t("goalManage.statusIgnored")],
+    ["done", t("goalManage.statusDone")],
   ];
   const statusOptions = [
     {
       id: "all",
-      label: "All",
+      label: t("filters.all"),
       active: allStatusesSelected,
       onClick: () =>
         setStatusFilters({
@@ -202,11 +204,11 @@ export default function ProjectsListPage() {
 
   return (
     <InternalPageLayout
-      backLink={{ to: "/activities", label: "← Back to Activities" }}
-      title="Projects"
+      backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
+      title={t("projects.title")}
       actions={
         <Button size="sm" onClick={() => navigate("/activities/project")}>
-          <Plus className="h-4 w-4 mr-2" /> Add Project
+          <Plus className="h-4 w-4 mr-2" /> {t("projects.addProject")}
         </Button>
       }
     >
@@ -231,7 +233,7 @@ export default function ProjectsListPage() {
 
         <div className="space-y-4">
           {displayProjects.length === 0 && (
-            <p className="text-sm text-muted-foreground">No projects match current filters.</p>
+            <p className="text-sm text-muted-foreground">{t("projects.noProjectsMatch")}</p>
           )}
           {displayProjects.map((project, i) => (
             <ProjectPreview

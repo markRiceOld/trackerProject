@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
+import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
@@ -19,6 +20,7 @@ function getFirstTbdProject(projects: GoalPreviewProps["projects"]): GoalPreview
 }
 
 export default function GoalsListPage() {
+  const { t } = useTranslation();
   const [goals, setGoals] = useState<GoalPreviewProps[] | null>(null);
   const [showLinksFilters, setShowLinksFilters] = useState(false);
   const [showStatusFilters, setShowStatusFilters] = useState(false);
@@ -62,7 +64,7 @@ export default function GoalsListPage() {
     fetchGoals();
   }, []);
 
-  if (!goals) return <p className="p-6">Loading...</p>;
+  if (!goals) return <p className="p-6">{t("common.loading")}</p>;
 
   const allLinksSelected = linkFilters.groupGoal && linkFilters.individualGoal;
   const allStatusesSelected =
@@ -73,25 +75,25 @@ export default function GoalsListPage() {
     statusFilters.done;
 
   const linksLabel = allLinksSelected
-    ? "All"
+    ? t("filters.all")
     : [
-        linkFilters.groupGoal ? "Group Goal" : null,
-        linkFilters.individualGoal ? "Individual Goal" : null,
+        linkFilters.groupGoal ? t("filters.groupGoal") : null,
+        linkFilters.individualGoal ? t("filters.individualGoal") : null,
       ]
         .filter(Boolean)
-        .join(", ") || "None";
+        .join(", ") || t("filters.none");
 
   const statusLabel = allStatusesSelected
-    ? "All"
+    ? t("filters.all")
     : [
-        statusFilters.backlog ? "Backlog" : null,
-        statusFilters.tbd ? "TBD" : null,
-        statusFilters.inProgress ? "In Progress" : null,
-        statusFilters.ignored ? "Ignored" : null,
-        statusFilters.done ? "Done" : null,
+        statusFilters.backlog ? t("goalManage.statusBacklog") : null,
+        statusFilters.tbd ? t("goalManage.statusTbd") : null,
+        statusFilters.inProgress ? t("goalManage.statusInProgress") : null,
+        statusFilters.ignored ? t("goalManage.statusIgnored") : null,
+        statusFilters.done ? t("goalManage.statusDone") : null,
       ]
         .filter(Boolean)
-        .join(", ") || "None";
+        .join(", ") || t("filters.none");
 
   const matchesLinkFilter = (g: GoalPreviewProps) => {
     const isGroupGoal = g.isGoalGroup === true;
@@ -138,34 +140,34 @@ export default function GoalsListPage() {
   };
 
   const statusOptionDefs: [keyof typeof statusFilters, string][] = [
-    ["backlog", "Backlog"],
-    ["tbd", "TBD"],
-    ["inProgress", "In Progress"],
-    ["ignored", "Ignored"],
-    ["done", "Done"],
+    ["backlog", t("goalManage.statusBacklog")],
+    ["tbd", t("goalManage.statusTbd")],
+    ["inProgress", t("goalManage.statusInProgress")],
+    ["ignored", t("goalManage.statusIgnored")],
+    ["done", t("goalManage.statusDone")],
   ];
   const linkOptions = [
     {
       id: "all",
-      label: "All",
+      label: t("filters.all"),
       active: allLinksSelected,
       onClick: () => setLinkFilters({ groupGoal: true, individualGoal: true }),
     },
     {
       id: "groupGoal",
-      label: "Group Goal",
+      label: t("filters.groupGoal"),
       active: linkFilters.groupGoal,
       onClick: () => setLinkFilters((prev) => ({ ...prev, groupGoal: !prev.groupGoal })),
     },
     {
       id: "individualGoal",
-      label: "Individual Goal",
+      label: t("filters.individualGoal"),
       active: linkFilters.individualGoal,
       onClick: () => setLinkFilters((prev) => ({ ...prev, individualGoal: !prev.individualGoal })),
     },
     {
       id: "none",
-      label: "None",
+      label: t("filters.none"),
       alwaysMuted: true,
       onClick: () => setLinkFilters({ groupGoal: false, individualGoal: false }),
     },
@@ -173,7 +175,7 @@ export default function GoalsListPage() {
   const statusOptions = [
     {
       id: "all",
-      label: "All",
+      label: t("filters.all"),
       active: allStatusesSelected,
       onClick: () =>
         setStatusFilters({
@@ -201,11 +203,11 @@ export default function GoalsListPage() {
 
   return (
     <InternalPageLayout
-      backLink={{ to: "/activities", label: "← Back to Activities" }}
-      title="Goals"
+      backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
+      title={t("goalsList.title")}
       actions={
         <Button size="sm" onClick={() => navigate("/activities/goal")}>
-          <Plus className="h-4 w-4 mr-2" /> Add Goal
+          <Plus className="h-4 w-4 mr-2" /> {t("goalsList.addGoal")}
         </Button>
       }
     >
@@ -230,7 +232,7 @@ export default function GoalsListPage() {
 
         <div className="space-y-4">
           {visibleGoals.length === 0 && (
-            <p className="text-sm text-muted-foreground">No goals match current filters.</p>
+            <p className="text-sm text-muted-foreground">{t("goalsList.noGoalsMatch")}</p>
           )}
           {visibleGoals.map((goal, i) => (
             <GoalPreview

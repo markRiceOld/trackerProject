@@ -7,6 +7,7 @@ import type { Action } from "./ActionsListPage";
 import { isToday, isBefore, isAfter, format, isValid } from "date-fns";
 import { parseDateOnly } from "~/utils/dateUtils";
 import { Badge } from "../ui/badge";
+import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useEffect, useState, useRef } from "react";
 import { useApi } from "~/api/useApi";
@@ -66,6 +67,7 @@ export default function ActionPreview({
   onRefetch,
   returnTo,
 }: ActionPreviewProps) {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const [checked, setChecked] = useState(action.done ?? false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -147,6 +149,20 @@ export default function ActionPreview({
   }
   const status = getStatus(action);
   const statusColor = getStatusColor(status);
+  const statusKey =
+    status === "Done"
+      ? "goalManage.statusDone"
+      : status === "Backlog"
+        ? "goalManage.statusBacklog"
+        : status === "In Progress"
+          ? "goalManage.statusInProgress"
+          : status === "Ignored"
+            ? "goalManage.statusIgnored"
+            : status === "TBD"
+              ? "goalManage.statusTbd"
+              : "";
+  const statusLabel = statusKey ? t(statusKey) : status;
+  const tbdDisplay = formatTbd(action.tbd) === "No Date" ? t("actions.statusNoDate") : formatTbd(action.tbd);
 
   const handleManage = () => {
     navigate(`/activities/action/${action.id}`, { state: returnTo ?? undefined });
@@ -275,7 +291,7 @@ export default function ActionPreview({
               onClick={() => setInfoBalloonOpen((o) => !o)}
               onMouseEnter={() => setInfoHover(true)}
               onMouseLeave={() => setInfoHover(false)}
-              aria-label="Action details"
+              aria-label={t("actions.actionDetails")}
             >
               <Info className="h-3.5 w-3.5" />
             </button>
@@ -287,11 +303,11 @@ export default function ActionPreview({
                 <div className="space-y-1.5">
                   <div className="font-medium break-words">{action.title}</div>
                   {todayAction.estimatedTimeMinutes != null && todayAction.estimatedTimeMinutes > 0 && (
-                    <div>Estimated: {todayAction.estimatedTimeMinutes} min</div>
+                    <div>{t("actions.estimatedMin", { min: todayAction.estimatedTimeMinutes })}</div>
                   )}
                   {parentLabel && <div className="text-muted-foreground">{parentLabel}</div>}
                   {!todayAction.estimatedTimeMinutes && !todayAction.startTimeOfDay && !parentLabel && (
-                    <div className="text-muted-foreground">No other details</div>
+                    <div className="text-muted-foreground">{t("actions.noOtherDetails")}</div>
                   )}
                 </div>
               </div>
@@ -306,13 +322,13 @@ export default function ActionPreview({
                   <span className="ml-1">{todayAction.startTimeOfDay}</span>
                 )}
                 {!todayAction.project?.title && !todayAction.startTimeOfDay && (
-                  <span>{formatTbd(action.tbd)}</span>
+                  <span>{tbdDisplay}</span>
                 )}
               </div>
             </div>
           </div>
           <div className="flex items-center gap-1 shrink-0">
-            <Button variant="ghost" size="icon" onClick={handleManage} className="h-8 w-8" aria-label="Manage">
+            <Button variant="ghost" size="icon" onClick={handleManage} className="h-8 w-8" aria-label={t("goalManage.manage")}>
               <Settings className="h-4 w-4" />
             </Button>
             <div ref={dropdownRef} className="relative">
@@ -321,7 +337,7 @@ export default function ActionPreview({
                 size="icon"
                 onClick={() => setDropdownOpen((o) => !o)}
                 className="h-8 w-8"
-                aria-label="Options"
+                aria-label={t("actions.options")}
               >
                 <MoreVertical className="h-4 w-4" />
               </Button>
@@ -335,7 +351,7 @@ export default function ActionPreview({
                     setDropdownOpen(false);
                   }}
                 >
-                  Outsource…
+                  {t("wizard.outsource")}…
                 </button>
                 <button
                   type="button"
@@ -345,7 +361,7 @@ export default function ActionPreview({
                     setDropdownOpen(false);
                   }}
                 >
-                  Postpone
+                  {t("wizard.postpone")}
                 </button>
                 {canIgnore(todayAction) && (
                   <button
@@ -353,7 +369,7 @@ export default function ActionPreview({
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                     onClick={() => handleIgnore()}
                   >
-                    Ignore (bucket list)
+                    {t("wizard.ignoreBucketList")}
                   </button>
                 )}
                 {canPass(todayAction) && (
@@ -362,7 +378,7 @@ export default function ActionPreview({
                     className="w-full px-3 py-2 text-left text-sm hover:bg-muted"
                     onClick={() => handlePass()}
                   >
-                    Pass
+                    {t("wizard.pass")}
                   </button>
                 )}
               </div>
@@ -382,7 +398,7 @@ export default function ActionPreview({
               onClick={(e) => e.stopPropagation()}
             >
               <Label htmlFor="action-preview-postpone-date" className="font-medium mb-3 flex items-center gap-2">
-                Postpone to date <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+                {t("wizard.postponeToDate")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
               </Label>
               <div className="flex gap-2">
                 <Input
@@ -398,7 +414,7 @@ export default function ActionPreview({
                   onClick={handlePostpone}
                   disabled={!postponeDate}
                 >
-                  Set date
+                  {t("wizard.setDate")}
                 </Button>
               </div>
               <Button
@@ -407,7 +423,7 @@ export default function ActionPreview({
                 className="mt-2"
                 onClick={() => setPostponeModalOpen(false)}
               >
-                Cancel
+                {t("common.cancel")}
               </Button>
             </div>
           </div>
@@ -430,11 +446,11 @@ export default function ActionPreview({
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="action-preview-outsource-do-title" className="text-xs flex items-center gap-2">
-                    Do outsourcing (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("wizard.doOutsourcingTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="action-preview-outsource-do-title"
-                    placeholder="e.g. Delegate to X"
+                    placeholder={t("wizard.delegatePlaceholder")}
                     value={outsourceForm.doTitle}
                     onChange={(e) =>
                       setOutsourceForm((p) => ({ ...p, doTitle: e.target.value }))
@@ -443,7 +459,7 @@ export default function ActionPreview({
                 </div>
                 <div>
                   <Label htmlFor="action-preview-outsource-do-date" className="text-xs flex items-center gap-2">
-                    Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="action-preview-outsource-do-date"
@@ -457,11 +473,11 @@ export default function ActionPreview({
                 </div>
                 <div>
                   <Label htmlFor="action-preview-outsource-ensure-title" className="text-xs flex items-center gap-2">
-                    Ensure done (title) <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("wizard.ensureDoneTitle")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="action-preview-outsource-ensure-title"
-                    placeholder="e.g. Confirm with X"
+                    placeholder={t("wizard.confirmPlaceholder")}
                     value={outsourceForm.ensureTitle}
                     onChange={(e) =>
                       setOutsourceForm((p) => ({ ...p, ensureTitle: e.target.value }))
@@ -470,7 +486,7 @@ export default function ActionPreview({
                 </div>
                 <div>
                   <Label htmlFor="action-preview-outsource-ensure-date" className="text-xs flex items-center gap-2">
-                    Date <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                    {t("today.date")} <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
                   </Label>
                   <Input
                     id="action-preview-outsource-ensure-date"
@@ -531,7 +547,7 @@ export default function ActionPreview({
             onClick={() => setInfoBalloonOpen((o) => !o)}
             onMouseEnter={() => setInfoHover(true)}
             onMouseLeave={() => setInfoHover(false)}
-            aria-label="Action details"
+            aria-label={t("actions.actionDetails")}
           >
             <Info className="h-3.5 w-3.5" />
           </button>
@@ -543,16 +559,16 @@ export default function ActionPreview({
               <div className="space-y-1.5">
                 <div className="font-medium break-words">{action.title}</div>
                 {otherAction.estimatedTimeMinutes != null && otherAction.estimatedTimeMinutes > 0 && (
-                  <div>Estimated: {otherAction.estimatedTimeMinutes} min</div>
+                  <div>{t("actions.estimatedMin", { min: otherAction.estimatedTimeMinutes })}</div>
                 )}
                 {otherAction.startTimeOfDay && (
-                  <div>Do time: {otherAction.startTimeOfDay}</div>
+                  <div>{t("today.timeToDo")}: {otherAction.startTimeOfDay}</div>
                 )}
                 {parentLabelOther && (
                   <div className="text-muted-foreground">{parentLabelOther}</div>
                 )}
                 {!otherAction.estimatedTimeMinutes && !otherAction.startTimeOfDay && !parentLabelOther && (
-                  <div className="text-muted-foreground">No other details</div>
+                  <div className="text-muted-foreground">{t("actions.noOtherDetails")}</div>
                 )}
               </div>
             </div>
@@ -560,8 +576,8 @@ export default function ActionPreview({
           <div className="min-w-0">
             <div className="font-medium text-sm line-clamp-1">{action.title}</div>
             <div className="text-xs text-muted-foreground flex items-center gap-2">
-              {formatTbd(action.tbd)}
-              <Badge className={statusColor}>{status}</Badge>
+              {tbdDisplay}
+              <Badge className={statusColor}>{statusLabel}</Badge>
             </div>
           </div>
         </div>
@@ -570,11 +586,11 @@ export default function ActionPreview({
       <div className="flex items-center gap-1 shrink-0">
         <Button variant="ghost" size="icon" onClick={handleManage}>
           <Settings className="h-4 w-4" />
-          <span className="sr-only">Manage</span>
+          <span className="sr-only">{t("goalManage.manage")}</span>
         </Button>
         <Button variant="ghost" size="icon" onClick={handleDelete}>
           <Trash2 className="h-4 w-4" />
-          <span className="sr-only">Delete</span>
+          <span className="sr-only">{t("common.delete")}</span>
         </Button>
       </div>
     </div>
