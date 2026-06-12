@@ -9,9 +9,17 @@ import ProjectPreview, { type ProjectPreviewProps } from "../projects/ProjectPre
 import MilestonePreview from "../milestones/MilestonePreview";
 import { getGoalStatus, isProjectDoneForGoal } from "./GoalPreview";
 import { useApi } from "~/api/useApi";
-import { DELETE_GOAL, DELETE_MILESTONE, DELETE_PROJECT, GET_GOAL, GET_GOALS, GET_INTERVALS, GET_PROJECTS, UPDATE_GOAL, UPDATE_INTERVAL, UPDATE_MILESTONE, UPDATE_PROJECT } from "~/api/queries";
+import { DELETE_GOAL, DELETE_MILESTONE, DELETE_PROJECT, GET_GOAL, GET_GOALS, GET_INTERVALS, GET_PROJECTS, UPDATE_GOAL, UPDATE_INTERVAL, UPDATE_MILESTONE, UPDATE_PROJECT, SAVE_DOD_CLARITY } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
-import { ListOrdered, Star, GripVertical, Trash2, ChevronDown, ChevronRight, Repeat } from "lucide-react";
+import { ListOrdered, Star, GripVertical, Trash2, ChevronDown, ChevronRight, Repeat, Sparkles, Flag, Info } from "lucide-react";
+import DodClarityWizard, {
+  DIMENSION_KEYS,
+  type ClarityResult,
+  type DimensionKey,
+  type DimensionAnswer,
+  buildInitialAnswers,
+  firstFlaggedStep,
+} from "./DodClarityWizard";
 import {
   DndContext,
   closestCenter,
@@ -141,7 +149,36 @@ export default function ManageGoalPage() {
   const [linkProjectToGoal, setLinkProjectToGoal] = useState(false);
   const [linkableProjects, setLinkableProjects] = useState<{ id: string; title: string }[]>([]);
   const [selectedProjectToLink, setSelectedProjectToLink] = useState("");
+  const [clarityWizardOpen, setClarityWizardOpen] = useState(false);
+  const [clarityWizardStep, setClarityWizardStep] = useState<number | undefined>();
+  const [clarityPartialAnswers, setClarityPartialAnswers] = useState<Record<DimensionKey, DimensionAnswer> | undefined>();
   const { call, getLastError } = useApi();
+
+  function openClarityWizard(startStep?: number) {
+    setClarityWizardStep(startStep);
+    setClarityWizardOpen(true);
+  }
+
+  const handleClarityComplete = async (result: ClarityResult) => {
+    setClarityWizardOpen(false);
+    setClarityWizardStep(undefined);
+    setClarityPartialAnswers(buildInitialAnswers(result.status, result.flaggedDimensions));
+    await call({
+      query: SAVE_DOD_CLARITY,
+      variables: {
+        id,
+        dod: result.dod,
+        dodClarityStatus: result.status,
+        dodFlaggedDimensions: result.flaggedDimensions,
+      },
+    });
+    setGoal((prev: any) => ({
+      ...prev,
+      dod: result.dod,
+      dodClarityStatus: result.status,
+      dodFlaggedDimensions: result.flaggedDimensions,
+    }));
+  };
 
   const refetchGoal = () => {
     call({ query: GET_GOAL, variables: { id } }).then((res) => {
@@ -641,6 +678,79 @@ export default function ManageGoalPage() {
             emptyDisplay={t("goalManage.dodEmptyDisplay")}
           />
 
+          {/* DoD clarity section */}
+          <div className="flex flex-wrap items-center gap-2">
+            {goal.dodClarityStatus === "green" && (
+              <span className="flex items-center gap-1 text-xs text-green-600 font-medium">
+                <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                {t("dodClarity.clarityGreen")}
+              </span>
+            )}
+            {goal.dodClarityStatus === "amber" && (
+              <span className="flex items-center gap-1 text-xs text-amber-600 font-medium">
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
+                {t("dodClarity.clarityAmber")}
+              </span>
+            )}
+            {!goal.dodClarityStatus && (
+              <span className="text-xs text-muted-foreground italic">{t("dodClarity.reminder")}</span>
+            )}
+            {goal.dodClarityStatus === "amber" && (
+              <span className="text-xs text-muted-foreground italic">{t("dodClarity.reminderAmber")}</span>
+            )}
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              disabled={!goal.dod?.trim()}
+              className="gap-2"
+              onClick={() => openClarityWizard(
+                goal.dodClarityStatus
+                  ? firstFlaggedStep(goal.dodFlaggedDimensions ?? [])
+                  : 0
+              )}
+            >
+              <Sparkles className="h-3.5 w-3.5" />
+              {goal.dodClarityStatus ? t("dodClarity.rerunCheck") : t("dodClarity.runCheck")}
+            </Button>
+          </div>
+
+          {/* Flagged dimensions panel */}
+          {(goal.dodFlaggedDimensions ?? []).length > 0 && (
+            <div className="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 space-y-2">
+              <p className="text-xs font-semibold text-amber-700 uppercase tracking-wide">
+                {t("dodClarity.flaggedPanel")}
+              </p>
+              <ul className="space-y-2">
+                {(goal.dodFlaggedDimensions as DimensionKey[]).map((key) => (
+                  <li key={key} className="flex items-start gap-2">
+                    <Flag className="h-3.5 w-3.5 mt-0.5 text-amber-500 shrink-0" />
+                    <div className="min-w-0">
+                      <span className="text-sm font-medium text-amber-800">
+                        {t(`dodClarity.dimension${key.charAt(0).toUpperCase() + key.slice(1)}`)}
+                      </span>
+                      <p className="text-xs text-amber-700 mt-0.5">
+                        {t(`dodClarity.${key}Question`)}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      className="ml-auto shrink-0 text-amber-400 hover:text-amber-600"
+                      title={t("dodClarity.tipsToggle")}
+                      onClick={() => {
+                        const stepIdx = DIMENSION_KEYS.indexOf(key);
+                        openClarityWizard(stepIdx !== -1 ? stepIdx : 0);
+                      }}
+                      aria-label={t("dodClarity.tipsToggle")}
+                    >
+                      <Info className="h-3.5 w-3.5" />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           {!isGoalGroup && (
             <>
               <p className="text-sm text-muted-foreground">
@@ -895,6 +1005,31 @@ export default function ManageGoalPage() {
           )}
         </div>
       </div>
+
+      {clarityWizardOpen && (() => {
+        const activeAnswers =
+          clarityPartialAnswers ??
+          buildInitialAnswers(goal.dodClarityStatus, goal.dodFlaggedDimensions ?? []);
+        const firstUnanswered = activeAnswers
+          ? DIMENSION_KEYS.findIndex((k) => activeAnswers[k] === null)
+          : -1;
+        const resolvedStep =
+          clarityWizardStep !== undefined
+            ? clarityWizardStep
+            : firstUnanswered !== -1
+              ? firstUnanswered
+              : firstFlaggedStep(goal.dodFlaggedDimensions ?? []);
+        return (
+          <DodClarityWizard
+            initialDod={goal.dod || ""}
+            initialAnswers={activeAnswers}
+            initialStep={resolvedStep}
+            onAnswerChange={(answers) => setClarityPartialAnswers(answers)}
+            onComplete={handleClarityComplete}
+            onClose={() => { setClarityWizardOpen(false); setClarityWizardStep(undefined); }}
+          />
+        );
+      })()}
 
       <ConfirmDialog
         open={confirmState?.type === "delete-project"}

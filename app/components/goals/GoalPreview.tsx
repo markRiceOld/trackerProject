@@ -14,6 +14,7 @@ export interface Goal {
   endDate?: Date;
   projects: { id: string; title: string; startDate?: Date; endDate?: Date; done: boolean }[];
   milestones?: { id: string; title: string }[];
+  dodClarityStatus?: string | null;
 }
 
 export interface GoalPreviewProps extends Goal {
@@ -89,6 +90,7 @@ export default function GoalPreview(props: GoalPreviewProps) {
     firstTbdProject,
     id,
     isGoalGroup,
+    dodClarityStatus,
   } = props;
 
   const statusRaw = getGoalStatus(props);
@@ -123,6 +125,18 @@ export default function GoalPreview(props: GoalPreviewProps) {
               <Badge variant="secondary" className="text-xs">{t("goalsList.goalGroup")}</Badge>
             )}
             {!isGoalGroup && <Badge className={statusColor}>{status}</Badge>}
+            {dodClarityStatus === "green" && (
+              <span className="flex items-center gap-1 text-xs text-green-600" title={t("dodClarity.clarityGreen")}>
+                <span className="inline-block h-2 w-2 rounded-full bg-green-500" />
+                {t("dodClarity.clarityGreen")}
+              </span>
+            )}
+            {dodClarityStatus === "amber" && (
+              <span className="flex items-center gap-1 text-xs text-amber-500" title={t("dodClarity.clarityAmber")}>
+                <span className="inline-block h-2 w-2 rounded-full bg-amber-400" />
+                {t("dodClarity.clarityAmber")}
+              </span>
+            )}
             {!isGoalGroup && currentOrNextLine && (
               <span className="truncate">{currentOrNextLine}</span>
             )}

@@ -199,8 +199,8 @@ export const REGISTER_MUTATION = `
 `;
 
 export const ADD_GOAL = `
-  mutation AddGoal($title: String!, $dod: String, $isGoalGroup: Boolean, $parentGoalId: ID, $parentMilestoneId: ID) {
-    addGoal(title: $title, dod: $dod, isGoalGroup: $isGoalGroup, parentGoalId: $parentGoalId, parentMilestoneId: $parentMilestoneId) {
+  mutation AddGoal($title: String!, $dod: String, $isGoalGroup: Boolean, $parentGoalId: ID, $parentMilestoneId: ID, $dodClarityStatus: String, $dodFlaggedDimensions: [String!]) {
+    addGoal(title: $title, dod: $dod, isGoalGroup: $isGoalGroup, parentGoalId: $parentGoalId, parentMilestoneId: $parentMilestoneId, dodClarityStatus: $dodClarityStatus, dodFlaggedDimensions: $dodFlaggedDimensions) {
       id
     }
   }
@@ -226,6 +226,8 @@ export const GET_GOALS = `
       createdAt
       parentGoalId
       parentMilestoneId
+      dodClarityStatus
+      dodFlaggedDimensions
       milestones {
         id
         title
@@ -271,6 +273,8 @@ export const GET_GOAL = `
       createdAt
       parentGoalId
       parentMilestoneId
+      dodClarityStatus
+      dodFlaggedDimensions
       parentGoal { id title isGoalGroup }
       parentMilestone { id title goal { id title } }
       intervals {
@@ -852,6 +856,17 @@ export const COMPLETE_PRE_DAY = `
       id
       dateKey
       preDayCompletedAt
+    }
+  }
+`;
+
+export const SAVE_DOD_CLARITY = `
+  mutation SaveDodClarity($id: ID!, $dod: String, $dodClarityStatus: String!, $dodFlaggedDimensions: [String!]!) {
+    saveDodClarity(id: $id, dod: $dod, dodClarityStatus: $dodClarityStatus, dodFlaggedDimensions: $dodFlaggedDimensions) {
+      id
+      dod
+      dodClarityStatus
+      dodFlaggedDimensions
     }
   }
 `;
