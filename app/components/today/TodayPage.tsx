@@ -16,9 +16,15 @@ import { toLocalDateString } from "~/utils/dateUtils";
 import { Moon, Pencil, Sun, Plus } from "lucide-react";
 import HintPopover from "~/components/ui/HintPopover";
 import { useTranslation } from "react-i18next";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 
 export default function TodayPage() {
   const { t } = useTranslation();
+  const todaySteps = [
+    { title: t("onboarding.modules.today.step1Title"), body: t("onboarding.modules.today.step1Body") },
+    { title: t("onboarding.modules.today.step2Title"), body: t("onboarding.modules.today.step2Body") },
+    { title: t("onboarding.modules.today.step3Title"), body: t("onboarding.modules.today.step3Body") },
+  ];
   const todayKey = toLocalDateString(new Date());
   const [preDayStatus, setPreDayStatus] = useState<{ afterDayRequired?: boolean } | null>(null);
   const [showAfterDay, setShowAfterDay] = useState(false);
@@ -134,6 +140,8 @@ export default function TodayPage() {
   const showGatheringState = todayActions !== null && todayActions.length === 0 && gatherRunning;
 
   return (
+    <>
+    <ModuleIntroOverlay moduleKey="today" steps={todaySteps} />
     <main className="space-y-8 p-6">
       <div className="flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight">{t("today.title")}</h1>
@@ -264,5 +272,6 @@ export default function TodayPage() {
         </>
       )}
     </main>
+    </>
   );
 }

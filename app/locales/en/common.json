@@ -704,5 +704,110 @@
     "openNotes": "Notes",
     "saving": "Saving…",
     "close": "Close notes"
+  },
+  "onboarding": {
+    "nav": {
+      "previous": "Previous",
+      "next": "Next",
+      "skip": "Skip",
+      "gotIt": "Got it",
+      "closeForNow": "Close for now",
+      "slideOf": "{{current}} of {{total}}"
+    },
+    "slides": {
+      "0": {
+        "title": "Welcome to Root",
+        "body": "Root is a structured productivity system built around one idea: the work you do each day should connect to something that matters. It ties your long-term goals to your daily actions through a clear hierarchy, daily rituals, and scheduled intervals — so nothing falls through the cracks."
+      },
+      "1": {
+        "title": "Three Ways to Capture Work",
+        "body": "Root organizes everything into three dimensions. Goals are your long-term ambitions — the things you're working toward over weeks or months. Intervals are recurring commitments — habits, routines, and time-blocked work that repeat on a schedule. Standalone actions are one-off tasks that don't belong to anything larger. All three feed into your day."
+      },
+      "2": {
+        "title": "How Goals Break Down",
+        "body": "Goals decompose into smaller, ordered units. A goal is complete when all its milestones are closed. A milestone closes when you mark it done. Projects hold the day-to-day actions that get gathered into your schedule. You always know where each action fits."
+      },
+      "3": {
+        "title": "Recurring Work",
+        "body": "Intervals are repeating commitments with a recurrence schedule — daily standups, weekly reviews, monthly check-ins. Routines are simpler: they repeat every day. At gathering time, Root creates actions from your active intervals and routines and places them in the right days automatically. You set the schedule once; Root handles the rest."
+      },
+      "4": {
+        "title": "Three Daily Rituals",
+        "intro": "Each day has three phases.",
+        "step1Title": "Pre-day",
+        "step1Body": "Before you start, assign start times to your actions and resolve any overlaps. This ritual gates the Today view.",
+        "step2Title": "Today",
+        "step2Body": "Your working view. Linked actions from goals and intervals sit at the top; standalone tasks below. Add quick tasks inline as the day unfolds.",
+        "step3Title": "After-day",
+        "step3Body": "Close the day by deciding the fate of each unfinished action: postpone it, send it to backlog, outsource it, or mark it done. Closing triggers gathering for the next two days."
+      },
+      "5": {
+        "title": "Let's Get Started",
+        "body": "That's all you need to know for now. The best place to begin is creating your first goal — the Goal Wizard will walk you through it step by step. Or if you want a deeper reference on any concept, the Guide page has it all.",
+        "ctaGoal": "Create my first goal",
+        "ctaGuide": "Open the Guide",
+        "ctaToday": "Go to Today"
+      }
+    },
+    "modules": {
+      "today": {
+        "step1Title": "Your Daily View",
+        "step1Body": "Today shows every action scheduled for today — whether it came from a goal, an interval, or was added manually. Before you can see it fully, the Pre-day ritual must be completed to assign start times and resolve any conflicts.",
+        "step2Title": "Linked vs Standalone",
+        "step2Body": "Actions that come from goals or intervals appear in the Linked section — they're part of something larger. Actions you add directly from this page appear in Standalone. The split keeps structured work and quick tasks visually separate.",
+        "step3Title": "Adding a Quick Task",
+        "step3Body": "Type in the input at the top of Standalone to add a task on the fly. Once you start typing, fields for date, estimated time, and start time appear. Hit Enter or the plus button to add it. That's it."
+      },
+      "pre-day": {
+        "step1Title": "The Pre-day Ritual",
+        "step1Body": "Pre-day is the planning gate that runs before your Today view opens. You review the actions gathered for today, assign start times to each one, and make sure your schedule holds together. Skipping it means Today remains locked.",
+        "step2Title": "Time Assignment",
+        "step2Body": "Each action needs a start time before the day can begin. Untimed actions — those without an assigned time — block the ritual from completing. Work through them in order, or defer any you're not ready to schedule.",
+        "step3Title": "Overlap Detection",
+        "step3Body": "If two actions are scheduled at the same time, Root flags the conflict. You'll see a warning on the overlapping action. Resolve it by adjusting the start time or estimated duration before proceeding."
+      },
+      "after-day": {
+        "step1Title": "Closing the Day",
+        "step1Body": "After-day is the reflection ritual. At the end of each day, you review every action that wasn't marked done and decide what happens to it. This is how Root stays clean — nothing carries forward silently.",
+        "step2Title": "Action Fates",
+        "step2Body": "For each unfinished action you choose a fate: Done — it was completed after all. Postpone — reschedule it to a future date. Backlog — return it to the project backlog without a date. Outsource — it's someone else's now. Bucket list — a someday idea, not urgent. Archive — it's no longer relevant.",
+        "step3Title": "What Happens Next",
+        "step3Body": "Once you close the day, Root runs gathering for the next two days — pulling in actions from your active intervals and routines. Your tomorrow is already partially populated before you sleep."
+      },
+      "goals-list": {
+        "step1Title": "Goals",
+        "step1Body": "A goal is the highest level of intent in Root — something you're working toward that takes sustained effort. Beneath each goal sits an ordered sequence of milestones, and beneath each milestone, projects and actions. The progress bar on each goal reflects how far through the milestone sequence you are.",
+        "step2Title": "Groups vs Regular Goals",
+        "step2Body": "Goals can be standalone or grouped. A goal group is a container that holds related goals together — useful when a large ambition breaks into several independent parallel tracks. Regular goals stand alone. Both types behave the same way internally; the group is just an organizational wrapper."
+      },
+      "manage-goal": {
+        "step1Title": "Milestones as Checkpoints",
+        "step1Body": "The milestones on this page are ordered checkpoints on the way to your goal. They run sequentially — completing one unlocks the focus on the next. Each milestone has a definition of achievement that makes it clear what done means for that checkpoint.",
+        "step2Title": "Progress",
+        "step2Body": "The progress bar at the top reflects milestone completion: how many milestones are closed out of the total. It doesn't measure effort or time — only closed milestones count. The current milestone is the first unclosed one in the sequence.",
+        "step3Title": "Projects and the Story View",
+        "step3Body": "Inside each milestone, projects hold the day-to-day work. The Story view lets you see all milestones and their projects together on one scrollable page — useful for getting a sense of the whole arc of a goal at once."
+      },
+      "projects-list": {
+        "step1Title": "Projects",
+        "step1Body": "A project is a body of work that lives inside a milestone. It holds a set of actions and has a definition of done that describes what completion looks like. A project's status — Active, Complete, or Blocked — is computed from the state of its actions and whether the definition of done condition is met.",
+        "step2Title": "Projects and Goals",
+        "step2Body": "Every project belongs to a milestone, which belongs to a goal. You can view all projects across all goals here, or navigate to a specific goal to see just its projects in context. Projects without a milestone aren't possible — the hierarchy is always intact."
+      },
+      "intervals-list": {
+        "step1Title": "Intervals and Routines",
+        "step1Body": "Intervals are recurring commitments on a schedule — they can repeat daily, weekly, monthly, or on custom patterns. Routines are a simpler variant that repeat every day without configuration. Both generate actions automatically.",
+        "step2Title": "How Recurrence Works",
+        "step2Body": "Each interval has a recurrence rule — which days of the week, which weeks of the month, or a custom pattern. At gathering time, Root evaluates which intervals are due and creates actions for those days. You set the rule once; Root creates the work.",
+        "step3Title": "Actions in Today",
+        "step3Body": "Actions generated from intervals appear in the Linked section of Today automatically. You don't need to do anything — gathering runs in the background when you open Today, and again after After-day completes. If an interval is paused or inactive, its actions won't be generated."
+      },
+      "calendar": {
+        "step1Title": "The Calendar View",
+        "step1Body": "The calendar shows scheduled actions — those with an assigned date and start time. Actions without a start time don't appear here. Milestones with target dates are also shown as markers. It's a time-view into your workload, not a complete task list.",
+        "step2Title": "Filtering",
+        "step2Body": "Use the filter controls to narrow what's shown — by goal, by interval, or by action type. This is useful when you want to see how a single goal's work is distributed across time, or when the calendar feels too dense and you want to focus on one track."
+      }
+    }
   }
 }

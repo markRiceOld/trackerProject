@@ -10,6 +10,7 @@ import {
 } from "react-router";
 
 import type { LinksFunction } from "react-router";
+import OnboardingSlideshow from "~/components/onboarding/OnboardingSlideshow";
 import "./app.css";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -35,6 +36,8 @@ export function ProtectedAppLayout() {
 
   const internal = isInternalPage(location.pathname);
   return (
+    <>
+    {isAuthenticated && <OnboardingSlideshow />}
     <div className="flex h-screen flex-col md:flex-row">
       <ResponsiveNavigation
         sidebarItems={getSidebarItems(t)}
@@ -45,6 +48,7 @@ export function ProtectedAppLayout() {
         <Outlet />
       </div>
     </div>
+    </>
   );
 }
 

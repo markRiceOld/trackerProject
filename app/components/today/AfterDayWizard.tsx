@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -48,6 +49,11 @@ type AfterDayWizardProps = {
 
 export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: AfterDayWizardProps) {
   const { t } = useTranslation();
+  const afterDaySteps = [
+    { title: t("onboarding.modules.after-day.step1Title"), body: t("onboarding.modules.after-day.step1Body") },
+    { title: t("onboarding.modules.after-day.step2Title"), body: t("onboarding.modules.after-day.step2Body") },
+    { title: t("onboarding.modules.after-day.step3Title"), body: t("onboarding.modules.after-day.step3Body") },
+  ];
   const STEPS = [
     t("wizard.stepReviewLinked"),
     t("wizard.stepReviewStandalone"),
@@ -285,6 +291,8 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
   }
 
   return (
+    <>
+    <ModuleIntroOverlay moduleKey="after-day" steps={afterDaySteps} />
     <main className="mx-auto max-w-2xl space-y-8 p-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold tracking-tight">{t("wizard.afterDayTitle")}</h1>
@@ -653,6 +661,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
         </section>
       )}
     </main>
+    </>
   );
 }
 

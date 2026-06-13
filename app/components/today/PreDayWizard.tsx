@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTranslation } from "react-i18next";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -86,6 +87,11 @@ export default function PreDayWizard({
   afterDayRequired?: boolean;
 }) {
   const { t } = useTranslation();
+  const preDaySteps = [
+    { title: t("onboarding.modules.pre-day.step1Title"), body: t("onboarding.modules.pre-day.step1Body") },
+    { title: t("onboarding.modules.pre-day.step2Title"), body: t("onboarding.modules.pre-day.step2Body") },
+    { title: t("onboarding.modules.pre-day.step3Title"), body: t("onboarding.modules.pre-day.step3Body") },
+  ];
   const yesterdayKey = addDaysToDateKey(todayKey, -1);
   const STEPS_PRE_ONLY = [t("wizard.stepDayOverview"), t("wizard.stepSetTimes"), t("wizard.stepDayOverviewBegin")] as const;
   const STEPS_WITH_AFTER = [t("wizard.stepAfterDay"), t("wizard.stepDayOverview"), t("wizard.stepSetTimes"), t("wizard.stepDayOverviewBegin")] as const;
@@ -397,6 +403,8 @@ export default function PreDayWizard({
   const steps = afterDayRequired ? STEPS_WITH_AFTER : STEPS_PRE_ONLY;
 
   return (
+    <>
+    <ModuleIntroOverlay moduleKey="pre-day" steps={preDaySteps} />
     <main className="mx-auto max-w-2xl space-y-8 p-6">
       <h1 className="text-2xl font-bold tracking-tight">{t("wizard.organizeTitle")}</h1>
 
@@ -720,5 +728,6 @@ export default function PreDayWizard({
         </section>
       )}
     </main>
+    </>
   );
 }

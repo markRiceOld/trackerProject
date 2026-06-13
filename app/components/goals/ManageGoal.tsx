@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Progress } from "~/components/ui/progress";
 import { Badge } from "~/components/ui/badge";
 import InternalPageLayout from "~/layout/InternalPageLayout";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 import ProjectPreview, { type ProjectPreviewProps } from "../projects/ProjectPreview";
 import MilestonePreview from "../milestones/MilestonePreview";
 import { getGoalStatus, isProjectDoneForGoal } from "./GoalPreview";
@@ -127,6 +128,11 @@ function SortableMilestoneRow({
 
 export default function ManageGoalPage() {
   const { t } = useTranslation();
+  const manageGoalSteps = [
+    { title: t("onboarding.modules.manage-goal.step1Title"), body: t("onboarding.modules.manage-goal.step1Body") },
+    { title: t("onboarding.modules.manage-goal.step2Title"), body: t("onboarding.modules.manage-goal.step2Body") },
+    { title: t("onboarding.modules.manage-goal.step3Title"), body: t("onboarding.modules.manage-goal.step3Body") },
+  ];
   const { id } = useParams();
   const navigate = useNavigate();
 
@@ -614,6 +620,8 @@ export default function ManageGoalPage() {
       : { to: "/activities/goals", label: `← ${t("goalManage.backToGoals")}` };
 
   return (
+    <>
+    <ModuleIntroOverlay moduleKey="manage-goal" steps={manageGoalSteps} />
     <InternalPageLayout
       backLink={backLink}
       title={titleBlock}
@@ -1084,5 +1092,6 @@ export default function ManageGoalPage() {
         />
       )}
     </InternalPageLayout>
+    </>
   );
 }

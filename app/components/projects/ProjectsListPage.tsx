@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 import ProjectPreview, { type ProjectPreviewProps, getProjectStatus } from "./ProjectPreview";
 import { useApi } from "../../api/useApi";
 import { GET_PROJECTS } from "~/api/queries";
@@ -18,6 +19,10 @@ function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPrev
 
 export default function ProjectsListPage() {
   const { t } = useTranslation();
+  const projectsListSteps = [
+    { title: t("onboarding.modules.projects-list.step1Title"), body: t("onboarding.modules.projects-list.step1Body") },
+    { title: t("onboarding.modules.projects-list.step2Title"), body: t("onboarding.modules.projects-list.step2Body") },
+  ];
   const [projects, setProjects] = useState<ProjectPreviewProps[] | null>(null);
   const [showLinksFilters, setShowLinksFilters] = useState(false);
   const [showStatusFilters, setShowStatusFilters] = useState(false);
@@ -203,7 +208,9 @@ export default function ProjectsListPage() {
   ];
 
   return (
-    <InternalPageLayout
+    <>
+      <ModuleIntroOverlay moduleKey="projects-list" steps={projectsListSteps} />
+      <InternalPageLayout
       backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
       title={t("projects.title")}
       actions={
@@ -249,6 +256,7 @@ export default function ProjectsListPage() {
         </div>
       </div>
     </InternalPageLayout>
+    </>
   );
 }
 

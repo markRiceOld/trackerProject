@@ -870,6 +870,36 @@ export const COMPLETE_PRE_DAY = `
   }
 `;
 
+export const GET_ONBOARDING_PROGRESS = `
+  query GetOnboardingProgress {
+    onboardingProgress {
+      lastSlideViewed
+      completedAt
+    }
+  }
+`;
+
+export const MARK_SLIDE_VIEWED = `
+  mutation MarkSlideViewed($slideIndex: Int!) {
+    markSlideViewed(slideIndex: $slideIndex) {
+      lastSlideViewed
+      completedAt
+    }
+  }
+`;
+
+export const GET_MODULE_INTRO_VIEWED = `
+  query GetModuleIntroViewed($moduleKey: String!) {
+    moduleIntroViewed(moduleKey: $moduleKey)
+  }
+`;
+
+export const MARK_MODULE_INTRO_VIEWED = `
+  mutation MarkModuleIntroViewed($moduleKey: String!) {
+    markModuleIntroViewed(moduleKey: $moduleKey)
+  }
+`;
+
 export const SAVE_DOD_CLARITY = `
   mutation SaveDodClarity($id: ID!, $dod: String, $dodClarityStatus: String!, $dodFlaggedDimensions: [String!]!) {
     saveDodClarity(id: $id, dod: $dod, dodClarityStatus: $dodClarityStatus, dodFlaggedDimensions: $dodFlaggedDimensions) {

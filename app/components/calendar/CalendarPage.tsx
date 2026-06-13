@@ -13,6 +13,7 @@ import { DEFAULT_CALENDAR_FILTERS } from "./calendarTypes";
 import CalendarManageActionModal, {
   type ManageModalAction,
 } from "./CalendarManageActionModal";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 
 type CalendarMode = "view" | "manage";
 
@@ -32,6 +33,10 @@ type ApiGoal = {
 
 export default function CalendarPage() {
   const { t } = useTranslation();
+  const calendarSteps = [
+    { title: t("onboarding.modules.calendar.step1Title"), body: t("onboarding.modules.calendar.step1Body") },
+    { title: t("onboarding.modules.calendar.step2Title"), body: t("onboarding.modules.calendar.step2Body") },
+  ];
   const { call } = useApi();
   const [mode, setMode] = useState<CalendarMode>("view");
   const [filters, setFilters] = useState<CalendarFilters>(DEFAULT_CALENDAR_FILTERS);
@@ -173,7 +178,9 @@ export default function CalendarPage() {
   };
 
   return (
-    <main className="flex flex-col h-full">
+    <>
+      <ModuleIntroOverlay moduleKey="calendar" steps={calendarSteps} />
+      <main className="flex flex-col h-full">
       <div className="flex items-center justify-between gap-3 px-4 py-2 shrink-0">
         <h1 className="text-2xl font-bold">{t("calendarPage.title")}</h1>
         <div className="inline-flex items-center rounded-md border border-border/60 p-1">
@@ -339,5 +346,6 @@ export default function CalendarPage() {
         </div>
       )}
     </main>
+    </>
   );
 }

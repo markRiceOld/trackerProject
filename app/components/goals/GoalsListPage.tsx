@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
 import HintPopover from "~/components/ui/HintPopover";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 import GoalPreview, { type GoalPreviewProps, getGoalStatus } from "./GoalPreview";
 import type { Action } from "../actions/ActionsListPage";
 import { useApi } from "~/api/useApi";
@@ -22,6 +23,10 @@ function getFirstTbdProject(projects: GoalPreviewProps["projects"]): GoalPreview
 
 export default function GoalsListPage() {
   const { t } = useTranslation();
+  const goalsListSteps = [
+    { title: t("onboarding.modules.goals-list.step1Title"), body: t("onboarding.modules.goals-list.step1Body") },
+    { title: t("onboarding.modules.goals-list.step2Title"), body: t("onboarding.modules.goals-list.step2Body") },
+  ];
   const [goals, setGoals] = useState<GoalPreviewProps[] | null>(null);
   const [showLinksFilters, setShowLinksFilters] = useState(false);
   const [showStatusFilters, setShowStatusFilters] = useState(false);
@@ -212,7 +217,9 @@ export default function GoalsListPage() {
   ];
 
   return (
-    <InternalPageLayout
+    <>
+      <ModuleIntroOverlay moduleKey="goals-list" steps={goalsListSteps} />
+      <InternalPageLayout
       backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
       title={
         <span className="flex items-center gap-2">
@@ -261,5 +268,6 @@ export default function GoalsListPage() {
         </div>
       </div>
     </InternalPageLayout>
+    </>
   );
 }

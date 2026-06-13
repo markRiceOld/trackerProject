@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
 import HintPopover from "~/components/ui/HintPopover";
+import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
 import IntervalPreview, { type IntervalPreviewProps } from "./IntervalPreview";
 import RoutinePreview, { type RoutinePreviewProps } from "./RoutinePreview";
 import { useApi } from "~/api/useApi";
@@ -16,6 +17,11 @@ type ScheduleItem =
 
 export default function IntervalsListPage() {
   const { t } = useTranslation();
+  const intervalsListSteps = [
+    { title: t("onboarding.modules.intervals-list.step1Title"), body: t("onboarding.modules.intervals-list.step1Body") },
+    { title: t("onboarding.modules.intervals-list.step2Title"), body: t("onboarding.modules.intervals-list.step2Body") },
+    { title: t("onboarding.modules.intervals-list.step3Title"), body: t("onboarding.modules.intervals-list.step3Body") },
+  ];
   const [items, setItems] = useState<ScheduleItem[] | null>(null);
   const navigate = useNavigate();
   const { call } = useApi();
@@ -40,7 +46,9 @@ export default function IntervalsListPage() {
   if (!items) return <p className="p-6">{t("common.loading")}</p>;
 
   return (
-    <InternalPageLayout
+    <>
+      <ModuleIntroOverlay moduleKey="intervals-list" steps={intervalsListSteps} />
+      <InternalPageLayout
       backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
       title={
         <span className="flex items-center gap-2">
@@ -85,5 +93,6 @@ export default function IntervalsListPage() {
         )}
       </div>
     </InternalPageLayout>
+    </>
   );
 }
