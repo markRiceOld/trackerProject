@@ -301,7 +301,7 @@ describe("close button", () => {
   it("calls onClose when X is clicked", () => {
     const onClose = vi.fn();
     renderWizard({ onClose });
-    fireEvent.click(screen.getByLabelText("Close"));
+    fireEvent.click(screen.getByLabelText("tools.close"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
