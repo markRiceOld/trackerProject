@@ -209,9 +209,9 @@ export default function ActionPreview({
         query: OUTSOURCE_ACTION,
         variables: {
           id: action.id,
-          doOutsourcingTitle: outsourceForm.doTitle || "Do outsourcing",
+          doOutsourcingTitle: outsourceForm.doTitle || t("wizard.doOutsourcingDefault"),
           doOutsourcingDate: outsourceForm.doDate,
-          ensureDoneTitle: outsourceForm.ensureTitle || "Ensure done",
+          ensureDoneTitle: outsourceForm.ensureTitle || t("wizard.ensureDoneDefault"),
           ensureDoneDate: outsourceForm.ensureDate,
         },
       });

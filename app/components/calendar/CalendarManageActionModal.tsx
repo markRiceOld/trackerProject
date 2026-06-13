@@ -146,7 +146,7 @@ export default function CalendarManageActionModal({
       if (!goalMap.has(goalId)) {
         goalMap.set(goalId, {
           id: goalId,
-          title: project.goal?.title ?? "Untitled goal",
+          title: project.goal?.title ?? t("common.untitledGoal"),
           milestones: [],
         });
       }

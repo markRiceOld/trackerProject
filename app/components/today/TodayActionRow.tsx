@@ -92,9 +92,9 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
         query: OUTSOURCE_ACTION,
         variables: {
           id: action.id,
-          doOutsourcingTitle: outsourceForm.doTitle || "Do outsourcing",
+          doOutsourcingTitle: outsourceForm.doTitle || t("wizard.doOutsourcingDefault"),
           doOutsourcingDate: outsourceForm.doDate,
-          ensureDoneTitle: outsourceForm.ensureTitle || "Ensure done",
+          ensureDoneTitle: outsourceForm.ensureTitle || t("wizard.ensureDoneDefault"),
           ensureDoneDate: outsourceForm.ensureDate,
         },
       });
@@ -141,7 +141,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
           <div className="font-medium text-sm truncate">{action.title}</div>
           <div className="text-xs text-muted-foreground">
             {action.project?.title && (
-              <span>from {action.project.title}</span>
+              <span>{t("today.fromProject", { title: action.project.title })}</span>
             )}
             {action.startTimeOfDay && (
               <span className="ml-1">{action.startTimeOfDay}</span>
@@ -153,7 +153,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
           size="icon"
           onClick={() => setOpen((o) => !o)}
           className="shrink-0 h-8 w-8"
-          aria-label="Options"
+          aria-label={t("actions.options")}
         >
           <MoreVertical className="h-4 w-4" />
         </Button>

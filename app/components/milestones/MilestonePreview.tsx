@@ -89,7 +89,7 @@ export default function MilestonePreview({
           variant="ghost"
           className="h-8 w-8"
           onClick={onEdit}
-          title="Edit milestone"
+          title={t("milestones.editMilestone")}
         >
           <Pencil className="h-4 w-4" />
         </Button>
@@ -107,7 +107,7 @@ export default function MilestonePreview({
           variant="ghost"
           className="h-8 w-8"
           onClick={onAddProject}
-          title="Add project to this milestone"
+          title={t("projects.addProject")}
         >
           <Plus className="h-4 w-4" />
         </Button>

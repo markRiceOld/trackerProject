@@ -313,7 +313,11 @@
     "addActionTitle": "Action title",
     "addActionEst": "Est (min)",
     "addActionStart": "Start",
-    "add": "Add"
+    "add": "Add",
+    "fromProject": "from {{title}}",
+    "goodMorning": "Good morning",
+    "start": "Start",
+    "afterDay": "After Day"
   },
   "toolsHome": {
     "title": "Tools",
@@ -464,7 +468,8 @@
     "delete": "Delete",
     "save": "Save",
     "edit": "Edit",
-    "change": "Change"
+    "change": "Change",
+    "untitledGoal": "Untitled goal"
   },
   "welcome": {
     "whatsNext": "What's next?",
@@ -538,6 +543,7 @@
     "gathered": "Gathered",
     "done": "Done",
     "wizardStepsAria": "Wizard steps",
+    "preDayTitle": "Pre-day",
     "postponeToDate": "Postpone to date",
     "ignoreBucketList": "Ignore (bucket list)",
     "doOutsourcingDefault": "Do outsourcing",

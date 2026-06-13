@@ -9,6 +9,7 @@
     "typecheck": "react-router typegen && tsc",
     "generate-pwa-assets": "pwa-assets-generator",
     "i18n:check-hardcoded": "node ./scripts/check-hardcoded-strings.mjs",
+    "i18n:check-missing": "node ./scripts/check-translations.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
