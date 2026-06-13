@@ -30,7 +30,13 @@
   "settings": {
     "title": "Settings",
     "logout": "Log out",
-    "underConstruction": "Settings"
+    "underConstruction": "Settings",
+    "discoverability": {
+      "title": "Journal discoverability",
+      "description": "Allow other users to add you to their journals by email address.",
+      "on": "Discoverable by email",
+      "off": "Not discoverable"
+    }
   },
   "calendar": {
     "view": "View",
@@ -318,13 +324,19 @@
     "fromProject": "from {{title}}",
     "goodMorning": "Good morning",
     "start": "Start",
-    "afterDay": "After Day"
+    "afterDay": "After Day",
+    "journalQuickAdd": "Journal",
+    "journalPlaceholder": "Quick journal entry...",
+    "selectJournal": "Select journal"
   },
   "toolsHome": {
     "title": "Tools",
     "timeMapTitle": "Time Map",
     "timeMapDescription": "Plan selected actions into a chosen date range.",
-    "openTimeMap": "Open Time Map"
+    "openTimeMap": "Open Time Map",
+    "journalsTitle": "Journals",
+    "journalsDescription": "Running records of thought and progress, optionally anchored to a goal or project.",
+    "openJournals": "Open Journals"
   },
   "calendarPage": {
     "title": "Calendar",
@@ -468,6 +480,8 @@
     "submit": "Submit",
     "delete": "Delete",
     "save": "Save",
+    "saving": "Saving...",
+    "create": "Create",
     "edit": "Edit",
     "change": "Change",
     "untitledGoal": "Untitled goal"
@@ -742,6 +756,13 @@
         "step3Body": "Close the day by deciding the fate of each unfinished action: postpone it, send it to backlog, outsource it, or mark it done. Closing triggers gathering for the next two days."
       },
       "5": {
+        "title": "Who Can Share Journals With You?",
+        "body": "Journals can be shared with other users by email. For someone to add you to their journal, they need to look you up by email first — but only if you allow it. Make your choice below. You can change this any time in Settings.",
+        "stateOn": "Others can find me by email",
+        "stateOff": "I'm not discoverable by email",
+        "hint": "You can change this later in Settings."
+      },
+      "6": {
         "title": "Let's Get Started",
         "body": "That's all you need to know for now. The best place to begin is creating your first goal — the Goal Wizard will walk you through it step by step. Or if you want a deeper reference on any concept, the Guide page has it all.",
         "ctaGoal": "Create my first goal",
@@ -807,7 +828,47 @@
         "step1Body": "The calendar shows scheduled actions — those with an assigned date and start time. Actions without a start time don't appear here. Milestones with target dates are also shown as markers. It's a time-view into your workload, not a complete task list.",
         "step2Title": "Filtering",
         "step2Body": "Use the filter controls to narrow what's shown — by goal, by interval, or by action type. This is useful when you want to see how a single goal's work is distributed across time, or when the calendar feels too dense and you want to focus on one track."
+      },
+      "journals": {
+        "step1Title": "Journals",
+        "step1Body": "Journals are running records — narrative logs of thought, progress, and experience, optionally anchored to a goal or project. Unlike structured task lists, journals tell the story of the work. Entries are chronological and permanent: you can archive them but not delete them.",
+        "step2Title": "Sharing",
+        "step2Body": "Journals can be shared with other users. Everyone on the access list can add entries — there's no elevated permission tier. To add someone, you look them up by email. They'll only be found if they've opted into discoverability in their settings.",
+        "step3Title": "Quick Capture",
+        "step3Body": "A quick-add input at the bottom of your Today view lets you drop a thought into any journal without navigating away. It defaults to your default journal but you can redirect it to any active journal on the fly."
       }
     }
+  },
+  "journals": {
+    "title": "Journals",
+    "new": "New journal",
+    "newJournal": "New journal",
+    "titlePlaceholder": "Journal title",
+    "descriptionPlaceholder": "Description (optional)",
+    "showArchived": "Archived",
+    "archived": "Archived",
+    "archivedNotice": "This journal is archived.",
+    "empty": "No journals yet.",
+    "noArchived": "No archived journals.",
+    "createFirst": "Create your first journal",
+    "entryCount": "{{count}} entries",
+    "setDefault": "Set as default",
+    "archiveJournal": "Archive journal",
+    "settings": {
+      "title": "Journal settings"
+    },
+    "access": {
+      "title": "Access list",
+      "emailPlaceholder": "Add by email...",
+      "notFound": "No user found with that email address."
+    },
+    "searchPlaceholder": "Search entries...",
+    "dateFrom": "From",
+    "dateTo": "To",
+    "noEntries": "No entries yet. Write the first one below.",
+    "noEntriesFiltered": "No entries match the current filters.",
+    "composerPlaceholder": "Write an entry... (Enter to submit, Shift+Enter for new line)",
+    "addEntry": "Add entry",
+    "overrideTimestamp": "Override timestamp to now"
   }
 }

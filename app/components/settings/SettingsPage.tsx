@@ -1,14 +1,33 @@
+import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import UnderConstruction from "../UnderConstruction";
 import { Button } from "../ui/button";
+import { Switch } from "../ui/switch";
 import { useAuth } from "../auth/AuthContext";
 import { useTranslation } from "react-i18next";
 import { setLanguage, type AppLanguage } from "~/i18n/config";
+import { useApi } from "~/api/useApi";
+import { GET_ME_DISCOVERABILITY, UPDATE_DISCOVERABILITY } from "~/api/queries";
 
 export default function SettingsPage() {
   const navigate = useNavigate();
   const auth = useAuth();
   const { t, i18n } = useTranslation();
+  const { call } = useApi();
+  const [discoverableByEmail, setDiscoverableByEmail] = useState(false);
+  const [discoverabilityLoaded, setDiscoverabilityLoaded] = useState(false);
+
+  useEffect(() => {
+    call({ query: GET_ME_DISCOVERABILITY }).then((res: any) => {
+      setDiscoverableByEmail(res?.me?.discoverableByEmail ?? false);
+      setDiscoverabilityLoaded(true);
+    });
+  }, []);
+
+  const handleDiscoverabilityToggle = (checked: boolean) => {
+    setDiscoverableByEmail(checked);
+    call({ query: UPDATE_DISCOVERABILITY, variables: { discoverableByEmail: checked } });
+  };
 
   const handleLogout = () => {
     // Clear whatever you use for auth
@@ -38,6 +57,20 @@ export default function SettingsPage() {
           >
             {t("language.persian")}
           </Button>
+        </div>
+      </section>
+      <section className="space-y-3">
+        <h2 className="text-sm font-medium text-muted-foreground">{t("settings.discoverability.title")}</h2>
+        <p className="text-sm text-muted-foreground">{t("settings.discoverability.description")}</p>
+        <div className="flex items-center gap-3">
+          <Switch
+            checked={discoverableByEmail}
+            onCheckedChange={handleDiscoverabilityToggle}
+            disabled={!discoverabilityLoaded}
+          />
+          <span className="text-sm">
+            {discoverableByEmail ? t("settings.discoverability.on") : t("settings.discoverability.off")}
+          </span>
         </div>
       </section>
       <section className="space-y-4">

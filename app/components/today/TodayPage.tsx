@@ -17,6 +17,7 @@ import { Moon, Pencil, Sun, Plus } from "lucide-react";
 import HintPopover from "~/components/ui/HintPopover";
 import { useTranslation } from "react-i18next";
 import ModuleIntroOverlay from "~/components/onboarding/ModuleIntroOverlay";
+import JournalQuickAdd from "~/components/journals/JournalQuickAdd";
 
 export default function TodayPage() {
   const { t } = useTranslation();
@@ -271,6 +272,8 @@ export default function TodayPage() {
           </section>
         </>
       )}
+
+      <JournalQuickAdd />
     </main>
     </>
   );

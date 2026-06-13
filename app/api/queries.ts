@@ -947,6 +947,175 @@ export const UPDATE_NOTE = `
   }
 `;
 
+export const GET_ME_DISCOVERABILITY = `
+  query GetMeDiscoverability {
+    me {
+      id
+      discoverableByEmail
+    }
+  }
+`;
+
+export const UPDATE_DISCOVERABILITY = `
+  mutation UpdateDiscoverability($discoverableByEmail: Boolean!) {
+    updateDiscoverability(discoverableByEmail: $discoverableByEmail)
+  }
+`;
+
+export const GET_JOURNALS = `
+  query GetJournals($includeArchived: Boolean) {
+    journals(includeArchived: $includeArchived) {
+      id
+      title
+      description
+      isArchived
+      isDefault
+      linkedGoalId
+      linkedProjectId
+      linkedGoal { id title }
+      linkedProject { id title }
+      entryCount
+      accessList { id userEmail }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_JOURNAL = `
+  query GetJournal($id: ID!) {
+    journal(id: $id) {
+      id
+      title
+      description
+      isArchived
+      isDefault
+      linkedGoalId
+      linkedProjectId
+      linkedGoal { id title }
+      linkedProject { id title }
+      entryCount
+      accessList { id userEmail addedAt }
+      createdAt
+      updatedAt
+    }
+  }
+`;
+
+export const GET_JOURNAL_ENTRIES = `
+  query GetJournalEntries($journalId: ID!, $includeArchived: Boolean, $dateFrom: String, $dateTo: String, $search: String) {
+    journalEntries(journalId: $journalId, includeArchived: $includeArchived, dateFrom: $dateFrom, dateTo: $dateTo, search: $search) {
+      id
+      body
+      createdAt
+      updatedAt
+      isArchived
+      timestampOverridden
+    }
+  }
+`;
+
+export const CREATE_JOURNAL = `
+  mutation CreateJournal($title: String!, $description: String, $linkedGoalId: ID, $linkedProjectId: ID) {
+    createJournal(title: $title, description: $description, linkedGoalId: $linkedGoalId, linkedProjectId: $linkedProjectId) {
+      id
+      title
+      isDefault
+    }
+  }
+`;
+
+export const UPDATE_JOURNAL = `
+  mutation UpdateJournal($id: ID!, $title: String, $description: String, $linkedGoalId: ID, $linkedProjectId: ID) {
+    updateJournal(id: $id, title: $title, description: $description, linkedGoalId: $linkedGoalId, linkedProjectId: $linkedProjectId) {
+      id
+      title
+      description
+      linkedGoalId
+      linkedProjectId
+      linkedGoal { id title }
+      linkedProject { id title }
+    }
+  }
+`;
+
+export const ARCHIVE_JOURNAL = `
+  mutation ArchiveJournal($id: ID!) {
+    archiveJournal(id: $id) { id isArchived }
+  }
+`;
+
+export const DELETE_JOURNAL = `
+  mutation DeleteJournal($id: ID!) {
+    deleteJournal(id: $id) { id }
+  }
+`;
+
+export const ADD_JOURNAL_ACCESS = `
+  mutation AddJournalAccess($journalId: ID!, $email: String!) {
+    addJournalAccess(journalId: $journalId, email: $email) {
+      id
+      accessList { id userEmail }
+    }
+  }
+`;
+
+export const REMOVE_JOURNAL_ACCESS = `
+  mutation RemoveJournalAccess($journalId: ID!, $email: String!) {
+    removeJournalAccess(journalId: $journalId, email: $email) {
+      id
+      accessList { id userEmail }
+    }
+  }
+`;
+
+export const SET_DEFAULT_JOURNAL = `
+  mutation SetDefaultJournal($journalId: ID!) {
+    setDefaultJournal(journalId: $journalId) { id isDefault }
+  }
+`;
+
+export const CREATE_ENTRY = `
+  mutation CreateEntry($journalId: ID!, $body: String!) {
+    createEntry(journalId: $journalId, body: $body) {
+      id
+      body
+      createdAt
+      updatedAt
+      isArchived
+      timestampOverridden
+    }
+  }
+`;
+
+export const UPDATE_ENTRY = `
+  mutation UpdateEntry($id: ID!, $body: String!, $overrideTimestamp: Boolean) {
+    updateEntry(id: $id, body: $body, overrideTimestamp: $overrideTimestamp) {
+      id
+      body
+      createdAt
+      updatedAt
+      timestampOverridden
+    }
+  }
+`;
+
+export const ARCHIVE_ENTRY = `
+  mutation ArchiveEntry($id: ID!) {
+    archiveEntry(id: $id) { id isArchived }
+  }
+`;
+
+export const ADD_QUICK_ENTRY = `
+  mutation AddQuickEntry($body: String!, $journalId: ID) {
+    addQuickEntry(body: $body, journalId: $journalId) {
+      id
+      body
+      createdAt
+    }
+  }
+`;
+
 export const DELETE_NOTE = `
   mutation DeleteNote($id: ID!) {
     deleteNote(id: $id) {

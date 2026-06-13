@@ -15,6 +15,8 @@ import ManageGoalPage from "./components/goals/ManageGoal";
 import MilestoneForm from "./components/milestones/MilestoneForm";
 import IntervalsListPage from "./components/intervals/IntervalsListPage";
 import IntervalForm from "./components/intervals/IntervalForm";
+import JournalsListPage from "./components/journals/JournalsListPage";
+import JournalDetailPage from "./components/journals/JournalDetailPage";
 import { Navigate } from "react-router";
 
 export default [
@@ -37,6 +39,14 @@ export default [
   {
     path: "/tools/time-map",
     element: <ToolsPage />,
+  },
+  {
+    path: "/tools/journals",
+    element: <JournalsListPage />,
+  },
+  {
+    path: "/tools/journals/:id",
+    element: <JournalDetailPage />,
   },
   {
     path: "/settings",

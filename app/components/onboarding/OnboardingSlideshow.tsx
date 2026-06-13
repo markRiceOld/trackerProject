@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { useApi } from "~/api/useApi";
-import { GET_ONBOARDING_PROGRESS, MARK_SLIDE_VIEWED } from "~/api/queries";
+import { GET_ONBOARDING_PROGRESS, MARK_SLIDE_VIEWED, GET_ME_DISCOVERABILITY, UPDATE_DISCOVERABILITY } from "~/api/queries";
 import { Button } from "~/components/ui/button";
+import { Switch } from "~/components/ui/switch";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
-const TOTAL_SLIDES = 6;
+const TOTAL_SLIDES = 7;
 
 export default function OnboardingSlideshow() {
   const { t } = useTranslation();
@@ -15,6 +16,7 @@ export default function OnboardingSlideshow() {
   const [completed, setCompleted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [current, setCurrent] = useState(0);
+  const [discoverableByEmail, setDiscoverableByEmail] = useState(false);
 
   useEffect(() => {
     call({ query: GET_ONBOARDING_PROGRESS }).then((res: any) => {
@@ -26,7 +28,15 @@ export default function OnboardingSlideshow() {
       }
       setLoaded(true);
     });
+    call({ query: GET_ME_DISCOVERABILITY }).then((res: any) => {
+      setDiscoverableByEmail(res?.me?.discoverableByEmail ?? false);
+    });
   }, []);
+
+  const handleDiscoverabilityChange = (val: boolean) => {
+    setDiscoverableByEmail(val);
+    call({ query: UPDATE_DISCOVERABILITY, variables: { discoverableByEmail: val } });
+  };
 
   if (!loaded || completed || dismissed) return null;
 
@@ -75,7 +85,12 @@ export default function OnboardingSlideshow() {
           <p className="text-xs font-medium text-muted-foreground mb-3">
             {t("onboarding.nav.slideOf", { current: current + 1, total: TOTAL_SLIDES })}
           </p>
-          <SlideContent current={current} t={t} />
+          <SlideContent
+            current={current}
+            t={t}
+            discoverableByEmail={discoverableByEmail}
+            onDiscoverabilityChange={handleDiscoverabilityChange}
+          />
         </div>
 
         {/* Navigation */}
@@ -96,11 +111,11 @@ export default function OnboardingSlideshow() {
         {isLast && (
           <div className="flex flex-col gap-2 px-6 py-4 border-t">
             <Link to="/goals/new" onClick={() => setCompleted(true)}>
-              <Button className="w-full">{t("onboarding.slides.5.ctaGoal")}</Button>
+              <Button className="w-full">{t("onboarding.slides.6.ctaGoal")}</Button>
             </Link>
             <Link to="/concepts" onClick={() => setCompleted(true)}>
               <Button variant="outline" className="w-full">
-                {t("onboarding.slides.5.ctaGuide")}
+                {t("onboarding.slides.6.ctaGuide")}
               </Button>
             </Link>
             <button
@@ -108,7 +123,7 @@ export default function OnboardingSlideshow() {
               onClick={handleNext}
               className="text-xs text-muted-foreground hover:text-foreground underline-offset-2 hover:underline py-1"
             >
-              {t("onboarding.slides.5.ctaToday")}
+              {t("onboarding.slides.6.ctaToday")}
             </button>
           </div>
         )}
@@ -117,7 +132,17 @@ export default function OnboardingSlideshow() {
   );
 }
 
-function SlideContent({ current, t }: { current: number; t: (key: string, opts?: any) => string }) {
+function SlideContent({
+  current,
+  t,
+  discoverableByEmail,
+  onDiscoverabilityChange,
+}: {
+  current: number;
+  t: (key: string, opts?: any) => string;
+  discoverableByEmail: boolean;
+  onDiscoverabilityChange: (val: boolean) => void;
+}) {
   switch (current) {
     case 0:
       return (
@@ -172,7 +197,23 @@ function SlideContent({ current, t }: { current: number; t: (key: string, opts?:
       return (
         <>
           <h2 className="text-xl font-bold mb-3">{t("onboarding.slides.5.title")}</h2>
-          <p className="text-sm text-muted-foreground leading-relaxed">{t("onboarding.slides.5.body")}</p>
+          <p className="text-sm text-muted-foreground leading-relaxed mb-5">{t("onboarding.slides.5.body")}</p>
+          <div className="flex items-center gap-3 rounded-lg bg-muted/40 px-4 py-3">
+            <Switch checked={discoverableByEmail} onCheckedChange={onDiscoverabilityChange} />
+            <div>
+              <p className="text-sm font-medium">
+                {discoverableByEmail ? t("onboarding.slides.5.stateOn") : t("onboarding.slides.5.stateOff")}
+              </p>
+              <p className="text-xs text-muted-foreground">{t("onboarding.slides.5.hint")}</p>
+            </div>
+          </div>
+        </>
+      );
+    case 6:
+      return (
+        <>
+          <h2 className="text-xl font-bold mb-3">{t("onboarding.slides.6.title")}</h2>
+          <p className="text-sm text-muted-foreground leading-relaxed">{t("onboarding.slides.6.body")}</p>
         </>
       );
     default:

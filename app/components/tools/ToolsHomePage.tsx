@@ -21,6 +21,18 @@ export default function ToolsHomePage() {
           {t("toolsHome.openTimeMap")}
         </Button>
       </section>
+
+      <section className="rounded-lg border bg-card p-5">
+        <div className="mb-4 space-y-1">
+          <h2 className="text-lg font-semibold">{t("toolsHome.journalsTitle")}</h2>
+          <p className="text-sm text-muted-foreground">
+            {t("toolsHome.journalsDescription")}
+          </p>
+        </div>
+        <Button onClick={() => navigate("/tools/journals")}>
+          {t("toolsHome.openJournals")}
+        </Button>
+      </section>
     </main>
   );
 }
