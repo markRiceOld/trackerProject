@@ -1,4 +1,5 @@
 import ActivitiesPage from "./components/activities/ActivitiesPage";
+import ConceptsPage from "./components/concepts/ConceptsPage";
 import CalendarPage from "./components/calendar/CalendarPage";
 import ToolsPage from "./components/tools/ToolsPage";
 import ToolsHomePage from "./components/tools/ToolsHomePage";
@@ -20,6 +21,10 @@ export default [
   {
     index: true,
     element: <Navigate to="/today" replace />,
+  },
+  {
+    path: "/concepts",
+    element: <ConceptsPage />,
   },
   {
     path: "/activities",

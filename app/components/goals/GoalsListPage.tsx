@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
+import HintPopover from "~/components/ui/HintPopover";
 import GoalPreview, { type GoalPreviewProps, getGoalStatus } from "./GoalPreview";
 import type { Action } from "../actions/ActionsListPage";
 import { useApi } from "~/api/useApi";
@@ -213,7 +214,12 @@ export default function GoalsListPage() {
   return (
     <InternalPageLayout
       backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
-      title={t("goalsList.title")}
+      title={
+        <span className="flex items-center gap-2">
+          {t("goalsList.title")}
+          <HintPopover textKey="hints.goalsList" conceptsAnchor="hierarchy" />
+        </span>
+      }
       actions={
         <Button size="sm" onClick={() => navigate("/activities/goal")}>
           <Plus className="h-4 w-4 mr-2" /> {t("goalsList.addGoal")}

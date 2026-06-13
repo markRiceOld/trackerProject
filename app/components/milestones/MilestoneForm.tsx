@@ -11,6 +11,7 @@ import InternalPageLayout from "~/layout/InternalPageLayout";
 import { useApi } from "~/api/useApi";
 import { ADD_MILESTONE, DELETE_MILESTONE, GET_GOAL, UPDATE_MILESTONE } from "~/api/queries";
 import { Pencil, Trash2 } from "lucide-react";
+import HintPopover from "~/components/ui/HintPopover";
 import { format, isValid } from "date-fns";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
 
@@ -194,6 +195,7 @@ export default function MilestoneForm() {
         <div className="space-y-2">
           <Label htmlFor="doa" className="flex items-center gap-2">
             {t("milestones.doa")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            <HintPopover textKey="hints.doa" conceptsAnchor="hierarchy" />
           </Label>
           <Input
             id="doa"
@@ -236,8 +238,9 @@ export default function MilestoneForm() {
             checked={isLast}
             onCheckedChange={(v) => handleIsLastChange(v === true)}
           />
-          <Label htmlFor="is-last" className="font-normal cursor-pointer">
+          <Label htmlFor="is-last" className="font-normal cursor-pointer flex items-center gap-2">
             {t("milestones.lastMilestoneLabel")}
+            <HintPopover textKey="hints.lastMilestone" conceptsAnchor="hierarchy" />
           </Label>
         </div>
 

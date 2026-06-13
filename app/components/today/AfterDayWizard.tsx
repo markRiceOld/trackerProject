@@ -19,6 +19,7 @@ import {
 import { toLocalDateString, addDaysToDateKey } from "~/utils/dateUtils";
 import { format } from "date-fns";
 import { Moon, Pencil, Sun, ChevronRight, CheckCircle2 } from "lucide-react";
+import HintPopover from "~/components/ui/HintPopover";
 
 type ActionItem = {
   id: string;
@@ -326,8 +327,9 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
       {/* Step 0: Review mandatory linked actions */}
       {step === 0 && (
         <section className="space-y-6">
-          <p className="text-muted-foreground">
-            {t("wizard.linkedIntro")}
+          <p className="text-muted-foreground flex items-start gap-2">
+            <span>{t("wizard.linkedIntro")}</span>
+            <HintPopover textKey="hints.afterDayFate" conceptsAnchor="action-fates" />
           </p>
           {linkedList.length === 0 ? (
             <p className="rounded-md border border-dashed p-4 text-muted-foreground">

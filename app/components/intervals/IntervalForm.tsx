@@ -14,6 +14,7 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { ChevronDown, ChevronRight, GripVertical, Pencil, Plus, Trash2 } from "lucide-react";
+import HintPopover from "~/components/ui/HintPopover";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
@@ -62,7 +63,7 @@ function AccordionSection({
   children,
   className,
 }: {
-  title: string;
+  title: React.ReactNode;
   open: boolean;
   onToggle: () => void;
   children: React.ReactNode;
@@ -770,7 +771,12 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         )}
         {mode === "interval" && (
         <AccordionSection
-          title={t("intervals.repeats")}
+          title={
+            <span className="flex items-center gap-2">
+              {t("intervals.repeats")}
+              <HintPopover textKey="hints.intervalRecurrence" conceptsAnchor="intervals-routines" />
+            </span>
+          }
           open={repeatsOpen}
           onToggle={() => setRepeatsOpen((o) => !o)}
         >

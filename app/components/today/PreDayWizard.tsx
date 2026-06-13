@@ -16,6 +16,7 @@ import {
 import { toLocalDateString, addDaysToDateKey } from "~/utils/dateUtils";
 import { format } from "date-fns";
 import { ChevronRight, Pencil, Sun, AlertTriangle } from "lucide-react";
+import HintPopover from "~/components/ui/HintPopover";
 import AfterDayWizard from "./AfterDayWizard";
 
 type ActionWithOverlap = {
@@ -612,6 +613,7 @@ export default function PreDayWizard({
                             <span className="flex items-center gap-1 text-sm text-amber-600">
                               <AlertTriangle className="h-4 w-4" />
                               {t("wizard.overlapsWithTask")}
+                              <HintPopover textKey="hints.preDayOverlap" conceptsAnchor="daily-flow" />
                             </span>
                           )}
                         </div>

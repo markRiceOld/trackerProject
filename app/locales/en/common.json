@@ -9,7 +9,8 @@
     "calendar": "Calendar",
     "tools": "Tools",
     "activities": "Activities",
-    "settings": "Settings"
+    "settings": "Settings",
+    "concepts": "Guide"
   },
   "auth": {
     "login": "Login",
@@ -608,6 +609,87 @@
     "typeProject": "project",
     "typeAction": "action",
     "typeInterval": "interval"
+  },
+  "concepts": {
+    "pageTitle": "Concepts & Guide",
+    "philosophy": {
+      "title": "Platform Philosophy",
+      "body": "This tracker is built around one principle: clarity before execution. Before you schedule a task, you define what success looks like. The system then organises work from strategic goals down to daily actions, and uses daily review ceremonies to keep everything honest. The flow is always top-down: you know why before you decide what and when."
+    },
+    "hierarchy": {
+      "title": "The Goal Hierarchy",
+      "intro": "Everything lives in one chain: Goals → Milestones → Projects → Actions.",
+      "goalDesc": "A Goal is a strategic objective — something you're working toward over weeks or months, with a written Definition of Done (DoD) describing exactly when you've succeeded.",
+      "milestoneDesc": "A Milestone is a sequential phase of that goal, each with its own Definition of Achieved (DoA).",
+      "projectDesc": "A Project is a focused body of work within a milestone, with its own DoD.",
+      "actionDesc": "An Action is a single task with an estimated duration and a scheduled date.",
+      "example": "Example: Goal: \"Launch MVP\" → Milestone: \"Beta ready\" → Project: \"Auth system\" → Actions: \"Set up JWT\", \"Write login page\"."
+    },
+    "goalGroups": {
+      "title": "Goal Groups vs Regular Goals",
+      "regular": "A regular goal has a timeline, a Definition of Done, and contains milestones and projects directly. It represents a concrete outcome you're driving toward.",
+      "group": "A goal group is a container — it organises related goals under one name but has no timeline or projects of its own. Think of it as a folder for a domain of your life. Goals inside a group are still independent, each with their own milestones and timelines.",
+      "example": "Example: \"2026 Health\" is a goal group containing \"Run a marathon\" and \"Lose 10kg\" as separate goals, each with its own milestones."
+    },
+    "intervals": {
+      "title": "Intervals vs Routines",
+      "intro": "Both intervals and routines generate actions automatically — the difference is when they fire.",
+      "intervalDesc": "Intervals run on a schedule you define: every 3 days, every Monday, on the 1st of each month. Use them for recurring work that isn't daily.",
+      "routineDesc": "Routines run every single day at specific times you set (e.g. 9am, 2pm, 8pm). Use them for daily practices.",
+      "gathering": "Both are checked during Action Gathering each morning and produce actions for today and the next two days.",
+      "example": "Example: \"Weekly team 1:1\" is an interval (every Monday). \"Morning pages\" is a routine (8am daily)."
+    },
+    "dailyFlow": {
+      "title": "The Daily Flow",
+      "intro": "Each day has three steps:",
+      "step1Title": "Action Gathering",
+      "step1Body": "The system checks all active intervals and routines and creates actions for today (and 2 days ahead). Runs automatically when you open Today.",
+      "step2Title": "Pre-day (Organize)",
+      "step2Body": "You assign start times to any untimed actions, resolve scheduling conflicts, and decide what to skip or postpone. Ends with \"Begin day.\"",
+      "step3Title": "After-day (Review)",
+      "step3Body": "You disposition anything you didn't complete: postpone, outsource, or archive it. Ends with a preview of tomorrow.",
+      "skipping": "Skipping a day isn't silent — if yesterday's After-day wasn't completed, the system will ask you to handle it before starting today's Pre-day."
+    },
+    "priority": {
+      "title": "The Priority System",
+      "intro": "Every action gets a priority based on two questions: Is this urgent? Is this important?",
+      "p": "P — Primary: Urgent + Important. Do it now.",
+      "s": "S — Secondary: Not urgent, but Important. Schedule it properly.",
+      "o": "O — Outsource: Urgent, but not Important. Delegate it.",
+      "b": "B — Bucket List: Neither urgent nor important. Park it for someday.",
+      "advice": "This is the Eisenhower matrix. A healthy week is mostly S — scheduled, important work — not constant P firefighting. Bucket list items stay visible without cluttering your active work."
+    },
+    "actionFates": {
+      "title": "Action Fates",
+      "intro": "When an action doesn't get done, After-day asks what happened. The answer is the action's fate — it keeps your system accurate without losing history.",
+      "postponed": "Postponed — Rescheduled to a future date. The work still matters, just later.",
+      "outsource": "Outsource (WOO) — Delegated. Two follow-up actions are created: one to hand it off, one to confirm it got done.",
+      "backlog": "Backlog — Not important enough to reschedule right now (for linked actions). Stays visible, deprioritised.",
+      "bucketList": "Bucket List — Parked for someday (for standalone actions). No date, no pressure.",
+      "archived": "PassedArchived — No longer relevant. Auto-applied to unlinked interval/routine actions."
+    },
+    "dayState": {
+      "title": "DayState Lifecycle",
+      "intro": "The system tracks each calendar day through four states:",
+      "state1": "Not started — No ceremony run yet.",
+      "state2": "Gathering complete — Intervals and routines have been converted to actions for today.",
+      "state3": "Pre-day complete — All actions have start times; you've begun the day.",
+      "state4": "After-day complete — All incomplete actions have been dispositioned.",
+      "closing": "Days that are fully complete show as closed. Incomplete days stay open until After-day is run, which is why the system prompts you to close yesterday before opening today."
+    }
+  },
+  "hints": {
+    "goalsList": "Goals are your strategic objectives — things you're actively working toward over weeks or months, each with a Definition of Done so you know exactly when you've succeeded. Goals contain Milestones, which contain Projects, which contain Actions — every task in the system traces back to a goal. If you have a broad area of life with multiple independent goals (like \"Health\" or \"Career\"), create a Goal Group to organise them without forcing them into a single timeline.",
+    "dod": "The Definition of Done is a written statement of what \"finished\" looks like for this goal. A good DoD is observable (you can verify it), binary (yes or no, not \"getting better\"), and something you actually control. Vague DoDs like \"improve my fitness\" create drift — concrete ones like \"run 5km without stopping\" create clarity. Use the clarity check (the ✓ button) to test your DoD across five dimensions.",
+    "doa": "The Definition of Achieved describes what it looks like when this milestone is complete — what will be true, demonstrated, or delivered. Unlike the goal's DoD (the final finish line), milestones are sequential phases: completing one unlocks the next. A good DoA is concrete enough that a third party could confirm it without explanation from you.",
+    "lastMilestone": "Marking a milestone as \"last\" designates it as the final phase of the goal — the one that closes everything out when complete. A goal can only have one last milestone. New milestones you add are automatically inserted before the last one, keeping the final phase pinned at the end of the sequence. This is typically your \"ship it\", \"hand off\", or \"launch\" milestone.",
+    "priority": "Priority is based on two questions: Is this urgent? Is this important? P (Primary) means both — do it now. S (Secondary) means important but not yet urgent — schedule it properly before it becomes a fire. O (Outsource) means urgent but not important — delegate it. B (Bucket List) means neither — park it for someday. A healthy workload is mostly S; if everything feels P, that's the signal to revisit what's actually important.",
+    "intervalsList": "Intervals generate actions automatically on a schedule you define — every N days, every Monday, on specific dates. They're for recurring work that isn't daily, like a weekly check-in or a monthly review. When the system gathers actions each morning, it checks all active intervals and creates actions for today and the next two days. Set an end date if the interval has a finite run; leave it open for indefinite recurring work.",
+    "intervalRecurrence": "The recurrence rule controls when this interval fires. \"Every 7 days\" counts from the start date. \"Every Monday\" uses a weekly day-of-week pattern. Use custom dates when the schedule is irregular — the 1st and 15th of each month, or a fixed list of deadlines. The system gathers actions 2 days ahead, so your actions appear before the due date rather than on it.",
+    "todayLinkedStandalone": "Linked actions belong to a project — they're part of tracked, committed work in your goal hierarchy. Standalone actions are one-offs with no project context, added directly to a day. Both appear on Today, but they're handled differently in After-day: linked actions that go undone require a fate decision (they represent committed project work), while standalone actions are optional to review.",
+    "preDayOverlap": "An overlap means two actions are scheduled at the same time based on their start time and estimated duration. Overlaps aren't blocked — you can keep them if one is background work or can flex. To resolve one, adjust a start time, postpone an action to another day, or outsource it. All remaining overlaps are shown in the final read-only overview before you begin your day.",
+    "afterDayFate": "Action fate records what happened to work you didn't complete, keeping your system accurate without losing history. Postpone reschedules to a specific date. Outsource creates two follow-up actions — one to hand it off, one to confirm it's done. Not Important moves it to your backlog (for linked actions). Pass archives it as no longer needed (for interval-generated actions).",
+    "learnMore": "Learn more →"
   },
   "notes": {
     "modalTitle": "Notes",

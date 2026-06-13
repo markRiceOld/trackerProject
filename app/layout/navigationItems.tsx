@@ -1,4 +1,5 @@
 import {
+  BookOpen,
   Calendar,
   FolderKanban,
   Settings,
@@ -32,6 +33,12 @@ export function getSidebarItems(t: TFunction) {
     title: t("nav.activities"),
     href: "/activities",
     icon: <FolderKanban className="h-4 w-4" />,
+  },
+  {
+    id: "concepts",
+    title: t("nav.concepts"),
+    href: "/concepts",
+    icon: <BookOpen className="h-4 w-4" />,
   },
   {
     id: "settings",

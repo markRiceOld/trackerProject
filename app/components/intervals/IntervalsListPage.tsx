@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 import InternalPageLayout from "~/layout/InternalPageLayout";
+import HintPopover from "~/components/ui/HintPopover";
 import IntervalPreview, { type IntervalPreviewProps } from "./IntervalPreview";
 import RoutinePreview, { type RoutinePreviewProps } from "./RoutinePreview";
 import { useApi } from "~/api/useApi";
@@ -41,7 +42,12 @@ export default function IntervalsListPage() {
   return (
     <InternalPageLayout
       backLink={{ to: "/activities", label: `← ${t("activities.backToActivities")}` }}
-      title={t("intervalsList.title")}
+      title={
+        <span className="flex items-center gap-2">
+          {t("intervalsList.title")}
+          <HintPopover textKey="hints.intervalsList" conceptsAnchor="intervals-routines" />
+        </span>
+      }
       actions={
         <div className="flex items-center gap-2">
           <Button size="sm" onClick={() => navigate("/activities/interval")}>

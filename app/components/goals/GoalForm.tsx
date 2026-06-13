@@ -6,6 +6,7 @@ import { Button } from "~/components/ui/button";
 import { Label } from "~/components/ui/label";
 import { Checkbox } from "~/components/ui/checkbox";
 import { Pencil, Sparkles, Flag, Info } from "lucide-react";
+import HintPopover from "~/components/ui/HintPopover";
 import InternalPageLayout from "~/layout/InternalPageLayout";
 import { useApi } from "~/api/useApi";
 import { ADD_GOAL } from "~/api/queries";
@@ -113,6 +114,7 @@ export default function GoalForm() {
         <div className="space-y-2">
           <Label htmlFor="goal-dod" className="flex items-center gap-2">
             {t("goalsList.dodOptional")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            <HintPopover textKey="hints.dod" conceptsAnchor="hierarchy" />
           </Label>
           <Input
             id="goal-dod"

@@ -14,6 +14,7 @@ import {
 } from "~/api/queries";
 import { toLocalDateString } from "~/utils/dateUtils";
 import { Moon, Pencil, Sun, Plus } from "lucide-react";
+import HintPopover from "~/components/ui/HintPopover";
 import { useTranslation } from "react-i18next";
 
 export default function TodayPage() {
@@ -154,7 +155,10 @@ export default function TodayPage() {
         <>
           {/* Section 1: Linked Actions */}
           <section className="space-y-4">
-            <h2 className="text-lg font-semibold text-muted-foreground">{t("today.linkedActions")}</h2>
+            <h2 className="text-lg font-semibold text-muted-foreground flex items-center gap-2">
+              {t("today.linkedActions")}
+              <HintPopover textKey="hints.todayLinkedStandalone" conceptsAnchor="daily-flow" />
+            </h2>
             {todayActions === null ? (
               <>
                 <Skeleton className="h-16 w-full rounded-md" />
