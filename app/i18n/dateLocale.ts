@@ -1,6 +1,6 @@
 import type { Locale } from "date-fns";
-import enUS from "date-fns/locale/en-US";
-import faIR from "date-fns/locale/fa-IR";
+import { enUS } from "date-fns/locale/en-US";
+import { faIR } from "date-fns/locale/fa-IR";
 import type { AppLanguage } from "./config";
 
 export function getDateFnsLocale(language: AppLanguage): Locale {

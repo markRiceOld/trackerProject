@@ -9,7 +9,7 @@ import {
   useLocation,
 } from "react-router";
 
-import type { Route } from "./+types/root";
+import type { LinksFunction } from "react-router";
 import "./app.css";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -57,7 +57,7 @@ export function ProtectedAppLayout() {
 //   );
 // }
 
-export const links: Route.LinksFunction = () => [
+export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
   {
     rel: "preconnect",
@@ -90,7 +90,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-export function ErrorBoundary({ error }: Route.ErrorBoundaryProps) {
+export function ErrorBoundary({ error }: { error: unknown }) {
   const { t } = useTranslation();
   let message = t("common.oops");
   let details = t("common.unexpectedError");
