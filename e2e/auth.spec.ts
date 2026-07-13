@@ -1,13 +1,5 @@
 import { test, expect } from "@playwright/test";
-import { mockGQL } from "./helpers/gql";
-import { authenticate } from "./helpers/auth";
-
-// Baseline mocks for the today page that the app redirects to after login
-const todayMocks = {
-  GetTodayActions: { todayActions: [] },
-  GetPreDayStatus: { preDayStatus: { afterDayRequired: false, canAccessToday: true, actionsWithoutTime: [], todayActionsWithOverlap: [] } },
-  RunActionGathering: { runActionGathering: { dateKeysProcessed: [], actionsCreated: 0 } },
-};
+import { getAuthData } from "./helpers/auth";
 
 // ── Simple: page renders ──────────────────────────────────────────────────────
 
@@ -34,49 +26,37 @@ test("unauthenticated visit to /today redirects to /login", async ({ page }) => 
 // ── Complex: flows ─────────────────────────────────────────────────────────────
 
 test("login flow: valid credentials → redirect to /today", async ({ page }) => {
-  await mockGQL(page, {
-    Login: { login: { token: "e2e-test-token", user: { id: "u1", email: "user@example.com" } } },
-    ...todayMocks,
-  });
+  const { email, password } = getAuthData();
 
   await page.goto("/login");
-  await page.getByPlaceholder("Email").fill("user@example.com");
-  await page.getByPlaceholder("Password").fill("password123");
+  await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Password").fill(password);
   await page.getByRole("button", { name: "Login" }).click();
 
-  await expect(page).toHaveURL(/\/today/, { timeout: 5000 });
+  await expect(page).toHaveURL(/\/today/, { timeout: 8000 });
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
 });
 
 test("login wrong credentials: error message shown", async ({ page }) => {
-  await mockGQL(page, {
-    Login: { login: null },
-  });
-
   await page.goto("/login");
-  await page.getByPlaceholder("Email").fill("wrong@example.com");
-  await page.getByPlaceholder("Password").fill("bad");
+  await page.getByPlaceholder("Email").fill("nobody@nowhere.invalid");
+  await page.getByPlaceholder("Password").fill("wrongpassword");
   await page.getByRole("button", { name: "Login" }).click();
 
-  // The page should stay on /login and show an error
   await expect(page).toHaveURL(/\/login/);
   await expect(page.locator(".text-red-500")).toBeVisible();
 });
 
 test("register flow: valid details → redirect to /today", async ({ page }) => {
-  await mockGQL(page, {
-    Register: { register: { token: "e2e-test-token", user: { id: "u1", email: "new@example.com" } } },
-    ...todayMocks,
-  });
+  const unique = `e2e-reg-${Date.now()}@test.local`;
 
   await page.goto("/register");
-  await page.getByPlaceholder("Email").fill("new@example.com");
-  // Register page has two password fields; use exact match to avoid hitting "Confirm Password"
-  await page.getByPlaceholder("Password", { exact: true }).fill("password123");
-  await page.getByPlaceholder("Confirm Password").fill("password123");
+  await page.getByPlaceholder("Email").fill(unique);
+  await page.getByPlaceholder("Password", { exact: true }).fill("TestPass-1");
+  await page.getByPlaceholder("Confirm Password").fill("TestPass-1");
   await page.getByRole("button", { name: /Register/i }).click();
 
-  await expect(page).toHaveURL(/\/today/, { timeout: 5000 });
+  await expect(page).toHaveURL(/\/today/, { timeout: 8000 });
 });
 
 test("register passwords mismatch: client-side error shown without API call", async ({ page }) => {

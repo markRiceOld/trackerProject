@@ -1,40 +1,22 @@
 import type { Page } from "@playwright/test";
-import { mockGQL } from "./gql";
+import * as fs from "fs";
+import * as path from "path";
+import { fileURLToPath } from "url";
 
-const FAKE_TOKEN = "e2e-test-token";
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const AUTH_FILE = path.join(__dirname, "..", ".auth", "e2e-user.json");
 
 /**
- * Inject a JWT token into localStorage before the page initialises,
- * so the AuthContext sees the user as authenticated on first render.
+ * Inject the real JWT token from globalSetup into localStorage so the app
+ * sees the test user as authenticated on first render.
  */
-export async function authenticate(page: Page, token = FAKE_TOKEN) {
-  await page.addInitScript((t) => {
-    window.localStorage.setItem("token", t);
-  }, token);
+export async function authenticate(page: Page) {
+  const auth = JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
+  await page.addInitScript((token: string) => {
+    window.localStorage.setItem("token", token);
+  }, auth.token);
 }
 
-/**
- * Simulate a full login flow through the UI.
- * Mocks the Login mutation, fills the form, and waits for navigation.
- */
-export async function loginViaUI(
-  page: Page,
-  email = "user@example.com",
-  password = "password123"
-) {
-  await mockGQL(page, {
-    Login: { login: { token: FAKE_TOKEN } },
-    // Today page will fire these after redirect
-    GetTodayActions: { todayActions: [] },
-    GetPreDayStatus: { preDayStatus: { afterDayRequired: false } },
-    RunActionGathering: { runActionGathering: true },
-  });
-
-  await page.goto("/login");
-  await page.getByPlaceholder(/email/i).fill(email);
-  await page.getByPlaceholder(/password/i).fill(password);
-  await page.getByRole("button", { name: /log in|sign in|login/i }).click();
-
-  // After login, the app redirects to /today (or wherever)
-  await page.waitForURL(/\/(today|$)/);
+export function getAuthData(): { email: string; password: string; token: string; friendEmail: string } {
+  return JSON.parse(fs.readFileSync(AUTH_FILE, "utf-8"));
 }

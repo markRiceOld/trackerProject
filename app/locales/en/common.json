@@ -851,6 +851,7 @@
     "empty": "No journals yet.",
     "noArchived": "No archived journals.",
     "createFirst": "Create your first journal",
+    "entryCount_one": "{{count}} entry",
     "entryCount": "{{count}} entries",
     "setDefault": "Set as default",
     "archiveJournal": "Archive journal",

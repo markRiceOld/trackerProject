@@ -1,39 +1,17 @@
 import { test, expect } from "@playwright/test";
-import { mockGQL } from "./helpers/gql";
-import { authenticate } from "./helpers/auth";
+import { authenticate, getAuthData } from "./helpers/auth";
 
-const todayMocks = {
-  GetTodayActions: { todayActions: [] },
-  GetPreDayStatus: {
-    preDayStatus: {
-      afterDayRequired: false,
-      canAccessToday: true,
-      actionsWithoutTime: [],
-      todayActionsWithOverlap: [],
-    },
-  },
-  RunActionGathering: { runActionGathering: { dateKeysProcessed: [], actionsCreated: 0 } },
-};
-
-test("navigate from Today to Goals via sidebar", async ({ page }) => {
+test("navigate from Today to Activities via sidebar", async ({ page }) => {
   await authenticate(page);
-  await mockGQL(page, {
-    ...todayMocks,
-    GetGoals: { goals: [] },
-  });
-
   await page.goto("/today");
   await expect(page.getByRole("heading", { name: "Today" })).toBeVisible();
 
-  // Click the Activities nav item, then navigate to goals
   await page.getByRole("link", { name: /Activities/i }).click();
   await expect(page).toHaveURL(/\/activities/);
 });
 
 test("logout: settings → Log out → redirected to /login", async ({ page }) => {
   await authenticate(page);
-  await mockGQL(page, todayMocks);
-
   await page.goto("/settings");
   await expect(page.getByRole("heading", { name: "Settings" })).toBeVisible();
 
@@ -42,23 +20,17 @@ test("logout: settings → Log out → redirected to /login", async ({ page }) =
 });
 
 test("unauthenticated access → /login → login → original destination", async ({ page }) => {
-  // First, intercept Login and set up today mocks
-  await mockGQL(page, {
-    Login: {
-      login: { token: "e2e-test-token", user: { id: "u1", email: "user@example.com" } },
-    },
-    ...todayMocks,
-  });
+  const { email, password } = getAuthData();
 
-  // Try to visit /today without auth — should redirect to /login
+  // Visit /today without auth — should redirect to /login
   await page.goto("/today");
   await expect(page).toHaveURL(/\/login/);
 
-  // Login
-  await page.getByPlaceholder("Email").fill("user@example.com");
-  await page.getByPlaceholder("Password").fill("password123");
+  // Login with real credentials
+  await page.getByPlaceholder("Email").fill(email);
+  await page.getByPlaceholder("Password").fill(password);
   await page.getByRole("button", { name: "Login" }).click();
 
-  // Should be sent to /today (the original destination)
-  await expect(page).toHaveURL(/\/today/, { timeout: 5000 });
+  // Should land on /today (the originally requested destination)
+  await expect(page).toHaveURL(/\/today/, { timeout: 8000 });
 });
