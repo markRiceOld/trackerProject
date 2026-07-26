@@ -11,6 +11,7 @@ import {
 
 import type { LinksFunction } from "react-router";
 import OnboardingSlideshow from "~/components/onboarding/OnboardingSlideshow";
+import { OnboardingTourProvider } from "~/components/onboarding/OnboardingTourContext";
 import "./app.css";
 import React from "react";
 import { useTranslation } from "react-i18next";
@@ -36,7 +37,9 @@ export function ProtectedAppLayout() {
 
   const internal = isInternalPage(location.pathname);
   return (
-    <>
+    // The provider spans both the tour and the <Outlet />, so the module intros
+    // rendered by pages can wait for the tour to clear.
+    <OnboardingTourProvider enabled={isAuthenticated}>
     {isAuthenticated && <OnboardingSlideshow />}
     <div className="flex h-screen flex-col md:flex-row">
       <ResponsiveNavigation
@@ -48,7 +51,7 @@ export function ProtectedAppLayout() {
         <Outlet />
       </div>
     </div>
-    </>
+    </OnboardingTourProvider>
   );
 }
 

@@ -3,7 +3,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
-import { Pencil, Settings, Trash2, MoreVertical, Info, StickyNote } from "lucide-react";
+import { Pencil, Settings, Trash2, MoreVertical, Info, StickyNote, CalendarClock } from "lucide-react";
 import type { Action } from "./ActionsListPage";
 import { isToday, isBefore, isAfter, format, isValid } from "date-fns";
 import { parseDateOnly } from "~/utils/dateUtils";
@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router";
 import { useEffect, useState, useRef } from "react";
 import { useApi } from "~/api/useApi";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 import {
   DELETE_ACTION,
   TOGGLE_ACTION,
@@ -89,13 +90,27 @@ export default function ActionPreview({
   const dropdownRef = useRef<HTMLDivElement>(null);
   const infoRef = useRef<HTMLDivElement>(null);
   const { call } = useApi();
+  const { submitting: postponing, run: runPostpone } = useSubmitGuard();
+  const { submitting: outsourcing, run: runOutsource } = useSubmitGuard();
+  const { submitting: fating, run: runFate } = useSubmitGuard();
+  const { submitting: deleting, run: runDelete } = useSubmitGuard();
   const minDate = format(new Date(), "yyyy-MM-dd");
   const todayAction = action as ActionWithTodayFields;
   const showInfoBalloon = infoBalloonOpen || infoHover;
-  function getStatus(actionArg: Action): string {
-    if (actionArg.done) return "Done";
-    if (!actionArg.tbd) return "Backlog";
-    const tbd = parseDateOnly(actionArg.tbd);
+  // Several parents render this row without an onRefetch, so a postpone would
+  // otherwise leave the old date on screen. Track the new one locally.
+  const [tbdOverride, setTbdOverride] = useState<string | null>(null);
+  const effectiveTbd = tbdOverride ?? action.tbd;
+
+  // tbd is typed as Date on Action but arrives from the API as a string, and the
+  // local override is a "yyyy-MM-dd" string — so accept both here.
+  function getStatus(
+    tbdValue: string | Date | null | undefined,
+    done?: boolean | null
+  ): string {
+    if (done) return "Done";
+    if (!tbdValue) return "Backlog";
+    const tbd = parseDateOnly(tbdValue);
     if (!isValid(tbd)) return "Backlog";
     if (isToday(tbd)) return "In Progress";
     if (isBefore(tbd, new Date())) return "Ignored";
@@ -112,6 +127,11 @@ export default function ActionPreview({
   useEffect(() => {
     setChecked(action.done ?? false);
   }, [action.id, action.done]);
+
+  // Drop the local date once the row is replaced or the parent refetches.
+  useEffect(() => {
+    setTbdOverride(null);
+  }, [action.id, action.tbd]);
 
   useEffect(() => {
     if (!dropdownOpen) return;
@@ -151,7 +171,7 @@ export default function ActionPreview({
         return "";
     }
   }
-  const status = getStatus(action);
+  const status = getStatus(effectiveTbd, action.done);
   const statusColor = getStatusColor(status);
   const statusKey =
     status === "Done"
@@ -166,7 +186,7 @@ export default function ActionPreview({
               ? "goalManage.statusTbd"
               : "";
   const statusLabel = statusKey ? t(statusKey) : status;
-  const tbdDisplay = formatTbd(action.tbd) === "No Date" ? t("actions.statusNoDate") : formatTbd(action.tbd);
+  const tbdDisplay = formatTbd(effectiveTbd) === "No Date" ? t("actions.statusNoDate") : formatTbd(effectiveTbd);
 
   const handleManage = () => {
     navigate(`/activities/action/${action.id}`, { state: returnTo ?? undefined });
@@ -188,86 +208,144 @@ export default function ActionPreview({
 
   const handlePostpone = async () => {
     if (!postponeDate) return;
-    try {
-      await call({
-        query: POSTPONE_ACTION,
-        variables: { id: action.id, newDate: postponeDate },
-      });
-      setPostponeDate("");
-      setPostponeModalOpen(false);
-      setDropdownOpen(false);
-      onRefetch?.();
-    } catch (e) {
-      console.error(e);
-    }
+    await runPostpone(async () => {
+      try {
+        const nextDate = postponeDate;
+        await call({
+          query: POSTPONE_ACTION,
+          variables: { id: action.id, newDate: nextDate },
+        });
+        setTbdOverride(nextDate);
+        setPostponeDate("");
+        setPostponeModalOpen(false);
+        setDropdownOpen(false);
+        onRefetch?.();
+        onReschedule?.();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   };
 
   const handleOutsource = async () => {
     if (!outsourceForm.doDate || !outsourceForm.ensureDate) return;
-    try {
-      await call({
-        query: OUTSOURCE_ACTION,
-        variables: {
-          id: action.id,
-          doOutsourcingTitle: outsourceForm.doTitle || t("wizard.doOutsourcingDefault"),
-          doOutsourcingDate: outsourceForm.doDate,
-          ensureDoneTitle: outsourceForm.ensureTitle || t("wizard.ensureDoneDefault"),
-          ensureDoneDate: outsourceForm.ensureDate,
-        },
-      });
-      setOutsourceForm({ doTitle: "", doDate: "", ensureTitle: "", ensureDate: "" });
-      setOutsourceModalOpen(false);
-      setDropdownOpen(false);
-      onRefetch?.();
-    } catch (e) {
-      console.error(e);
-    }
+    await runOutsource(async () => {
+      try {
+        await call({
+          query: OUTSOURCE_ACTION,
+          variables: {
+            id: action.id,
+            doOutsourcingTitle: outsourceForm.doTitle || t("wizard.doOutsourcingDefault"),
+            doOutsourcingDate: outsourceForm.doDate,
+            ensureDoneTitle: outsourceForm.ensureTitle || t("wizard.ensureDoneDefault"),
+            ensureDoneDate: outsourceForm.ensureDate,
+          },
+        });
+        setOutsourceForm({ doTitle: "", doDate: "", ensureTitle: "", ensureDate: "" });
+        setOutsourceModalOpen(false);
+        setDropdownOpen(false);
+        onRefetch?.();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   };
 
   const handleIgnore = async () => {
-    try {
-      await call({ query: SET_ACTION_IGNORE, variables: { id: action.id } });
-      setDropdownOpen(false);
-      onRefetch?.();
-    } catch (e) {
-      console.error(e);
-    }
+    await runFate(async () => {
+      try {
+        await call({ query: SET_ACTION_IGNORE, variables: { id: action.id } });
+        setDropdownOpen(false);
+        onRefetch?.();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   };
 
   const handlePass = async () => {
-    try {
-      await call({
-        query: SET_ACTION_PASSED_ARCHIVED,
-        variables: { id: action.id },
-      });
-      setDropdownOpen(false);
-      onRefetch?.();
-    } catch (e) {
-      console.error(e);
-    }
+    await runFate(async () => {
+      try {
+        await call({
+          query: SET_ACTION_PASSED_ARCHIVED,
+          variables: { id: action.id },
+        });
+        setDropdownOpen(false);
+        onRefetch?.();
+      } catch (e) {
+        console.error(e);
+      }
+    });
   };
 
   const handleDelete = async () => {
-    try {
-      await call({
-        query: DELETE_ACTION,
-        variables: { id: action.id },
-      });
-      onDelete?.(action.id ?? '');
-    } catch (err) {
-      console.error("Delete failed", err);
-    }
+    await runDelete(async () => {
+      try {
+        await call({
+          query: DELETE_ACTION,
+          variables: { id: action.id },
+        });
+        onDelete?.(action.id ?? '');
+      } catch (err) {
+        console.error("Delete failed", err);
+      }
+    });
   };
   
+
+  // Shared by both variants: the today row's "Postpone" menu item and the list
+  // row's quick reschedule button on ignored actions.
+  const postponeModal = postponeModalOpen && (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+      onClick={() => setPostponeModalOpen(false)}
+    >
+      <div
+        className="rounded-lg border bg-card p-4 shadow-lg w-full max-w-sm"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <Label htmlFor="action-preview-postpone-date" className="font-medium mb-3 flex items-center gap-2">
+          {t("wizard.postponeToDate")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+        </Label>
+        <div className="flex gap-2">
+          <Input
+            id="action-preview-postpone-date"
+            type="date"
+            min={minDate}
+            value={postponeDate}
+            onChange={(e) => setPostponeDate(e.target.value)}
+            className="flex-1"
+          />
+          <Button
+            size="sm"
+            onClick={handlePostpone}
+            disabled={!postponeDate}
+            loading={postponing}
+          >
+            {t("wizard.setDate")}
+          </Button>
+        </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="mt-2"
+          onClick={() => setPostponeModalOpen(false)}
+          disabled={postponing}
+        >
+          {t("common.cancel")}
+        </Button>
+      </div>
+    </div>
+  );
 
   if (showTodayOptions) {
     const parentLabel =
       todayAction.milestone?.title
-        ? `Milestone: ${todayAction.milestone.title}`
+        ? t("actions.milestoneBadge", { title: todayAction.milestone.title })
         : todayAction.goal?.title
-          ? `Goal: ${todayAction.goal.title}`
+          ? t("actions.goalBadge", { title: todayAction.goal.title })
           : todayAction.project?.title
-            ? `Project: ${todayAction.project.title}`
+            ? t("actions.projectBadge", { title: todayAction.project.title })
             : null;
 
     return (
@@ -306,7 +384,7 @@ export default function ActionPreview({
               <div className="font-medium text-sm truncate">{action.title}</div>
               <div className="text-xs text-muted-foreground">
                 {todayAction.project?.title && (
-                  <span>from {todayAction.project.title}</span>
+                  <span>{t("today.fromProject", { title: todayAction.project.title })}</span>
                 )}
                 {todayAction.startTimeOfDay && (
                   <span className="ml-1">{todayAction.startTimeOfDay}</span>
@@ -380,47 +458,7 @@ export default function ActionPreview({
           </div>
         </div>
 
-        {/* Postpone modal */}
-        {postponeModalOpen && (
-          <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-            onClick={() => setPostponeModalOpen(false)}
-          >
-            <div
-              className="rounded-lg border bg-card p-4 shadow-lg w-full max-w-sm"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Label htmlFor="action-preview-postpone-date" className="font-medium mb-3 flex items-center gap-2">
-                {t("wizard.postponeToDate")} <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
-              </Label>
-              <div className="flex gap-2">
-                <Input
-                  id="action-preview-postpone-date"
-                  type="date"
-                  min={minDate}
-                  value={postponeDate}
-                  onChange={(e) => setPostponeDate(e.target.value)}
-                  className="flex-1"
-                />
-                <Button
-                  size="sm"
-                  onClick={handlePostpone}
-                  disabled={!postponeDate}
-                >
-                  {t("wizard.setDate")}
-                </Button>
-              </div>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-2"
-                onClick={() => setPostponeModalOpen(false)}
-              >
-                {t("common.cancel")}
-              </Button>
-            </div>
-          </div>
-        )}
+        {postponeModal}
 
         {/* Outsource modal */}
         {outsourceModalOpen && (
@@ -435,7 +473,7 @@ export default function ActionPreview({
               className="rounded-lg border bg-card p-4 shadow-lg w-full max-w-md my-auto"
               onClick={(e) => e.stopPropagation()}
             >
-              <h3 className="font-medium mb-3">Outsource: set dates for follow-up tasks</h3>
+              <h3 className="font-medium mb-3">{t("wizard.outsourceSetDatesIntro")}</h3>
               <div className="grid gap-2 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="action-preview-outsource-do-title" className="text-xs flex items-center gap-2">
@@ -497,7 +535,7 @@ export default function ActionPreview({
                   onClick={handleOutsource}
                   disabled={!outsourceForm.doDate || !outsourceForm.ensureDate}
                 >
-                  Confirm outsource
+                  {t("wizard.confirmOutsource")}
                 </Button>
                 <Button
                   variant="ghost"
@@ -506,7 +544,7 @@ export default function ActionPreview({
                     setOutsourceForm({ doTitle: "", doDate: "", ensureTitle: "", ensureDate: "" });
                   }}
                 >
-                  Cancel
+                  {t("common.cancel")}
                 </Button>
               </div>
             </div>
@@ -527,11 +565,11 @@ export default function ActionPreview({
   const otherAction = action as ActionWithTodayFields;
   const parentLabelOther =
     otherAction.milestone?.title
-      ? `Milestone: ${otherAction.milestone.title}`
+      ? t("actions.milestoneBadge", { title: otherAction.milestone.title })
       : otherAction.goal?.title
-        ? `Goal: ${otherAction.goal.title}`
+        ? t("actions.goalBadge", { title: otherAction.goal.title })
         : otherAction.project?.title
-          ? `Project: ${otherAction.project.title}`
+          ? t("actions.projectBadge", { title: otherAction.project.title })
           : null;
 
   return (
@@ -577,9 +615,23 @@ export default function ActionPreview({
           )}
           <div className="min-w-0">
             <div className="font-medium text-sm line-clamp-1">{action.title}</div>
-            <div className="text-xs text-muted-foreground flex items-center gap-2">
+            <div className="text-xs text-muted-foreground flex items-center gap-2 flex-wrap">
               {tbdDisplay}
               <Badge className={statusColor}>{statusLabel}</Badge>
+              {/* An ignored action is one whose date has passed — the only thing
+                  you usually want here is to give it a new one. */}
+              {status === "Ignored" && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 gap-1 px-2 text-xs"
+                  onClick={() => setPostponeModalOpen(true)}
+                  disabled={postponing}
+                >
+                  <CalendarClock className="h-3.5 w-3.5" />
+                  {t("actions.updateDate")}
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -600,6 +652,7 @@ export default function ActionPreview({
         </Button>
       </div>
     </div>
+    {postponeModal}
     {notesOpen && (
       <NotesModal
         entityType="action"
@@ -616,6 +669,7 @@ export default function ActionPreview({
       confirmLabel={t("actions.delete")}
       variant="destructive"
       onConfirm={handleDelete}
+      confirmLoading={deleting}
     />
     </>
   );

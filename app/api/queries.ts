@@ -772,12 +772,64 @@ export const GET_NOT_DONE_ACTIONS_FOR_DATE = `
         sourceId
         estimatedTimeMinutes
       }
+      linkedManual {
+        id
+        title
+        tbd
+        estimatedTimeMinutes
+        project {
+          id
+          title
+        }
+      }
       standalone {
         id
         title
         tbd
         estimatedTimeMinutes
       }
+    }
+  }
+`;
+
+export const GET_API_TOKENS = `
+  query GetApiTokens {
+    apiTokens {
+      id
+      name
+      prefix
+      scope
+      lastUsedAt
+      expiresAt
+      revokedAt
+      createdAt
+    }
+  }
+`;
+
+export const CREATE_API_TOKEN = `
+  mutation CreateApiToken($name: String!, $scope: ApiTokenScope!, $expiresInDays: Int) {
+    createApiToken(name: $name, scope: $scope, expiresInDays: $expiresInDays) {
+      token
+      apiToken {
+        id
+        name
+        prefix
+        scope
+        lastUsedAt
+        expiresAt
+        revokedAt
+        createdAt
+      }
+    }
+  }
+`;
+
+export const REVOKE_API_TOKEN = `
+  mutation RevokeApiToken($id: ID!) {
+    revokeApiToken(id: $id) {
+      id
+      revokedAt
     }
   }
 `;

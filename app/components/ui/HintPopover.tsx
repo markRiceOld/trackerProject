@@ -29,7 +29,7 @@ export default function HintPopover({ textKey, conceptsAnchor }: HintPopoverProp
     <div className="relative inline-flex shrink-0" ref={ref}>
       <button
         type="button"
-        aria-label="hint"
+        aria-label={t("hints.hintLabel")}
         aria-expanded={open}
         onClick={() => setOpen((o) => !o)}
         className="inline-flex items-center justify-center h-4 w-4 rounded-full text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"

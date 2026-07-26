@@ -3,57 +3,108 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { useApi } from "~/api/useApi";
 import { GET_ONBOARDING_PROGRESS, MARK_SLIDE_VIEWED, GET_ME_DISCOVERABILITY, UPDATE_DISCOVERABILITY } from "~/api/queries";
+import { useOnboardingTour } from "./OnboardingTourContext";
+import { setLanguage, SUPPORTED_LANGUAGES, type AppLanguage } from "~/i18n/config";
 import { Button } from "~/components/ui/button";
 import { Switch } from "~/components/ui/switch";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 
 const TOTAL_SLIDES = 7;
 
-export default function OnboardingSlideshow() {
-  const { t } = useTranslation();
+type OnboardingSlideshowProps = {
+  /**
+   * Replay mode: show the tour on demand (from Settings) regardless of stored
+   * progress, and leave that progress untouched — it is a re-read, not a redo.
+   */
+  replay?: boolean;
+  /** Called when a replayed tour is closed or finished. */
+  onClose?: () => void;
+};
+
+export default function OnboardingSlideshow({
+  replay = false,
+  onClose,
+}: OnboardingSlideshowProps = {}) {
+  const { t, i18n } = useTranslation();
   const { call } = useApi();
-  const [loaded, setLoaded] = useState(false);
+  const { setStatus } = useOnboardingTour();
+  const [loaded, setLoaded] = useState(replay);
   const [completed, setCompleted] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [current, setCurrent] = useState(0);
+  const [pickingLanguage, setPickingLanguage] = useState(false);
   const [discoverableByEmail, setDiscoverableByEmail] = useState(false);
 
   useEffect(() => {
-    call({ query: GET_ONBOARDING_PROGRESS }).then((res: any) => {
-      const progress = res?.onboardingProgress;
-      if (progress?.completedAt) {
-        setCompleted(true);
-      } else if (progress?.lastSlideViewed != null) {
-        setCurrent(Math.min(progress.lastSlideViewed + 1, TOTAL_SLIDES - 1));
-      }
-      setLoaded(true);
-    });
+    if (!replay) {
+      call({ query: GET_ONBOARDING_PROGRESS }).then((res: any) => {
+        const progress = res?.onboardingProgress;
+        if (progress?.completedAt) {
+          setCompleted(true);
+        } else if (progress?.lastSlideViewed != null) {
+          setCurrent(Math.min(progress.lastSlideViewed + 1, TOTAL_SLIDES - 1));
+        } else {
+          // Nothing viewed yet — this is the first login, so ask which language
+          // to read the rest of the tour (and the app) in before it starts.
+          // Someone resuming mid-tour has already answered.
+          setPickingLanguage(true);
+        }
+        setLoaded(true);
+      });
+    }
     call({ query: GET_ME_DISCOVERABILITY }).then((res: any) => {
       setDiscoverableByEmail(res?.me?.discoverableByEmail ?? false);
     });
-  }, []);
+  }, [replay]);
 
   const handleDiscoverabilityChange = (val: boolean) => {
     setDiscoverableByEmail(val);
     call({ query: UPDATE_DISCOVERABILITY, variables: { discoverableByEmail: val } });
   };
 
-  if (!loaded || completed || dismissed) return null;
+  const showing = loaded && !completed && !dismissed;
+
+  // Tell the module intros whether this tour owns the screen. A replay is
+  // opened deliberately from Settings, so it doesn't drive the first-run
+  // sequencing.
+  useEffect(() => {
+    if (replay) return;
+    setStatus(!loaded ? "pending" : showing ? "visible" : "hidden");
+  }, [replay, loaded, showing]);
+
+  if (!showing) return null;
 
   const isFirst = current === 0;
   const isLast = current === TOTAL_SLIDES - 1;
 
+  const handleFinish = () => {
+    setCompleted(true);
+    // Taking a CTA finishes the tour just as much as clicking through to the
+    // end — persist that, or it reappears on every load. Fire-and-forget so
+    // navigation isn't held up.
+    if (!replay) {
+      void call({ query: MARK_SLIDE_VIEWED, variables: { slideIndex: TOTAL_SLIDES - 1 } });
+    }
+    onClose?.();
+  };
+
   const handleNext = async () => {
-    await call({ query: MARK_SLIDE_VIEWED, variables: { slideIndex: current } });
+    // Replaying is a re-read — don't rewrite the stored progress.
+    if (!replay) {
+      await call({ query: MARK_SLIDE_VIEWED, variables: { slideIndex: current } });
+    }
     if (isLast) {
-      setCompleted(true);
+      handleFinish();
     } else {
       setCurrent((c) => c + 1);
     }
   };
 
   const handlePrev = () => setCurrent((c) => Math.max(0, c - 1));
-  const handleClose = () => setDismissed(true);
+  const handleClose = () => {
+    setDismissed(true);
+    onClose?.();
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm">
@@ -68,6 +119,14 @@ export default function OnboardingSlideshow() {
           <X className="h-4 w-4" />
         </button>
 
+        {pickingLanguage ? (
+          <LanguageStep
+            t={t}
+            currentLanguage={i18n.language}
+            onContinue={() => setPickingLanguage(false)}
+          />
+        ) : (
+          <>
         {/* Progress bar */}
         <div className="flex gap-1 px-6 pt-6">
           {Array.from({ length: TOTAL_SLIDES }).map((_, i) => (
@@ -110,14 +169,16 @@ export default function OnboardingSlideshow() {
         {/* Last slide CTAs */}
         {isLast && (
           <div className="flex flex-col gap-2 px-6 py-4 border-t">
-            <Link to="/goals/new" onClick={() => setCompleted(true)}>
-              <Button className="w-full">{t("onboarding.slides.6.ctaGoal")}</Button>
-            </Link>
-            <Link to="/concepts" onClick={() => setCompleted(true)}>
-              <Button variant="outline" className="w-full">
+            <Button asChild className="w-full">
+              <Link to="/activities/goal" onClick={handleFinish}>
+                {t("onboarding.slides.6.ctaGoal")}
+              </Link>
+            </Button>
+            <Button asChild variant="outline" className="w-full">
+              <Link to="/concepts" onClick={handleFinish}>
                 {t("onboarding.slides.6.ctaGuide")}
-              </Button>
-            </Link>
+              </Link>
+            </Button>
             <button
               type="button"
               onClick={handleNext}
@@ -127,7 +188,43 @@ export default function OnboardingSlideshow() {
             </button>
           </div>
         )}
+          </>
+        )}
       </div>
+    </div>
+  );
+}
+
+function LanguageStep({
+  t,
+  currentLanguage,
+  onContinue,
+}: {
+  t: (key: string, opts?: any) => string;
+  currentLanguage: string;
+  onContinue: () => void;
+}) {
+  return (
+    <div className="px-6 pt-8 pb-6">
+      <h2 className="text-xl font-bold mb-2">{t("onboarding.language.title")}</h2>
+      <p className="text-sm text-muted-foreground leading-relaxed mb-5">
+        {t("onboarding.language.body")}
+      </p>
+      <div className="flex flex-col gap-2">
+        {SUPPORTED_LANGUAGES.map((lang) => (
+          <Button
+            key={lang}
+            variant={currentLanguage === lang ? "default" : "outline"}
+            className="w-full justify-center"
+            onClick={() => void setLanguage(lang as AppLanguage)}
+          >
+            {t(lang === "fa" ? "language.persian" : "language.english")}
+          </Button>
+        ))}
+      </div>
+      <Button size="sm" className="w-full mt-5" onClick={onContinue}>
+        {t("onboarding.nav.next")}
+      </Button>
     </div>
   );
 }

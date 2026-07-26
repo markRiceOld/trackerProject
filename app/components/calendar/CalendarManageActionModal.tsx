@@ -195,7 +195,7 @@ export default function CalendarManageActionModal({
       onClick={onClose}
       role="dialog"
       aria-modal="true"
-      aria-label="Add actions to calendar manage queue"
+      aria-label={t("calendarPage.addActionsToQueue")}
     >
       <div
         className="h-full w-full bg-card p-4 sm:mx-auto sm:my-8 sm:h-auto sm:max-h-[86vh] sm:max-w-4xl sm:rounded-lg sm:border sm:shadow-lg"

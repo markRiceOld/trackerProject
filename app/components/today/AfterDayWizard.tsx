@@ -21,6 +21,8 @@ import { toLocalDateString, addDaysToDateKey } from "~/utils/dateUtils";
 import { format } from "date-fns";
 import { Moon, Pencil, Sun, ChevronRight, CheckCircle2 } from "lucide-react";
 import HintPopover from "~/components/ui/HintPopover";
+import { LoadingBlock } from "~/components/ui/spinner";
+import { useKeyedSubmitGuard } from "~/utils/useSubmitGuard";
 
 type ActionItem = {
   id: string;
@@ -29,13 +31,35 @@ type ActionItem = {
   sourceId?: string;
   tbd?: string;
   estimatedTimeMinutes?: number;
+  project?: { id: string; title: string } | null;
 };
 
 type NotDoneData = {
   nonLinkedGathered: ActionItem[];
   linkedGathered: ActionItem[];
+  linkedManual: ActionItem[];
   standalone: ActionItem[];
 };
+
+const EMPTY_NOT_DONE: NotDoneData = {
+  nonLinkedGathered: [],
+  linkedGathered: [],
+  linkedManual: [],
+  standalone: [],
+};
+
+/**
+ * Step 0 handles everything the user linked to the hierarchy: actions they
+ * attached to a project by hand, and gathered actions from a scoped interval.
+ * The hand-made ones come first — they're the deliberate commitments.
+ */
+function getLinkedList(data: NotDoneData | null): ActionItem[] {
+  return [...(data?.linkedManual ?? []), ...(data?.linkedGathered ?? [])];
+}
+
+function countLinked(data: NotDoneData | null): number {
+  return getLinkedList(data).length;
+}
 
 type StepIndex = 0 | 1 | 2 | 3;
 
@@ -86,7 +110,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
   const fetchNotDone = useCallback(
     (dateKey: string) =>
       call({ query: GET_NOT_DONE_ACTIONS_FOR_DATE, variables: { date: dateKey } }).then(
-        (res: any) => res?.notDoneActionsForDate ?? { nonLinkedGathered: [], linkedGathered: [], standalone: [] }
+        (res: any) => res?.notDoneActionsForDate ?? EMPTY_NOT_DONE
       ),
     [call]
   );
@@ -105,7 +129,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
     setLoading(true);
     call({ query: GET_NOT_DONE_ACTIONS_FOR_DATE, variables: { date: dateKeyToClose } })
       .then((res: any) => {
-        const data = res?.notDoneActionsForDate ?? { nonLinkedGathered: [], linkedGathered: [], standalone: [] };
+        const data: NotDoneData = res?.notDoneActionsForDate ?? EMPTY_NOT_DONE;
         return data;
       })
       .then(async (data) => {
@@ -123,11 +147,11 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           const updated = res2?.notDoneActionsForDate ?? data;
           if (!cancelled) {
             setNotDoneData(updated);
-            if ((updated?.linkedGathered?.length ?? 0) === 0) setStep(1);
+            if (countLinked(updated) === 0) setStep(1);
           }
         } else if (!cancelled) {
           setNotDoneData(data);
-          if ((data?.linkedGathered?.length ?? 0) === 0) setStep(1);
+          if (countLinked(data) === 0) setStep(1);
         }
         if (!cancelled) setLoading(false);
       })
@@ -187,7 +211,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
     };
   }, [step, tomorrowKey]);
 
-  const linkedList = notDoneData?.linkedGathered ?? [];
+  const linkedList = getLinkedList(notDoneData);
   const standaloneList = notDoneData?.standalone ?? [];
   const canAdvanceFromStep0 = linkedList.length === 0;
   const hasStep0Content = linkedList.length > 0;
@@ -235,11 +259,16 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
     }
   };
 
+  // One row at a time — these all refetch the whole day, so overlapping
+  // mutations would race each other's results.
+  const { isSubmitting: isRowBusy, run: runStandalone } = useKeyedSubmitGuard();
+
   const applyStandaloneChoice = async (
     actionId: string,
     choice: "postpone" | "outsource" | "ignore" | "delete",
     extra?: { newDate?: string; doTitle?: string; doDate?: string; ensureTitle?: string; ensureDate?: string }
   ) => {
+    await runStandalone(actionId, async () => {
     try {
       if (choice === "postpone" && extra?.newDate) {
         await call({ query: POSTPONE_ACTION, variables: { id: actionId, newDate: extra.newDate } });
@@ -266,6 +295,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const finishFlow = async () => {
@@ -285,7 +315,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
   if (loading && step === 0) {
     return (
       <main className="p-6">
-        <p className="text-muted-foreground">{t("wizard.loadingAfterDay")}</p>
+        <LoadingBlock label={t("wizard.loadingAfterDay")} />
       </main>
     );
   }
@@ -347,7 +377,14 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           <ul className="space-y-4">
               {linkedList.map((action) => (
                 <li key={action.id} className="rounded-lg border bg-card p-4">
-                  <div className="mb-3 font-medium">{action.title}</div>
+                  <div className="mb-3">
+                    <div className="font-medium">{action.title}</div>
+                    <p className="text-xs text-muted-foreground">
+                      {action.project
+                        ? action.project.title
+                        : t(`wizard.source.${action.sourceType === "routine" ? "routine" : "interval"}`)}
+                    </p>
+                  </div>
                   {linkedResponses[action.id] ? (
                     <span className="text-sm text-muted-foreground">
                       {t("wizard.chosen", {
@@ -541,6 +578,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                     onOutsource={(extra) => applyStandaloneChoice(action.id, "outsource", extra)}
                     onIgnore={() => applyStandaloneChoice(action.id, "ignore")}
                     onDelete={() => applyStandaloneChoice(action.id, "delete")}
+                    busy={isRowBusy(action.id)}
                   />
                 ))}
               </ul>
@@ -561,6 +599,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
                     onOutsource={(extra) => applyStandaloneChoice(action.id, "outsource", extra)}
                     onIgnore={() => applyStandaloneChoice(action.id, "ignore")}
                     onDelete={() => applyStandaloneChoice(action.id, "delete")}
+                    busy={isRowBusy(action.id)}
                   />
                 ))}
               </ul>
@@ -603,13 +642,13 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
           )}
           <div className="flex flex-wrap gap-3">
             {embeddedInPreDay ? (
-              <Button onClick={finishFlow} disabled={finishing} className="gap-2">
+              <Button onClick={finishFlow} loading={finishing} className="gap-2">
                 {t("wizard.continueToDayReview")}
                 <ChevronRight className="h-4 w-4" />
               </Button>
             ) : (
               <>
-                <Button onClick={finishFlow} disabled={finishing} className="gap-2">
+                <Button onClick={finishFlow} loading={finishing} className="gap-2">
                   <Moon className="h-4 w-4" />
                   {t("wizard.goodNight")}
                 </Button>
@@ -653,7 +692,7 @@ export default function AfterDayWizard({ dateKeyToClose, onClose, onComplete }: 
             </ul>
           )}
           <div className="flex justify-end">
-            <Button onClick={finishFlow} disabled={finishing} className="gap-2">
+            <Button onClick={finishFlow} loading={finishing} className="gap-2">
               <Sun className="h-4 w-4" />
               {t("wizard.done")}
             </Button>
@@ -672,6 +711,7 @@ function StandaloneRow({
   onOutsource,
   onIgnore,
   onDelete,
+  busy = false,
 }: {
   action: ActionItem;
   minDate: string;
@@ -684,6 +724,8 @@ function StandaloneRow({
   }) => void;
   onIgnore: () => void;
   onDelete: () => void;
+  /** True while this row's mutation is in flight. */
+  busy?: boolean;
 }) {
   const { t } = useTranslation();
   const [showPostpone, setShowPostpone] = useState(false);
@@ -709,10 +751,10 @@ function StandaloneRow({
         <Button variant="outline" size="sm" onClick={() => setShowOutsource((p) => !p)}>
           {t("wizard.outsource")}
         </Button>
-        <Button variant="outline" size="sm" onClick={onIgnore}>
+        <Button variant="outline" size="sm" onClick={onIgnore} loading={busy}>
           {t("wizard.ignore")}
         </Button>
-        <Button variant="destructive" size="sm" onClick={onDelete}>
+        <Button variant="destructive" size="sm" onClick={onDelete} loading={busy}>
           {t("wizard.delete")}
         </Button>
       </div>
@@ -738,6 +780,7 @@ function StandaloneRow({
               }
             }}
             disabled={!postponeDate}
+            loading={busy}
           >
             {t("wizard.setDate")}
           </Button>
@@ -796,6 +839,7 @@ function StandaloneRow({
           <Button
             size="sm"
             disabled={!outsourceForm.doDate || !outsourceForm.ensureDate}
+            loading={busy}
             onClick={() => {
               onOutsource(outsourceForm);
               setShowOutsource(false);

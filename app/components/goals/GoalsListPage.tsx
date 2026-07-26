@@ -12,6 +12,7 @@ import { useApi } from "~/api/useApi";
 import { GET_GOALS } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
 import ListFilters from "~/components/ui/list-filters";
+import { LoadingBlock } from "~/components/ui/spinner";
 
 
 
@@ -76,7 +77,7 @@ export default function GoalsListPage() {
     fetchGoals();
   }, []);
 
-  if (!goals) return <p className="p-6">{t("common.loading")}</p>;
+  if (!goals) return <LoadingBlock className="p-6" />;
 
   const allLinksSelected = linkFilters.groupGoal && linkFilters.individualGoal;
   const allStatusesSelected =

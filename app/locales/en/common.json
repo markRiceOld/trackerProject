@@ -36,6 +36,12 @@
       "description": "Allow other users to add you to their journals by email address.",
       "on": "Discoverable by email",
       "off": "Not discoverable"
+    },
+    "guide": {
+      "title": "Guide & welcome tour",
+      "description": "Read the full guide any time, or replay the welcome tour shown on first launch.",
+      "openGuide": "Open the guide",
+      "replayWelcome": "Replay welcome tour"
     }
   },
   "calendar": {
@@ -141,8 +147,11 @@
     "errors": {
       "estimatedRequiredWithDueDate": "Estimated time is required when a due date is set.",
       "estimatedRange": "Estimated time must be between 0 and 1440 minutes (24 hours).",
-      "timeRequiredToday": "Time is required when the date is today (use HH:mm)."
-    }
+      "timeRequiredToday": "Time is required when the date is today (use HH:mm).",
+      "timeInvalid": "Time must be in HH:mm format."
+    },
+    "clickToUpdate": "click to update",
+    "updateDate": "update date"
   },
   "intervals": {
     "type": "Type",
@@ -166,6 +175,7 @@
     "defaultTodoTimeHelp": "When this interval creates actions, use this time as the default start time (e.g. 09:00).",
     "repeats": "Repeats",
     "repeatsLabel": "Repeats:",
+    "timeOfDayLabel": "Time of day:",
     "nextLabel": "Next:",
     "linkedLabel": "Linked:",
     "stepCountOne": "1 step",
@@ -395,7 +405,9 @@
     "chooseProject": "— Choose project —",
     "moveToBacklog": "Move to backlog",
     "moveToBucketList": "Move to bucket list",
-    "noDescription": "no description"
+    "noDescription": "no description",
+    "actionCountOne": "1 action",
+    "actionCountOther": "{{count}} actions"
   },
   "goalsList": {
     "title": "Goals",
@@ -452,7 +464,10 @@
     "addAction": "Add action",
     "noActions": "No actions yet.",
     "noActionsMatch": "No actions match current filters.",
-    "backToActions": "Back to Actions"
+    "backToActions": "Back to Actions",
+    "select": "Select",
+    "selectedCount": "{{count}} selected",
+    "doneSelecting": "Done"
   },
   "filters": {
     "links": "Links",
@@ -563,7 +578,12 @@
     "ignoreBucketList": "Ignore (bucket list)",
     "doOutsourcingDefault": "Do outsourcing",
     "ensureDoneDefault": "Ensure done",
-    "outsourceSetDatesIntro": "Outsource: set dates for follow-up tasks"
+    "outsourceSetDatesIntro": "Outsource: set dates for follow-up tasks",
+    "minutesParen": "({{min}} min)",
+    "source": {
+      "interval": "From an interval",
+      "routine": "From a routine"
+    }
   },
   "dodClarity": {
     "checkButton": "Check Clarity",
@@ -703,7 +723,8 @@
     "todayLinkedStandalone": "Linked actions belong to a project — they're part of tracked, committed work in your goal hierarchy. Standalone actions are one-offs with no project context, added directly to a day. Both appear on Today, but they're handled differently in After-day: linked actions that go undone require a fate decision (they represent committed project work), while standalone actions are optional to review.",
     "preDayOverlap": "An overlap means two actions are scheduled at the same time based on their start time and estimated duration. Overlaps aren't blocked — you can keep them if one is background work or can flex. To resolve one, adjust a start time, postpone an action to another day, or outsource it. All remaining overlaps are shown in the final read-only overview before you begin your day.",
     "afterDayFate": "Action fate records what happened to work you didn't complete, keeping your system accurate without losing history. Postpone reschedules to a specific date. Outsource creates two follow-up actions — one to hand it off, one to confirm it's done. Not Important moves it to your backlog (for linked actions). Pass archives it as no longer needed (for interval-generated actions).",
-    "learnMore": "Learn more →"
+    "learnMore": "Learn more →",
+    "hintLabel": "Hint"
   },
   "notes": {
     "modalTitle": "Notes",
@@ -720,6 +741,10 @@
     "close": "Close notes"
   },
   "onboarding": {
+    "language": {
+      "title": "Choose your language",
+      "body": "Pick the language you'd like to use. You can change it any time in Settings."
+    },
     "nav": {
       "previous": "Previous",
       "next": "Next",
@@ -871,5 +896,32 @@
     "composerPlaceholder": "Write an entry... (Enter to submit, Shift+Enter for new line)",
     "addEntry": "Add entry",
     "overrideTimestamp": "Override timestamp to now"
+  },
+  "apiTokens": {
+    "title": "API tokens",
+    "description": "Give a script or an assistant access to your tracker over the API. A token acts as you — treat it like a password.",
+    "nameLabel": "Token name",
+    "namePlaceholder": "e.g. Claude Code",
+    "scopeLabel": "Access",
+    "scopeRead": "Read only",
+    "scopeWrite": "Read and write",
+    "generate": "Generate token",
+    "empty": "No tokens yet.",
+    "issuedTitle": "Your new token",
+    "issuedWarning": "Copy it now — this is the only time it is shown. If you lose it, generate a new one.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "dismiss": "Done",
+    "revoke": "Revoke",
+    "revokeConfirmTitle": "Revoke this token?",
+    "revokeConfirmBody": "\"{{name}}\" will stop working immediately. Anything using it will need a new token.",
+    "revokedOn": "Revoked {{date}}",
+    "lastUsed": "Last used {{date}}",
+    "neverUsed": "Never used",
+    "expires": "expires {{date}}",
+    "errors": {
+      "createFailed": "Could not generate the token.",
+      "copyFailed": "Could not copy to the clipboard — select the token and copy it manually."
+    }
   }
 }

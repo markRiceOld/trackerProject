@@ -21,6 +21,7 @@ import { Settings, Trash2, ChevronDown, ChevronRight, Plus, X, StickyNote } from
 import { Label } from "~/components/ui/label";
 import { Input } from "~/components/ui/input";
 import NotesModal from "~/components/notes/NotesModal";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 export interface Project {
   title: string;
@@ -238,8 +239,11 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
   };
   const canAddAction = newActionTitle.trim() !== "" && isValidEstimated(newActionEstimatedMin);
 
+  const { submitting: addingActionBusy, run: runAddAction } = useSubmitGuard();
+
   const handleAddActionInAccordion = async () => {
     if (!newActionTitle.trim() || !isValidEstimated(newActionEstimatedMin)) return;
+    await runAddAction(async () => {
     const estNum = parseInt(newActionEstimatedMin.trim(), 10);
     const startTime =
       newActionDateIsToday && newActionStartTimeOfDay.trim()
@@ -276,6 +280,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
     } catch (err) {
       console.error("Failed to add action:", err);
     }
+    });
   };
 
   const handleDeleteActionInAccordion = (actionId: string) => {
@@ -296,7 +301,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
               <span className="text-xs text-muted-foreground shrink-0">{dateLabel}</span>
             )}
             <span className="text-xs text-muted-foreground shrink-0">
-              {projectActions.length} action{projectActions.length !== 1 ? "s" : ""}
+              {projectActions.length === 1 ? t("projects.actionCountOne") : t("projects.actionCountOther", { count: projectActions.length })}
             </span>
           </div>
           {showControls && (
@@ -357,6 +362,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                   size="sm"
                   onClick={doDeleteProject}
                   disabled={deleting}
+                  loading={deleting}
                 >
                   {deleting ? t("projects.deleting") : t("common.delete")}
                 </Button>
@@ -441,6 +447,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                     !deleteChoice ||
                     (deleteChoice === "move-to-project" && !moveToProjectId)
                   }
+                  loading={deleting}
                 >
                   {deleting ? t("projects.deleting") : t("projects.deleteProject")}
                 </Button>
@@ -493,7 +500,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                     </div>
                   )}
                   <div className="text-xs text-muted-foreground">
-                    {projectActions.length} action{projectActions.length !== 1 ? "s" : ""}
+                    {projectActions.length === 1 ? t("projects.actionCountOne") : t("projects.actionCountOther", { count: projectActions.length })}
                     {startDate && endDate && (
                       <span className="ml-2">
                         · {format(startDate, "MMM d")} – {format(endDate, "MMM d")}
@@ -578,6 +585,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                       startTimeOfDay={newActionStartTimeOfDay}
                       onStartTimeOfDayChange={setNewActionStartTimeOfDay}
                       onAdd={handleAddActionInAccordion}
+                      busy={addingActionBusy}
                       onCancel={() => {
                         setAddingAction(false);
                         setNewActionTitle("");
@@ -628,6 +636,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                       startTimeOfDay={newActionStartTimeOfDay}
                       onStartTimeOfDayChange={setNewActionStartTimeOfDay}
                       onAdd={handleAddActionInAccordion}
+                      busy={addingActionBusy}
                       onCancel={() => {
                         setAddingAction(false);
                         setNewActionTitle("");
@@ -665,6 +674,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
                   startTimeOfDay={newActionStartTimeOfDay}
                   onStartTimeOfDayChange={setNewActionStartTimeOfDay}
                   onAdd={handleAddActionInAccordion}
+                  busy={addingActionBusy}
                   onCancel={() => {
                     setAddingAction(false);
                     setNewActionTitle("");
@@ -699,7 +709,7 @@ export default function ProjectPreview(props: ProjectPreviewProps) {
               <Button variant="outline" size="sm" onClick={() => setConfirmDeleteOpen(false)} disabled={deleting}>
                 {t("common.cancel")}
               </Button>
-              <Button variant="destructive" size="sm" onClick={doDeleteProject} disabled={deleting}>
+              <Button variant="destructive" size="sm" onClick={doDeleteProject} disabled={deleting} loading={deleting}>
                 {deleting ? t("projects.deleting") : t("common.delete")}
               </Button>
             </div>

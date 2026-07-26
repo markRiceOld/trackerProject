@@ -10,6 +10,7 @@ import { useApi } from "../../api/useApi";
 import { GET_PROJECTS } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
 import ListFilters from "~/components/ui/list-filters";
+import { LoadingBlock } from "~/components/ui/spinner";
 
 function getFirstTbdAction(actions: ProjectPreviewProps["actions"]): ProjectPreviewProps["firstTbdAction"] | undefined {
   return [...actions]
@@ -61,7 +62,7 @@ export default function ProjectsListPage() {
     fetchProjects();
   }, []);
 
-  if (!projects) return <p className="p-6">{t("common.loading")}</p>;
+  if (!projects) return <LoadingBlock className="p-6" />;
 
   const allLinksSelected = linkFilters.milestones && linkFilters.goals;
   const allStatusesSelected =

@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useApi } from "~/api/useApi";
 import { GET_MODULE_INTRO_VIEWED, MARK_MODULE_INTRO_VIEWED } from "~/api/queries";
+import { useOnboardingTour } from "./OnboardingTourContext";
 import { Button } from "~/components/ui/button";
 import { X } from "lucide-react";
 
@@ -19,16 +20,24 @@ type Props = {
 export default function ModuleIntroOverlay({ moduleKey, steps }: Props) {
   const { t } = useTranslation();
   const { call } = useApi();
+  const { status: tourStatus } = useOnboardingTour();
   const [loaded, setLoaded] = useState(false);
   const [visible, setVisible] = useState(false);
   const [current, setCurrent] = useState(0);
 
+  // The welcome tour goes first: it and this overlay are both `fixed inset-0
+  // z-50`, so showing both stacks them and the top one eats the other's clicks.
+  // Wait until the tour is off screen — finished, or closed for the session —
+  // before even asking whether this intro is due.
+  const tourClear = tourStatus === "hidden";
+
   useEffect(() => {
+    if (!tourClear) return;
     call({ query: GET_MODULE_INTRO_VIEWED, variables: { moduleKey } }).then((res: any) => {
       if (!res?.moduleIntroViewed) setVisible(true);
       setLoaded(true);
     });
-  }, [moduleKey]);
+  }, [moduleKey, tourClear]);
 
   const dismiss = async () => {
     setVisible(false);

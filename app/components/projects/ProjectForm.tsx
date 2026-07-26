@@ -14,6 +14,7 @@ import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { Pencil, Trash2 } from "lucide-react";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
 import { cn } from "~/lib/utils";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 type GoalOption = { id: string; title: string; milestones: { id: string; title: string }[] };
 
@@ -50,6 +51,7 @@ export default function ProjectForm() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const { call, getLastError } = useApi();
+  const { submitting, run } = useSubmitGuard();
 
   const handleDeleteConfirm = async () => {
     if (!id) return;
@@ -143,6 +145,10 @@ export default function ProjectForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await run(performProjectSubmit);
+  };
+
+  const performProjectSubmit = async () => {
     setSubmitError(null);
 
     try {
@@ -417,8 +423,8 @@ export default function ProjectForm() {
           </p>
         )}
         <div className="flex gap-2 pt-2">
-          <Button type="submit">{t("common.submit")}</Button>
-          <Button type="button" variant="ghost" onClick={() => navigate(cancelTo)}>
+          <Button type="submit" loading={submitting}>{t("common.submit")}</Button>
+          <Button type="button" variant="ghost" onClick={() => navigate(cancelTo)} disabled={submitting}>
             {t("common.cancel")}
           </Button>
         </div>

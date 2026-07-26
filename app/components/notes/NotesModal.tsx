@@ -5,6 +5,8 @@ import { X, Trash2, Check, Pencil } from "lucide-react";
 import { useApi } from "~/api/useApi";
 import { GET_NOTES, ADD_NOTE, UPDATE_NOTE, DELETE_NOTE } from "~/api/queries";
 import { cn } from "~/lib/utils";
+import { LoadingBlock, Spinner } from "~/components/ui/spinner";
+import { useKeyedSubmitGuard } from "~/utils/useSubmitGuard";
 
 export type EntityType =
   | "action"
@@ -66,6 +68,8 @@ export default function NotesModal({
     }
   }, [editingId]);
 
+  const { isSubmitting: isDeleting, run: runDelete } = useKeyedSubmitGuard();
+
   const handleAdd = async () => {
     const body = newBody.trim();
     if (!body) return;
@@ -115,9 +119,11 @@ export default function NotesModal({
   };
 
   const handleDelete = async (id: string) => {
-    await call({ query: DELETE_NOTE, variables: { id } });
-    setNotes((prev) => prev.filter((n) => n.id !== id));
-    if (editingId === id) setEditingId(null);
+    await runDelete(id, async () => {
+      await call({ query: DELETE_NOTE, variables: { id } });
+      setNotes((prev) => prev.filter((n) => n.id !== id));
+      if (editingId === id) setEditingId(null);
+    });
   };
 
   const handleNewKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -161,7 +167,7 @@ export default function NotesModal({
         {/* Notes list */}
         <div className="flex-1 overflow-y-auto px-5 py-3 space-y-2">
           {loading ? (
-            <p className="text-sm text-muted-foreground py-4 text-center">…</p>
+            <LoadingBlock className="py-4" />
           ) : notes.length === 0 ? (
             <p className="text-sm text-muted-foreground py-4 text-center">
               {t("notes.emptyState")}
@@ -194,6 +200,7 @@ export default function NotesModal({
                       size="sm"
                       className="h-6 px-2 text-xs"
                       disabled={!editBody.trim() || saving}
+                      loading={saving}
                       onClick={() => handleSaveEdit(note.id)}
                       aria-label={t("notes.saveNote")}
                     >
@@ -220,10 +227,15 @@ export default function NotesModal({
                     </button>
                     <button
                       onClick={() => handleDelete(note.id)}
-                      className="p-1 text-muted-foreground hover:text-destructive transition-colors rounded"
+                      disabled={isDeleting(note.id)}
+                      className="p-1 text-muted-foreground hover:text-destructive transition-colors rounded disabled:opacity-50 disabled:pointer-events-none"
                       aria-label={t("notes.deleteNote")}
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      {isDeleting(note.id) ? (
+                        <Spinner className="h-3.5 w-3.5" />
+                      ) : (
+                        <Trash2 className="h-3.5 w-3.5" />
+                      )}
                     </button>
                   </div>
                 </div>
@@ -251,6 +263,7 @@ export default function NotesModal({
             <Button
               size="sm"
               disabled={!newBody.trim() || adding}
+              loading={adding}
               onClick={handleAdd}
             >
               <Check className="h-3.5 w-3.5 mr-1" />

@@ -36,6 +36,7 @@ import {
 } from "~/api/queries";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { cn } from "~/lib/utils";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 const REPEAT_UNIT_KEYS = ["minute", "hour", "day", "week", "month", "year"] as const;
 const DAY_LABEL_KEYS = ["dayMon", "dayTue", "dayWed", "dayThu", "dayFri", "daySat", "daySun"] as const;
@@ -175,6 +176,7 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
   const [searchParams] = useSearchParams();
   const isEdit = Boolean(id);
   const { call } = useApi();
+  const { submitting, run } = useSubmitGuard();
 
   const [title, setTitle] = useState("");
   const [status, setStatus] = useState<"active" | "inactive">("active");
@@ -342,6 +344,10 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await run(performIntervalSubmit);
+  };
+
+  const performIntervalSubmit = async () => {
     setTitleError(null);
     setRepeatError(null);
     setStepsError(null);
@@ -1139,8 +1145,8 @@ export default function IntervalForm({ mode }: { mode: ScheduleFormMode }) {
         )}
 
         <div className="flex gap-2 pt-4">
-          <Button type="submit">{t("intervals.save")}</Button>
-          <Button type="button" variant="ghost" onClick={() => navigate("/activities/intervals")}>
+          <Button type="submit" loading={submitting}>{t("intervals.save")}</Button>
+          <Button type="button" variant="ghost" onClick={() => navigate("/activities/intervals")} disabled={submitting}>
             {t("common.cancel")}
           </Button>
         </div>

@@ -19,6 +19,8 @@ import { format } from "date-fns";
 import { ChevronRight, Pencil, Sun, AlertTriangle } from "lucide-react";
 import HintPopover from "~/components/ui/HintPopover";
 import AfterDayWizard from "./AfterDayWizard";
+import { LoadingBlock } from "~/components/ui/spinner";
+import { useKeyedSubmitGuard } from "~/utils/useSubmitGuard";
 
 type ActionWithOverlap = {
   action: {
@@ -238,7 +240,12 @@ export default function PreDayWizard({
     });
   };
 
+  // Per-action guard: only the row being acted on locks, not the whole list.
+  const { isSubmitting: isActionBusy, busy: anyActionBusy, run: runAction } =
+    useKeyedSubmitGuard();
+
   const handleSetTime = async (actionId: string, timeStr: string) => {
+    await runAction(actionId, async () => {
     try {
       await call({
         query: SET_ACTION_START_TIME,
@@ -254,9 +261,11 @@ export default function PreDayWizard({
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handlePostpone = async (actionId: string, newDate: string) => {
+    await runAction(actionId, async () => {
     try {
       await call({ query: POSTPONE_ACTION, variables: { id: actionId, newDate } });
       const updated = await fetchPreDay();
@@ -274,9 +283,11 @@ export default function PreDayWizard({
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handleIgnore = async (actionId: string) => {
+    await runAction(actionId, async () => {
     try {
       await call({ query: SET_ACTION_IGNORE, variables: { id: actionId } });
       const updated = await fetchPreDay();
@@ -289,9 +300,11 @@ export default function PreDayWizard({
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handlePass = async (actionId: string) => {
+    await runAction(actionId, async () => {
     try {
       await call({ query: SET_ACTION_PASSED_ARCHIVED, variables: { id: actionId } });
       const updated = await fetchPreDay();
@@ -304,6 +317,7 @@ export default function PreDayWizard({
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handleOutsource = async (
@@ -313,6 +327,7 @@ export default function PreDayWizard({
     ensureTitle: string,
     ensureDate: string
   ) => {
+    await runAction(actionId, async () => {
     try {
       await call({
         query: OUTSOURCE_ACTION,
@@ -336,6 +351,7 @@ export default function PreDayWizard({
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handleStep2Submit = () => {
@@ -384,7 +400,7 @@ export default function PreDayWizard({
   if (loading) {
     return (
       <main className="p-6">
-        <p className="text-muted-foreground">{t("wizard.loading")}</p>
+        <LoadingBlock label={t("wizard.loading")} />
       </main>
     );
   }
@@ -461,7 +477,7 @@ export default function PreDayWizard({
                     {a.title}
                     {a.estimatedTimeMinutes != null && (
                       <span className="ml-2 text-sm text-muted-foreground">
-                        ({a.estimatedTimeMinutes} min)
+                        {t("wizard.minutesParen", { min: a.estimatedTimeMinutes })}
                       </span>
                     )}
                   </li>
@@ -519,6 +535,7 @@ export default function PreDayWizard({
                         <Button
                           size="sm"
                           disabled={!postponeDate[a.id]}
+                          loading={isActionBusy(a.id)}
                           onClick={() =>
                             postponeDate[a.id] && handlePostpone(a.id, postponeDate[a.id])
                           }
@@ -587,6 +604,7 @@ export default function PreDayWizard({
                         <Button
                           size="sm"
                           disabled={!outsourceForm.doDate || !outsourceForm.ensureDate}
+                          loading={isActionBusy(a.id)}
                           onClick={() =>
                             handleOutsource(
                               a.id,
@@ -649,6 +667,7 @@ export default function PreDayWizard({
                             <Button
                               variant="outline"
                               size="sm"
+                              loading={isActionBusy(a.id)}
                               onClick={() => handleIgnore(a.id)}
                             >
                               {t("wizard.ignore")}
@@ -658,6 +677,7 @@ export default function PreDayWizard({
                             <Button
                               variant="outline"
                               size="sm"
+                              loading={isActionBusy(a.id)}
                               onClick={() => handlePass(a.id)}
                             >
                               {t("wizard.pass")}
@@ -686,7 +706,7 @@ export default function PreDayWizard({
                 </Button>
               </div>
             )}
-            <Button onClick={handleStep2Submit} disabled={!isStep2Complete()}>
+            <Button onClick={handleStep2Submit} disabled={!isStep2Complete()} loading={anyActionBusy}>
               {t("wizard.submitTimes")}
             </Button>
           </div>
@@ -720,7 +740,7 @@ export default function PreDayWizard({
             </ul>
           )}
           <div className="flex justify-end">
-            <Button onClick={handleBegin} disabled={finishing} className="gap-2">
+            <Button onClick={handleBegin} loading={finishing} className="gap-2">
               <Sun className="h-4 w-4" />
               {t("wizard.begin")}
             </Button>

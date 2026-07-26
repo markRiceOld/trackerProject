@@ -7,6 +7,7 @@ import type { AppLanguage } from "~/i18n/config";
 import { getDateFnsLocale, getWeekStartsOn } from "~/i18n/dateLocale";
 import { useTranslation } from "react-i18next";
 import { ChevronLeft, ChevronRight } from "lucide-react";
+import { Spinner } from "~/components/ui/spinner";
 
 interface MonthWeeksViewProps {
   currentDate: Date;
@@ -139,7 +140,7 @@ export default function MonthWeeksView({
                                   aria-label={t("calendar.removeFromDay")}
                                   title={t("calendar.removeFromDay")}
                                 >
-                                  {assigningActionIds?.has(ev.entityId) ? "…" : "x"}
+                                  {assigningActionIds?.has(ev.entityId) ? <Spinner className="h-3 w-3" /> : "x"}
                                 </button>
                               </div>
                             ) : (

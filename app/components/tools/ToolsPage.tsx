@@ -15,6 +15,7 @@ import { Checkbox } from "~/components/ui/checkbox";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Badge } from "~/components/ui/badge";
+import { LoadingBlock, Spinner } from "~/components/ui/spinner";
 
 type ToolStep = 1 | 2;
 
@@ -411,7 +412,7 @@ export default function ToolsPage() {
                       aria-label={t("tools.clearDate")}
                       title={t("tools.clearDate")}
                     >
-                      {savingActionIds.has(actionId) ? "…" : "×"}
+                      {savingActionIds.has(actionId) ? <Spinner className="h-3 w-3" /> : "×"}
                     </button>
                   </span>
                 );
@@ -515,7 +516,7 @@ export default function ToolsPage() {
           </p>
         </div>
 
-        <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Wizard steps">
+        <div className="flex gap-2 overflow-x-auto pb-1" aria-label={t("wizard.wizardStepsAria")}>
           <button
             type="button"
             onClick={() => setStep(1)}
@@ -540,7 +541,7 @@ export default function ToolsPage() {
         {step === 1 && (
           <section className="space-y-6">
             {loading ? (
-              <p className="text-muted-foreground">{t("tools.loadingData")}</p>
+              <LoadingBlock label={t("tools.loadingData")} />
             ) : (
               <>
                 <div className="space-y-3">

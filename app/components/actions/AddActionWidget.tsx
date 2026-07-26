@@ -18,6 +18,8 @@ export type AddActionWidgetProps = {
   /** yyyy-MM-dd for min date and to show Start time when date is today */
   todayKey: string;
   canAdd: boolean;
+  /** True while the add mutation is in flight. */
+  busy?: boolean;
   /** Optional size for the trigger-style Add button when used as inline variant */
   addButtonSize?: "default" | "sm";
 };
@@ -36,6 +38,7 @@ export default function AddActionWidget({
   onCancel,
   todayKey,
   canAdd,
+  busy = false,
   addButtonSize = "default",
 }: AddActionWidgetProps) {
   const { t } = useTranslation();
@@ -115,6 +118,7 @@ export default function AddActionWidget({
           size={addButtonSize}
           onClick={onAdd}
           disabled={!canAdd}
+          loading={busy}
           title={t("actionsList.addAction")}
         >
           <Plus className="h-4 w-4 mr-1.5" />

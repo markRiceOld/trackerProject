@@ -30,6 +30,8 @@ import {
   ARCHIVE_JOURNAL,
   UPDATE_JOURNAL,
 } from "~/api/queries";
+import { LoadingBlock } from "~/components/ui/spinner";
+import { useSubmitGuard, useKeyedSubmitGuard } from "~/utils/useSubmitGuard";
 
 type JournalDetail = {
   id: string;
@@ -113,77 +115,105 @@ export default function JournalDetailPage() {
     fetchEntries();
   }, [fetchEntries]);
 
-  const handleSubmitEntry = () => {
+  const { submitting: composing, run: runCompose } = useSubmitGuard();
+  const { submitting: journalBusy, run: runJournal } = useSubmitGuard();
+  const { isSubmitting: isEntryBusy, run: runEntry } = useKeyedSubmitGuard();
+  const { isSubmitting: isAccessBusy, run: runAccess } = useKeyedSubmitGuard();
+
+  const refreshJournal = async () => {
+    const res: any = await call({ query: GET_JOURNAL, variables: { id } });
+    setJournal(res?.journal ?? null);
+  };
+
+  const handleSubmitEntry = async () => {
     if (!composerBody.trim() || !id) return;
-    setSubmitting(true);
-    call({ query: CREATE_ENTRY, variables: { journalId: id, body: composerBody.trim() } }).then(() => {
-      setComposerBody("");
-      setSubmitting(false);
-      fetchEntries();
-      call({ query: GET_JOURNAL, variables: { id } }).then((res: any) => {
-        setJournal(res?.journal ?? null);
-      });
+    await runCompose(async () => {
+      setSubmitting(true);
+      try {
+        await call({
+          query: CREATE_ENTRY,
+          variables: { journalId: id, body: composerBody.trim() },
+        });
+        setComposerBody("");
+        fetchEntries();
+        await refreshJournal();
+      } finally {
+        setSubmitting(false);
+      }
     });
   };
 
-  const handleEditSave = (entryId: string) => {
+  const handleEditSave = async (entryId: string) => {
     if (!editBody.trim()) return;
-    call({
-      query: UPDATE_ENTRY,
-      variables: { id: entryId, body: editBody.trim(), overrideTimestamp: editOverride },
-    }).then(() => {
+    await runEntry(entryId, async () => {
+      await call({
+        query: UPDATE_ENTRY,
+        variables: { id: entryId, body: editBody.trim(), overrideTimestamp: editOverride },
+      });
       setEditingEntryId(null);
       fetchEntries();
     });
   };
 
-  const handleArchiveEntry = (entryId: string) => {
-    call({ query: ARCHIVE_ENTRY, variables: { id: entryId } }).then(fetchEntries);
+  const handleArchiveEntry = async (entryId: string) => {
+    await runEntry(entryId, async () => {
+      await call({ query: ARCHIVE_ENTRY, variables: { id: entryId } });
+      fetchEntries();
+    });
   };
 
-  const handleAddAccess = () => {
+  const handleAddAccess = async () => {
     if (!accessEmail.trim() || !id) return;
-    setAddingAccess(true);
-    setAccessError("");
-    call({ query: ADD_JOURNAL_ACCESS, variables: { journalId: id, email: accessEmail.trim() } })
-      .then((res) => {
+    await runAccess("add", async () => {
+      setAddingAccess(true);
+      setAccessError("");
+      try {
+        const res = await call({
+          query: ADD_JOURNAL_ACCESS,
+          variables: { journalId: id, email: accessEmail.trim() },
+        });
         if (!res) {
-          setAddingAccess(false);
           setAccessError(getLastError() ?? t("journals.access.notFound"));
           return;
         }
         setAccessEmail("");
+        await refreshJournal();
+      } finally {
         setAddingAccess(false);
-        call({ query: GET_JOURNAL, variables: { id } }).then((res: any) => setJournal(res?.journal ?? null));
-      });
-  };
-
-  const handleRemoveAccess = (email: string) => {
-    if (!id) return;
-    call({ query: REMOVE_JOURNAL_ACCESS, variables: { journalId: id, email } }).then(() => {
-      call({ query: GET_JOURNAL, variables: { id } }).then((res: any) => setJournal(res?.journal ?? null));
+      }
     });
   };
 
-  const handleSetDefault = () => {
+  const handleRemoveAccess = async (email: string) => {
     if (!id) return;
-    call({ query: SET_DEFAULT_JOURNAL, variables: { journalId: id } }).then(() => {
-      call({ query: GET_JOURNAL, variables: { id } }).then((res: any) => setJournal(res?.journal ?? null));
+    await runAccess(email, async () => {
+      await call({ query: REMOVE_JOURNAL_ACCESS, variables: { journalId: id, email } });
+      await refreshJournal();
     });
   };
 
-  const handleArchiveJournal = () => {
+  const handleSetDefault = async () => {
     if (!id) return;
-    call({ query: ARCHIVE_JOURNAL, variables: { id } }).then(() => {
-      call({ query: GET_JOURNAL, variables: { id } }).then((res: any) => setJournal(res?.journal ?? null));
+    await runJournal(async () => {
+      await call({ query: SET_DEFAULT_JOURNAL, variables: { journalId: id } });
+      await refreshJournal();
     });
   };
 
-  const handleTitleSave = () => {
+  const handleArchiveJournal = async () => {
+    if (!id) return;
+    await runJournal(async () => {
+      await call({ query: ARCHIVE_JOURNAL, variables: { id } });
+      await refreshJournal();
+    });
+  };
+
+  const handleTitleSave = async () => {
     if (!titleDraft.trim() || !id) return;
-    call({ query: UPDATE_JOURNAL, variables: { id, title: titleDraft.trim() } }).then(() => {
+    await runJournal(async () => {
+      await call({ query: UPDATE_JOURNAL, variables: { id, title: titleDraft.trim() } });
       setEditingTitle(false);
-      call({ query: GET_JOURNAL, variables: { id } }).then((res: any) => setJournal(res?.journal ?? null));
+      await refreshJournal();
     });
   };
 
@@ -191,7 +221,7 @@ export default function JournalDetailPage() {
   const linkedEntity = journal?.linkedGoal ?? journal?.linkedProject;
 
   if (journal === null && entries === null) {
-    return <p className="p-6 text-muted-foreground">{t("common.loading")}</p>;
+    return <LoadingBlock className="p-6" />;
   }
   if (!journal) {
     return <p className="p-6 text-muted-foreground">{t("common.notFound")}</p>;
@@ -209,7 +239,7 @@ export default function JournalDetailPage() {
         className="text-2xl font-bold h-auto py-0 border-0 border-b rounded-none focus-visible:ring-0 px-0"
         autoFocus
       />
-      <Button size="sm" onClick={handleTitleSave}>{t("common.save")}</Button>
+      <Button size="sm" onClick={handleTitleSave} loading={journalBusy}>{t("common.save")}</Button>
       <Button size="sm" variant="ghost" onClick={() => setEditingTitle(false)}>{t("common.cancel")}</Button>
     </div>
   ) : (
@@ -232,7 +262,7 @@ export default function JournalDetailPage() {
       actions={
         <div className="flex items-center gap-1">
           {!journal.isDefault && !journal.isArchived && (
-            <Button size="sm" variant="ghost" onClick={handleSetDefault} title={t("journals.setDefault")}>
+            <Button size="sm" variant="ghost" onClick={handleSetDefault} loading={journalBusy} title={t("journals.setDefault")}>
               <Star className="h-4 w-4" />
             </Button>
           )}
@@ -287,6 +317,7 @@ export default function JournalDetailPage() {
                         variant="ghost"
                         className="h-6 w-6 p-0 text-muted-foreground"
                         onClick={() => handleRemoveAccess(a.userEmail)}
+                        loading={isAccessBusy(a.userEmail)}
                       >
                         <X className="h-3.5 w-3.5" />
                       </Button>
@@ -302,7 +333,7 @@ export default function JournalDetailPage() {
                   onKeyDown={(e) => e.key === "Enter" && handleAddAccess()}
                   className="h-8 text-sm"
                 />
-                <Button size="sm" onClick={handleAddAccess} disabled={!accessEmail.trim() || addingAccess}>
+                <Button size="sm" onClick={handleAddAccess} disabled={!accessEmail.trim() || addingAccess} loading={isAccessBusy("add")}>
                   <UserPlus className="h-3.5 w-3.5" />
                 </Button>
               </div>
@@ -316,6 +347,7 @@ export default function JournalDetailPage() {
                 variant="outline"
                 className="gap-2 text-muted-foreground"
                 onClick={handleArchiveJournal}
+                loading={journalBusy}
               >
                 <Archive className="h-3.5 w-3.5" />
                 {t("journals.archiveJournal")}
@@ -362,7 +394,7 @@ export default function JournalDetailPage() {
 
         {/* Entry list */}
         {entries === null ? (
-          <p className="text-muted-foreground text-sm">{t("common.loading")}</p>
+          <LoadingBlock className="py-4" />
         ) : visibleEntries.length === 0 ? (
           <p className="text-muted-foreground text-sm">
             {search || dateFrom || dateTo ? t("journals.noEntriesFiltered") : t("journals.noEntries")}
@@ -393,7 +425,7 @@ export default function JournalDetailPage() {
                         {t("journals.overrideTimestamp")}
                       </label>
                       <div className="flex gap-2 ml-auto">
-                        <Button size="sm" onClick={() => handleEditSave(entry.id)}>
+                        <Button size="sm" onClick={() => handleEditSave(entry.id)} loading={isEntryBusy(entry.id)}>
                           {t("common.save")}
                         </Button>
                         <Button
@@ -433,6 +465,7 @@ export default function JournalDetailPage() {
                             variant="ghost"
                             className="h-6 w-6 p-0 text-muted-foreground"
                             onClick={() => handleArchiveEntry(entry.id)}
+                            loading={isEntryBusy(entry.id)}
                           >
                             <Archive className="h-3.5 w-3.5" />
                           </Button>
@@ -468,6 +501,7 @@ export default function JournalDetailPage() {
                 size="sm"
                 onClick={handleSubmitEntry}
                 disabled={!composerBody.trim() || submitting}
+                loading={composing}
                 className="gap-2"
               >
                 <Plus className="h-3.5 w-3.5" />

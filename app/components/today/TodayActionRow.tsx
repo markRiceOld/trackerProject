@@ -13,6 +13,7 @@ import {
   SET_ACTION_PASSED_ARCHIVED,
 } from "~/api/queries";
 import { MoreVertical, Pencil } from "lucide-react";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 export type TodayAction = {
   id: string;
@@ -70,8 +71,12 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
     }
   };
 
+  // One fate per row at a time — each of these refetches the day.
+  const { submitting: acting, run: runAct } = useSubmitGuard();
+
   const handlePostpone = async () => {
     if (!postponeDate) return;
+    await runAct(async () => {
     try {
       await call({
         query: POSTPONE_ACTION,
@@ -83,10 +88,12 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handleOutsource = async () => {
     if (!outsourceForm.doDate || !outsourceForm.ensureDate) return;
+    await runAct(async () => {
     try {
       await call({
         query: OUTSOURCE_ACTION,
@@ -105,9 +112,11 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handleIgnore = async () => {
+    await runAct(async () => {
     try {
       await call({ query: SET_ACTION_IGNORE, variables: { id: action.id } });
       setOpen(false);
@@ -115,9 +124,11 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   const handlePass = async () => {
+    await runAct(async () => {
     try {
       await call({
         query: SET_ACTION_PASSED_ARCHIVED,
@@ -128,6 +139,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
     } catch (e) {
       console.error(e);
     }
+    });
   };
 
   return (
@@ -174,7 +186,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
               onChange={(e) => setPostponeDate(e.target.value)}
               className="w-40"
             />
-            <Button size="sm" variant="outline" onClick={handlePostpone} disabled={!postponeDate}>
+            <Button size="sm" variant="outline" onClick={handlePostpone} disabled={!postponeDate} loading={acting}>
               {t("wizard.postpone")}
             </Button>
           </div>
@@ -250,6 +262,7 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
               <div className="flex gap-2">
                 <Button
                   size="sm"
+                  loading={acting}
                   onClick={handleOutsource}
                   disabled={!outsourceForm.doDate || !outsourceForm.ensureDate}
                 >
@@ -276,14 +289,14 @@ export default function TodayActionRow({ action, onRefetch }: Props) {
 
           {/* Ignore (bucket list) - if available */}
           {canIgnore(action) && (
-            <Button size="sm" variant="outline" onClick={handleIgnore}>
+            <Button size="sm" variant="outline" onClick={handleIgnore} loading={acting}>
               {t("wizard.ignoreBucketList")}
             </Button>
           )}
 
           {/* Pass - if available */}
           {canPass(action) && (
-            <Button size="sm" variant="outline" onClick={handlePass}>
+            <Button size="sm" variant="outline" onClick={handlePass} loading={acting}>
               {t("wizard.pass")}
             </Button>
           )}

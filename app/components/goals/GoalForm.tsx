@@ -18,6 +18,7 @@ import DodClarityWizard, {
   buildInitialAnswers,
   firstFlaggedStep,
 } from "./DodClarityWizard";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 export default function GoalForm() {
   const { t } = useTranslation();
@@ -36,6 +37,7 @@ export default function GoalForm() {
   const [wizardOpen, setWizardOpen] = useState(false);
   const [wizardTargetStep, setWizardTargetStep] = useState<number | undefined>();
   const { call } = useApi(ADD_GOAL);
+  const { submitting, run } = useSubmitGuard();
 
   function handleClarityComplete(result: ClarityResult) {
     setDod(result.dod);
@@ -53,6 +55,10 @@ export default function GoalForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await run(performGoalSubmit);
+  };
+
+  const performGoalSubmit = async () => {
     const variables = {
       title,
       dod,
@@ -186,8 +192,8 @@ export default function GoalForm() {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit">{t("common.submit")}</Button>
-          <Button type="button" variant="ghost" onClick={() => navigate(-1)}>
+          <Button type="submit" loading={submitting}>{t("common.submit")}</Button>
+          <Button type="button" variant="ghost" onClick={() => navigate(-1)} disabled={submitting}>
             {t("common.cancel")}
           </Button>
         </div>

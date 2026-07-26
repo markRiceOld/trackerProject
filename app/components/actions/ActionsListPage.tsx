@@ -11,6 +11,8 @@ import { GET_ACTIONS, DELETE_ACTION } from "~/api/queries";
 import { parseDateOnly } from "~/utils/dateUtils";
 import { format, isAfter, isBefore, isToday, isValid } from "date-fns";
 import ListFilters from "~/components/ui/list-filters";
+import { LoadingBlock } from "~/components/ui/spinner";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 export interface Action {
   id?: string;
@@ -95,19 +97,23 @@ export default function ActionsListPage() {
     });
   }
 
+  const { submitting: bulkDeleting, run: runBulkDelete } = useSubmitGuard();
+
   async function deleteSelected() {
     if (selectedIds.size === 0) return;
     const ids = Array.from(selectedIds);
-    try {
-      await Promise.all(
-        ids.map((id) => call({ query: DELETE_ACTION, variables: { id } }))
-      );
-      setActions((prev) => (prev as Action[]).filter((a) => a.id && !selectedIds.has(a.id)));
-      setSelectedIds(new Set());
-      setSelectionMode(false);
-    } catch (err) {
-      console.error("Failed to delete selected:", err);
-    }
+    await runBulkDelete(async () => {
+      try {
+        await Promise.all(
+          ids.map((id) => call({ query: DELETE_ACTION, variables: { id } }))
+        );
+        setActions((prev) => (prev as Action[]).filter((a) => a.id && !selectedIds.has(a.id)));
+        setSelectedIds(new Set());
+        setSelectionMode(false);
+      } catch (err) {
+        console.error("Failed to delete selected:", err);
+      }
+    });
   }
 
   const sorted = [...(actions ?? [])].sort((a, b) => {
@@ -272,7 +278,7 @@ export default function ActionsListPage() {
     })),
   ];
 
-  if (!actions) return <p>{t("common.loading")}</p>;
+  if (!actions) return <LoadingBlock />;
 
   return (
     <InternalPageLayout
@@ -313,21 +319,22 @@ export default function ActionsListPage() {
               setSelectedIds(new Set());
             }}
           >
-            Select
+            {t("actionsList.select")}
           </Button>
         ) : (
           <>
             <span className="text-sm text-muted-foreground">
-              {selectedIds.size} selected
+              {t("actionsList.selectedCount", { count: selectedIds.size })}
             </span>
             <Button
               variant="destructive"
               size="sm"
               onClick={deleteSelected}
               disabled={selectedIds.size === 0}
+              loading={bulkDeleting}
             >
               <Trash2 className="h-4 w-4 mr-1.5" />
-              Delete
+              {t("common.delete")}
             </Button>
             <Button
               variant="ghost"
@@ -337,7 +344,7 @@ export default function ActionsListPage() {
                 setSelectedIds(new Set());
               }}
             >
-              Done
+              {t("actionsList.doneSelecting")}
             </Button>
           </>
         )}
@@ -367,7 +374,7 @@ export default function ActionsListPage() {
                   <div className="text-xs text-muted-foreground">
                     {action.tbd
                       ? format(parseDateOnly(action.tbd), "MMM d, yyyy")
-                      : "No date"}
+                      : t("actions.statusNoDate")}
                   </div>
                 </div>
               </div>

@@ -6,6 +6,7 @@ import { Link, useLocation, useNavigate } from "react-router";
 import { useApi } from "~/api/useApi";
 import { REGISTER_MUTATION } from "~/api/queries";
 import { useTranslation } from "react-i18next";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 
 
@@ -20,6 +21,7 @@ export default function RegisterPage() {
   const location = useLocation();
   const fromPath = location.state?.from?.pathname || "/today";
   const { call, getLastError, loading } = useApi(REGISTER_MUTATION);
+  const { submitting, run } = useSubmitGuard();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,21 +32,23 @@ export default function RegisterPage() {
       return;
     }
 
-    try {
-      const res = await call({ variables: { email, password } });
+    await run(async () => {
+      try {
+        const res = await call({ variables: { email, password } });
 
-      if (!res?.register) {
-        setError(getLastError() || t("auth.errors.registrationFailed"));
-        return;
+        if (!res?.register) {
+          setError(getLastError() || t("auth.errors.registrationFailed"));
+          return;
+        }
+
+        const { token } = res.register;
+        login(token);
+        navigate(fromPath, { replace: true });
+      } catch (err: any) {
+        setError(err?.message || t("auth.errors.registrationFailed"));
+        console.error(err);
       }
-
-      const { token } = res.register;
-      login(token);
-      navigate(fromPath, { replace: true });
-    } catch (err: any) {
-      setError(err?.message || t("auth.errors.registrationFailed"));
-      console.error(err);
-    }
+    });
   };
 
   return (
@@ -78,8 +82,8 @@ export default function RegisterPage() {
           autoComplete="new-password"
         />
         {error && <div className="text-sm text-red-500">{error}</div>}
-        <Button type="submit" className="w-full" disabled={loading}>
-          {loading ? t("auth.registering") : t("auth.register")}
+        <Button type="submit" className="w-full" loading={submitting || loading}>
+          {submitting || loading ? t("auth.registering") : t("auth.register")}
         </Button>
       </form>
       <Button variant="link" className="text-yellow-700">

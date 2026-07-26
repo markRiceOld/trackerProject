@@ -6,6 +6,7 @@ import { useAuth } from "./AuthContext";
 import { useApi } from "~/api/useApi";
 import { LOGIN_MUTATION } from "~/api/queries";
 import { useTranslation } from "react-i18next";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 
 
@@ -18,6 +19,7 @@ export default function LoginPage() {
   const location = useLocation();
   const { login } = useAuth();
   const { call, getLastError } = useApi(LOGIN_MUTATION);
+  const { submitting, run } = useSubmitGuard();
 
   const from = location.state?.from?.pathname || "/";
 
@@ -25,22 +27,24 @@ export default function LoginPage() {
     e.preventDefault();
     setError("");
 
-    try {
-      const res = await call({
-        variables: { email, password },
-      });
+    await run(async () => {
+      try {
+        const res = await call({
+          variables: { email, password },
+        });
 
-      if (!res?.login?.token) {
-        setError(getLastError() || t("auth.errors.loginFailed"));
-        return;
+        if (!res?.login?.token) {
+          setError(getLastError() || t("auth.errors.loginFailed"));
+          return;
+        }
+
+        login(res.login.token);
+        navigate(from, { replace: true });
+      } catch (err: any) {
+        setError(err?.message || t("auth.errors.somethingWrong"));
+        console.error(err);
       }
-
-      login(res.login.token);
-      navigate(from, { replace: true });
-    } catch (err: any) {
-      setError(err?.message || t("auth.errors.somethingWrong"));
-      console.error(err);
-    }
+    });
   };
 
   return (
@@ -59,7 +63,7 @@ export default function LoginPage() {
           onChange={(e) => setPassword(e.target.value)}
         />
         {error && <div className="text-sm text-red-500">{error}</div>}
-        <Button type="submit" className="w-full">
+        <Button type="submit" className="w-full" loading={submitting}>
           {t("auth.login")}
         </Button>
       </form>

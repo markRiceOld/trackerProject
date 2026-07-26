@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { useApi } from "~/api/useApi";
 import { GET_JOURNALS, ADD_QUICK_ENTRY } from "~/api/queries";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 type JournalOption = { id: string; title: string; isDefault: boolean };
 
@@ -38,9 +39,15 @@ export default function JournalQuickAdd() {
     return () => document.removeEventListener("mousedown", handler);
   }, []);
 
-  const handleSubmit = () => {
+  const { submitting, run } = useSubmitGuard();
+
+  const handleSubmit = async () => {
     if (!input.trim() || !targetId) return;
-    call({ query: ADD_QUICK_ENTRY, variables: { body: input.trim(), journalId: targetId } }).then(() => {
+    await run(async () => {
+      await call({
+        query: ADD_QUICK_ENTRY,
+        variables: { body: input.trim(), journalId: targetId },
+      });
       setInput("");
     });
   };
@@ -92,7 +99,7 @@ export default function JournalQuickAdd() {
           onKeyDown={(e) => e.key === "Enter" && handleSubmit()}
           className="flex-1"
         />
-        <Button size="icon" onClick={handleSubmit} disabled={!input.trim()} variant="outline">
+        <Button size="icon" onClick={handleSubmit} disabled={!input.trim()} loading={submitting} variant="outline">
           <Plus className="h-4 w-4" />
         </Button>
       </div>

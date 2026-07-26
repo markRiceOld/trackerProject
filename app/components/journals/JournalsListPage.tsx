@@ -13,6 +13,7 @@ import {
   ARCHIVE_JOURNAL,
   SET_DEFAULT_JOURNAL,
 } from "~/api/queries";
+import { LoadingBlock } from "~/components/ui/spinner";
 
 type JournalSummary = {
   id: string;
@@ -139,7 +140,7 @@ export default function JournalsListPage() {
               onChange={(e) => setCreateDescription(e.target.value)}
             />
             <div className="flex gap-2">
-              <Button size="sm" onClick={handleCreate} disabled={!createTitle.trim() || creating}>
+              <Button size="sm" onClick={handleCreate} disabled={!createTitle.trim() || creating} loading={creating}>
                 {creating ? t("common.saving") : t("common.create")}
               </Button>
               <Button
@@ -159,7 +160,7 @@ export default function JournalsListPage() {
 
         {/* Journal list */}
         {journals === null ? (
-          <p className="text-muted-foreground">{t("common.loading")}</p>
+          <LoadingBlock />
         ) : visibleJournals.length === 0 ? (
           <div className="rounded-xl border border-dashed p-8 text-center space-y-2">
             <BookOpen className="h-8 w-8 mx-auto text-muted-foreground/50" />

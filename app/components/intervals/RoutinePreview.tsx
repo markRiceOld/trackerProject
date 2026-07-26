@@ -75,10 +75,10 @@ export default function RoutinePreview(props: RoutinePreviewProps) {
       <div className="flex items-start justify-between gap-2">
         <div className="text-xs text-muted-foreground space-y-1 min-w-0">
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
-            <span>Time of day: {timeLabel}</span>
+            <span>{t("intervals.timeOfDayLabel")} {timeLabel}</span>
           </div>
           <div className="flex flex-wrap items-center gap-x-2 gap-y-0">
-            <span>{stepCount} step{stepCount !== 1 ? "s" : ""}</span>
+            <span>{stepCount === 1 ? t("intervals.stepCountOne") : t("intervals.stepCountOther", { count: stepCount })}</span>
           </div>
         </div>
         {showControls && (

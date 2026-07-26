@@ -13,6 +13,7 @@ import { InlineEdit } from "~/components/ui/inline-edit";
 import { Pencil, Trash2 } from "lucide-react";
 import { useApi } from "~/api/useApi";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 import { useTranslation } from "react-i18next";
 
 const MAX_ESTIMATED_MINUTES = 24 * 60; // 24 hours
@@ -81,6 +82,8 @@ export default function ActionForm() {
   const navigate = useNavigate();
   const { call } = useApi();
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const { submitting, run } = useSubmitGuard();
+  const { submitting: deleting, run: runDelete } = useSubmitGuard();
 
   const startOfToday = (() => {
     const d = new Date();
@@ -189,45 +192,51 @@ export default function ActionForm() {
       return;
     }
 
+    // Time is optional in general, but mandatory once the action is due today.
+    const timeStr = startTimeOfDay.trim();
     if (tbdIsToday) {
-      const timeStr = startTimeOfDay.trim();
       if (!timeStr || !isValidTime(timeStr)) {
         setTimeOfDayError(t("actions.errors.timeRequiredToday"));
         return;
       }
+    } else if (timeStr && !isValidTime(timeStr)) {
+      setTimeOfDayError(t("actions.errors.timeInvalid"));
+      return;
     }
 
-    try {
-      const isEditing = isEdit && id;
-      const mutation = isEditing ? UPDATE_ACTION : ADD_ACTION;
-      const tbdStr = tbd ? toLocalDateString(tbd) : null;
-      const startTime = tbdIsToday && startTimeOfDay.trim() && isValidTime(startTimeOfDay.trim())
-        ? startTimeOfDay.trim().slice(0, 5)
-        : undefined;
+    await run(async () => {
+      try {
+        const isEditing = isEdit && id;
+        const mutation = isEditing ? UPDATE_ACTION : ADD_ACTION;
+        const tbdStr = tbd ? toLocalDateString(tbd) : null;
+        const startTime = timeStr && isValidTime(timeStr) ? timeStr.slice(0, 5) : undefined;
 
-      const variables = isEditing
-        ? {
-            id,
-            title,
-            tbd: tbdStr,
-            done: false,
-            estimatedTimeMinutes: estNum ?? undefined,
-            startTimeOfDay: startTime ?? undefined,
-            projectId: projectId || null,
-          }
-        : {
-            title,
-            tbd: tbdStr,
-            estimatedTimeMinutes: estNum ?? undefined,
-            startTimeOfDay: startTime,
-            projectId: projectId || undefined,
-          };
+        const variables = isEditing
+          ? {
+              id,
+              title,
+              tbd: tbdStr,
+              done: false,
+              estimatedTimeMinutes: estNum ?? undefined,
+              // null (not undefined) so clearing the field actually clears it —
+              // the resolver skips undefined and writes null.
+              startTimeOfDay: startTime ?? null,
+              projectId: projectId || null,
+            }
+          : {
+              title,
+              tbd: tbdStr,
+              estimatedTimeMinutes: estNum ?? undefined,
+              startTimeOfDay: startTime,
+              projectId: projectId || undefined,
+            };
 
-      const res = await call({ query: mutation, variables });
-      if (res?.updateAction ?? res?.addAction) navigate(returnTo);
-    } catch (error) {
-      console.error("Failed to submit action:", error);
-    }
+        const res = await call({ query: mutation, variables });
+        if (res?.updateAction ?? res?.addAction) navigate(returnTo);
+      } catch (error) {
+        console.error("Failed to submit action:", error);
+      }
+    });
   };
 
   function handleCancel() {
@@ -242,9 +251,11 @@ export default function ActionForm() {
 
   const handleDeleteConfirm = async () => {
     if (!id) return;
-    await call({ query: DELETE_ACTION, variables: { id } });
-    setDeleteConfirmOpen(false);
-    navigate(returnTo);
+    await runDelete(async () => {
+      await call({ query: DELETE_ACTION, variables: { id } });
+      setDeleteConfirmOpen(false);
+      navigate(returnTo);
+    });
   };
 
   if (isEdit) {
@@ -259,6 +270,7 @@ export default function ActionForm() {
             variant="ghost"
             className="h-8 w-8 text-destructive hover:text-destructive ms-2"
             onClick={() => setDeleteConfirmOpen(true)}
+            disabled={deleting}
             title={t("actions.deleteAction")}
             aria-label={t("actions.deleteAction")}
           >
@@ -308,42 +320,57 @@ export default function ActionForm() {
                 </Button>
               </div>
             ) : (
-              <p
-                className="text-muted-foreground cursor-pointer text-sm"
+              // The hint only makes sense once a date is showing — with no date
+              // the label already reads "Click to set…". It disappears on its own
+              // while the calendar is open, since that replaces this whole block.
+              <button
+                type="button"
+                className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground"
                 onClick={() => {
                   setEditingTbd(true);
                   setTempTbd(tbd);
                 }}
               >
-                {tbd ? format(tbd, "MMM d, yyyy") : t("actions.clickToSetTbdDate")}
-              </p>
+                <span>
+                  {tbd ? format(tbd, "MMM d, yyyy") : t("actions.clickToSetTbdDate")}
+                </span>
+                {tbd && (
+                  <span className="text-xs text-muted-foreground/80 underline underline-offset-2">
+                    {t("actions.clickToUpdate")}
+                  </span>
+                )}
+                <Pencil className="h-3.5 w-3.5 shrink-0" aria-hidden />
+              </button>
             )}
           </div>
 
-          {tbdIsToday && (
-            <div className="space-y-2">
-              <Label htmlFor="startTimeOfDay" className="flex items-center gap-2">
-                {t("actions.timeToDo")} <span className="text-destructive">*</span>
-                <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
-              </Label>
-              <Input
-                id="startTimeOfDay"
-                type="time"
-                value={startTimeOfDay}
-                onChange={(e) => {
-                  setStartTimeOfDay(e.target.value);
-                  setTimeOfDayError(null);
-                }}
-                aria-invalid={Boolean(timeOfDayError)}
-                className={timeOfDayError ? "border-red-500" : undefined}
-              />
-              {timeOfDayError && (
-                <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
-                  {timeOfDayError}
-                </p>
+          <div className="space-y-2">
+            <Label htmlFor="startTimeOfDay" className="flex items-center gap-2">
+              {t("actions.timeToDo")}{" "}
+              {tbdIsToday ? (
+                <span className="text-destructive">*</span>
+              ) : (
+                `(${t("actions.optional")})`
               )}
-            </div>
-          )}
+              <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+            </Label>
+            <Input
+              id="startTimeOfDay"
+              type="time"
+              value={startTimeOfDay}
+              onChange={(e) => {
+                setStartTimeOfDay(e.target.value);
+                setTimeOfDayError(null);
+              }}
+              aria-invalid={Boolean(timeOfDayError)}
+              className={timeOfDayError ? "border-red-500" : undefined}
+            />
+            {timeOfDayError && (
+              <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+                {timeOfDayError}
+              </p>
+            )}
+          </div>
 
           <div className="space-y-2">
             <Label htmlFor="estimatedTimeMinutes" className="flex items-center gap-2">
@@ -406,8 +433,8 @@ export default function ActionForm() {
           )}
 
           <div className="flex gap-2 pt-2">
-            <Button type="submit">{t("actions.update")}</Button>
-            <Button type="button" variant="outline" onClick={handleCancel}>
+            <Button type="submit" loading={submitting}>{t("actions.update")}</Button>
+            <Button type="button" variant="outline" onClick={handleCancel} disabled={submitting}>
               {t("actions.cancel")}
             </Button>
           </div>
@@ -455,30 +482,33 @@ export default function ActionForm() {
           />
         </div>
 
-        {tbdIsToday && (
-          <div className="space-y-2">
-            <Label htmlFor="startTimeOfDay" className="flex items-center gap-2">
-              {t("actions.timeToDo")} <span className="text-destructive">*</span>
-              <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
-            </Label>
-            <Input
-              id="startTimeOfDay"
-              type="time"
-              value={startTimeOfDay}
-              onChange={(e) => {
-                setStartTimeOfDay(e.target.value);
-                setTimeOfDayError(null);
-              }}
-              aria-invalid={Boolean(timeOfDayError)}
-              className={timeOfDayError ? "border-red-500" : undefined}
-            />
-            {timeOfDayError && (
-              <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
-                {timeOfDayError}
-              </p>
+        <div className="space-y-2">
+          <Label htmlFor="startTimeOfDay" className="flex items-center gap-2">
+            {t("actions.timeToDo")}{" "}
+            {tbdIsToday ? (
+              <span className="text-destructive">*</span>
+            ) : (
+              `(${t("actions.optional")})`
             )}
-          </div>
-        )}
+            <Pencil className="h-3.5 w-3.5 text-muted-foreground shrink-0" aria-hidden />
+          </Label>
+          <Input
+            id="startTimeOfDay"
+            type="time"
+            value={startTimeOfDay}
+            onChange={(e) => {
+              setStartTimeOfDay(e.target.value);
+              setTimeOfDayError(null);
+            }}
+            aria-invalid={Boolean(timeOfDayError)}
+            className={timeOfDayError ? "border-red-500" : undefined}
+          />
+          {timeOfDayError && (
+            <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
+              {timeOfDayError}
+            </p>
+          )}
+        </div>
 
         <div className="space-y-2">
           <Label htmlFor="estimatedTimeMinutes" className="flex items-center gap-2">
@@ -500,7 +530,7 @@ export default function ActionForm() {
             className={estimatedTimeError ? "border-red-500 focus-visible:ring-red-500/30" : undefined}
           />
           <p className="text-xs text-muted-foreground">
-            Max 24 hours (1440 min). Required when a due date is set.
+            {t("actions.maxTimeHelp")}
           </p>
           {estimatedTimeError && (
             <p role="alert" className="text-sm font-medium text-red-600 dark:text-red-400">
@@ -537,7 +567,7 @@ export default function ActionForm() {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit">{t("actions.create")}</Button>
+          <Button type="submit" loading={submitting}>{t("actions.create")}</Button>
           <Button type="button" variant="outline" onClick={handleCancel}>
             {t("actions.cancel")}
           </Button>

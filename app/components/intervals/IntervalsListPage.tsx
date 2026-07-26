@@ -10,6 +10,7 @@ import IntervalPreview, { type IntervalPreviewProps } from "./IntervalPreview";
 import RoutinePreview, { type RoutinePreviewProps } from "./RoutinePreview";
 import { useApi } from "~/api/useApi";
 import { GET_INTERVALS, GET_ROUTINES } from "~/api/queries";
+import { LoadingBlock } from "~/components/ui/spinner";
 
 type ScheduleItem =
   | { kind: "interval"; data: IntervalPreviewProps }
@@ -43,7 +44,7 @@ export default function IntervalsListPage() {
     setItems((prev) => prev?.filter((x) => x.kind !== kind || x.data.id !== id) ?? []);
   };
 
-  if (!items) return <p className="p-6">{t("common.loading")}</p>;
+  if (!items) return <LoadingBlock className="p-6" />;
 
   return (
     <>

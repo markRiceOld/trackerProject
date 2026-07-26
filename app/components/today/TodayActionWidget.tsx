@@ -9,6 +9,7 @@ import type { Action } from "../actions/ActionsListPage";
 import { useApi } from "~/api/useApi";
 import { ADD_ACTION, DELETE_ACTION, GET_STANDALONE_ACTIONS } from "~/api/queries";
 import { toLocalDateString } from "~/utils/dateUtils";
+import { LoadingBlock } from "~/components/ui/spinner";
 
 export default function TodayActionWidget() {
   const [actions, setActions] = useState<Action[]>([]);
@@ -83,7 +84,7 @@ export default function TodayActionWidget() {
 
   }
 
-  if (loading) return <p className="p-6">{t("common.loading")}</p>;
+  if (loading) return <LoadingBlock className="p-6" />;
 
   return (
     <div className="space-y-4">

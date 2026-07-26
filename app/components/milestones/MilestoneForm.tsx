@@ -14,12 +14,14 @@ import { Pencil, Trash2 } from "lucide-react";
 import HintPopover from "~/components/ui/HintPopover";
 import { format, isValid } from "date-fns";
 import { parseDateOnly, toLocalDateString } from "~/utils/dateUtils";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 export default function MilestoneForm() {
   const { t } = useTranslation();
   const { goalId, milestoneId } = useParams<{ goalId: string; milestoneId?: string }>();
   const navigate = useNavigate();
   const { call } = useApi();
+  const { submitting, run } = useSubmitGuard();
 
   const startOfToday = (() => {
     const d = new Date();
@@ -92,6 +94,10 @@ export default function MilestoneForm() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    await run(performMilestoneSubmit);
+  };
+
+  const performMilestoneSubmit = async () => {
     if (!goalId) return;
 
     const predictionDateStr =
@@ -245,7 +251,7 @@ export default function MilestoneForm() {
         </div>
 
         <div className="flex gap-2 pt-2">
-          <Button type="submit">{t("common.submit")}</Button>
+          <Button type="submit" loading={submitting}>{t("common.submit")}</Button>
           <Button
             type="button"
             variant="ghost"

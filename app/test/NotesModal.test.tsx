@@ -71,7 +71,7 @@ describe("initial render", () => {
     // never resolves — we check before the promise settles
     mockCall.mockReturnValue(new Promise(() => {}));
     renderModal();
-    expect(screen.getByText("…")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   it("shows empty state when no notes returned", async () => {

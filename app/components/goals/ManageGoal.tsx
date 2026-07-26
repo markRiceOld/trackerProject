@@ -36,6 +36,8 @@ import { cn } from "~/lib/utils";
 import { ConfirmDialog } from "~/components/ui/confirm-dialog";
 import { InlineEdit } from "~/components/ui/inline-edit";
 import NotesModal from "~/components/notes/NotesModal";
+import { LoadingBlock } from "~/components/ui/spinner";
+import { useSubmitGuard } from "~/utils/useSubmitGuard";
 
 type ParsedProject = ProjectPreviewProps & {
   startDate: Date | null;
@@ -362,8 +364,11 @@ export default function ManageGoalPage() {
     setSelectedProjectToLink("");
   };
 
+  const { submitting: linking, run: runLink } = useSubmitGuard();
+
   const handleLinkGoal = async () => {
     if (!selectedGoalToLink) return;
+    await runLink(async () => {
     await call({
       query: UPDATE_GOAL,
       variables: {
@@ -373,10 +378,12 @@ export default function ManageGoalPage() {
     });
     closeLinkPanels();
     refetchGoal();
+    });
   };
 
   const handleLinkInterval = async () => {
     if (!selectedIntervalToLink || !id) return;
+    await runLink(async () => {
     await call({
       query: UPDATE_INTERVAL,
       variables: {
@@ -388,10 +395,12 @@ export default function ManageGoalPage() {
     });
     closeLinkPanels();
     refetchGoal();
+    });
   };
 
   const handleLinkProject = async () => {
     if (!selectedProjectToLink || !id) return;
+    await runLink(async () => {
     await call({
       query: UPDATE_PROJECT,
       variables: {
@@ -402,6 +411,7 @@ export default function ManageGoalPage() {
     });
     closeLinkPanels();
     refetchGoal();
+    });
   };
 
 
@@ -495,7 +505,7 @@ export default function ManageGoalPage() {
   };
 
   if (loadError) return <p className="p-6 text-destructive">{t(`goalManage.${loadError}`)}</p>;
-  if (!goal) return <p className="p-6">{t("goalManage.loading")}</p>;
+  if (!goal) return <LoadingBlock className="p-6" label={t("goalManage.loading")} />;
 
   const allProjects = [
     ...goal.projects,
@@ -676,10 +686,11 @@ export default function ManageGoalPage() {
               size="sm"
               onClick={linkIntervalToGoal ? handleLinkInterval : linkProjectToGoal ? handleLinkProject : handleLinkGoal}
               disabled={linkIntervalToGoal ? !selectedIntervalToLink : linkProjectToGoal ? !selectedProjectToLink : !selectedGoalToLink}
+              loading={linking}
             >
               {t("goalManage.link")}
             </Button>
-            <Button size="sm" variant="ghost" onClick={closeLinkPanels}>
+            <Button size="sm" variant="ghost" onClick={closeLinkPanels} disabled={linking}>
               {t("goalManage.cancel")}
             </Button>
           </div>
