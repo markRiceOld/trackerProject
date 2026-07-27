@@ -346,7 +346,10 @@
     "openTimeMap": "Open Time Map",
     "journalsTitle": "Journals",
     "journalsDescription": "Running records of thought and progress, optionally anchored to a goal or project.",
-    "openJournals": "Open Journals"
+    "openJournals": "Open Journals",
+    "skillsTitle": "Skills",
+    "skillsDescription": "Practice the habits that decide whether working with AI helps or hurts — starting with evidence-seeking.",
+    "openEvidenceLab": "Open Evidence Lab"
   },
   "calendarPage": {
     "title": "Calendar",
@@ -922,6 +925,114 @@
     "errors": {
       "createFailed": "Could not generate the token.",
       "copyFailed": "Could not copy to the clipboard — select the token and copy it manually."
+    }
+  },
+  "skills": {
+    "evidence": {
+      "title": "Evidence Lab",
+      "subtitle": "Training one reflex: leave a confident answer and check it against something independent. The aim is discrimination, not suspicion.",
+      "startDrill": "Start a drill",
+      "modulesTitle": "Modules",
+      "practiceModule": "Practice",
+      "dueOn": "due {{date}}"
+    },
+    "intro": {
+      "step1Title": "Check, don't judge",
+      "step1Body": "You'll see AI answers that look exactly like real ones. Some are wrong; some are perfectly correct. Your job is to find out which — not to find fault.",
+      "step2Title": "Go sideways, fast",
+      "step2Body": "Don't reason about the answer on its own terms. Open something independent, spend forty seconds, come back. Speed is part of the skill, not a compromise.",
+      "step3Title": "Commit before you look",
+      "step3Body": "You give a verdict and a confidence before anything is revealed. That's deliberate: it's the only way to find out what you actually would have concluded."
+    },
+    "banners": {
+      "draftLocale": "This language's items are machine-drafted and awaiting review by a native speaker. Practice works normally; wording may change.",
+      "probeBlocked": "Scored assessment is not available yet: {{count}} item(s) still need a human to verify the answer key and freeze search results. Practice works today.",
+      "noBaseline": "You haven't taken the baseline yet. Without it, later scores have nothing to be compared against.",
+      "baselineSkipped": "You skipped the baseline, so later scores aren't comparable to a starting point. Practice still counts."
+    },
+    "metrics": {
+      "strictComposite": "Checked and correct",
+      "discrimination": "Discrimination",
+      "discriminationHint": "Faulty items caught, minus true items wrongly flagged. This is the number that separates skill from suspicion.",
+      "reflexSpeed": "Median time to check",
+      "overTrust": "Over-trust",
+      "hitRate": "Faulty caught",
+      "falseAlarmRate": "True claims flagged",
+      "calibration": "Calibration (Brier)",
+      "attempts": "Items done",
+      "lateral": "Checked first",
+      "independent": "Independent source",
+      "accurate": "Right verdict",
+      "trace": "Fault located"
+    },
+    "state": {
+      "not_started": "Not started",
+      "in_progress": "In progress",
+      "mastered": "Mastered",
+      "tested_out": "Tested out",
+      "due_review": "Review due"
+    },
+    "verdict": {
+      "supported": "Supported",
+      "unsupported": "Unsupported",
+      "misattributed": "Misattributed",
+      "outdated": "Out of date",
+      "contested": "Contested",
+      "cant_tell": "Can't tell yet"
+    },
+    "faultTag": {
+      "none": "Nothing wrong",
+      "citation": "The citation",
+      "quote": "The quote",
+      "claim_support": "Source doesn't support it",
+      "recency": "It's out of date",
+      "framing": "Framed as settled",
+      "existence": "It doesn't exist",
+      "figure": "A number or figure"
+    },
+    "drill": {
+      "itemLabel": "Module: {{module}}",
+      "sidewaysHint": "Read the answer, then check it before deciding. Fluency tells you nothing about accuracy.",
+      "checkSideways": "Check sideways",
+      "frozenResults": "Results frozen with this item, so every attempt meets the same evidence.",
+      "suggestedSearches": "Suggested searches — these open in a new tab.",
+      "pasteBackHint": "Bring back what you found: the link, and the line that settles it.",
+      "urlPlaceholder": "https://…",
+      "snippetPlaceholder": "The sentence that answers it",
+      "addSource": "Add source",
+      "verdictLabel": "Your verdict",
+      "faultLabel": "Which part fails?",
+      "confidenceLabel": "Confidence: {{value}}%",
+      "commitWarning": "Committing locks your verdict and reveals the answer. Checks made after this point don't count.",
+      "commit": "Commit verdict",
+      "correctVerdict": "Correct verdict: {{verdict}}",
+      "masteryRemaining": "Still needed for mastery",
+      "nextItem": "Next item",
+      "backToOverview": "Back to Evidence Lab",
+      "exhaustedTitle": "No items left in this pool",
+      "exhaustedBody": "Every item here has been used. An item is spent once it's been revealed — re-serving it would measure memory instead of skill. More items arrive with the next content pass.",
+      "falseAlarmNote": "This claim was accurate. Flagging a true answer is the failure mode that looks like diligence — checking means finding out, not finding fault.",
+      "overTrustNote": "You were confident, wrong, and didn't check. That combination is the strongest single predictor of a bad outcome when working with AI."
+    },
+    "errors": {
+      "couldNotStart": "Could not start an item. Try again.",
+      "couldNotSubmit": "Could not record your verdict. Try again."
+    },
+    "plan": {
+      "title": "Put this in my calendar",
+      "description": "Schedule module sittings as ordinary actions, so practice competes for time alongside everything else you've committed to.",
+      "configure": "Configure",
+      "hide": "Hide",
+      "startDate": "Start",
+      "sessionsPerWeek": "Sittings per week",
+      "timeOfDay": "Time of day",
+      "schedule": "Add to calendar",
+      "reschedule": "Reschedule",
+      "clear": "Remove from calendar",
+      "scheduledSummary": "{{count}} sitting(s) scheduled. Next: {{date}}.",
+      "nothingUpcoming": "Nothing upcoming — reschedule to add more.",
+      "twoSittingsNote": "Each module is scheduled twice on different days. That isn't padding: mastery needs correct, checked attempts on two separate days, so a single-sitting plan would look complete and never get there.",
+      "rerunNote": "Rescheduling replaces upcoming sittings. Ones you've already done, and any in the past, are left alone."
     }
   }
 }

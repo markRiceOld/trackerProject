@@ -17,6 +17,8 @@ import IntervalsListPage from "./components/intervals/IntervalsListPage";
 import IntervalForm from "./components/intervals/IntervalForm";
 import JournalsListPage from "./components/journals/JournalsListPage";
 import JournalDetailPage from "./components/journals/JournalDetailPage";
+import EvidenceLabPage from "./components/skills/EvidenceLabPage";
+import EvidenceDrillPage from "./components/skills/EvidenceDrillPage";
 import { Navigate } from "react-router";
 
 export default [
@@ -43,6 +45,14 @@ export default [
   {
     path: "/tools/journals",
     element: <JournalsListPage />,
+  },
+  {
+    path: "/tools/skills/evidence",
+    element: <EvidenceLabPage />,
+  },
+  {
+    path: "/tools/skills/evidence/drill",
+    element: <EvidenceDrillPage />,
   },
   {
     path: "/tools/journals/:id",

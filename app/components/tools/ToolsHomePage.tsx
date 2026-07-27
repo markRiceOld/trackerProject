@@ -33,6 +33,16 @@ export default function ToolsHomePage() {
           {t("toolsHome.openJournals")}
         </Button>
       </section>
+
+      <section className="rounded-lg border bg-card p-5">
+        <div className="mb-4 space-y-1">
+          <h2 className="text-lg font-semibold">{t("toolsHome.skillsTitle")}</h2>
+          <p className="text-sm text-muted-foreground">{t("toolsHome.skillsDescription")}</p>
+        </div>
+        <Button onClick={() => navigate("/tools/skills/evidence")}>
+          {t("toolsHome.openEvidenceLab")}
+        </Button>
+      </section>
     </main>
   );
 }

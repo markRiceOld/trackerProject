@@ -1175,3 +1175,160 @@ export const DELETE_NOTE = `
     }
   }
 `;
+
+// ─── Skill tools (Evidence Lab) ──────────────────────────────────────────────
+// Note what these documents cannot ask for: there is no `key`, `faultTarget` or
+// `reveal` field on SkillItem. The answer is only ever returned by
+// submitSkillAttempt, after a verdict has been committed.
+
+export const GET_SKILL_MODULES = `
+  query SkillModules($skillKey: SkillKey!) {
+    skillModules(skillKey: $skillKey) {
+      moduleKey
+      title
+      concept
+      model
+      state
+      currentStep
+      masteredAt
+      nextReviewAt
+    }
+  }
+`;
+
+export const GET_SKILL_PROGRESS = `
+  query SkillProgress($skillKey: SkillKey!) {
+    skillProgress(skillKey: $skillKey) {
+      skillKey
+      contentVersion
+      locale
+      reviewStatus
+      hasBaseline
+      assessmentSkipped
+      probeReady
+      probeBlockers
+      calendarPlanningEnabled
+      totalAttempts
+      itemCount
+      strictCount
+      strictComposite
+      hitRate
+      falseAlarmRate
+      discrimination
+      meanBrier
+      medianTimeToFirstCheckMs
+      overTrustRate
+      accuracyRate
+    }
+  }
+`;
+
+export const START_SKILL_ITEM = `
+  mutation StartSkillItem($skillKey: SkillKey!, $mode: SkillMode!, $moduleKey: String) {
+    startSkillItem(skillKey: $skillKey, mode: $mode, moduleKey: $moduleKey) {
+      attemptId
+      item {
+        itemId
+        moduleKey
+        difficulty
+        prompt
+        answer
+        snapshotQueries {
+          query
+          results {
+            title
+            url
+            snippet
+          }
+        }
+      }
+    }
+  }
+`;
+
+export const LOG_SKILL_CHECK_EVENT = `
+  mutation LogSkillCheckEvent($attemptId: ID!, $kind: String!, $payload: String) {
+    logSkillCheckEvent(attemptId: $attemptId, kind: $kind, payload: $payload)
+  }
+`;
+
+export const SUBMIT_SKILL_ATTEMPT = `
+  mutation SubmitSkillAttempt(
+    $attemptId: ID!
+    $verdict: SkillVerdict!
+    $confidence: Int!
+    $faultTag: SkillFaultTag!
+    $sources: [SkillSourceInput!]
+    $timeZoneOffsetMinutes: Int
+  ) {
+    submitSkillAttempt(
+      attemptId: $attemptId
+      verdict: $verdict
+      confidence: $confidence
+      faultTag: $faultTag
+      sources: $sources
+      timeZoneOffsetMinutes: $timeZoneOffsetMinutes
+    ) {
+      attemptId
+      lateral
+      independence
+      accuracy
+      traceQuality
+      strict
+      brier
+      timeToFirstCheckMs
+      falseAlarm
+      overTrust
+      correctVerdict
+      reveal
+      moduleState
+      masteryUnmet
+    }
+  }
+`;
+
+export const SKIP_SKILL_ASSESSMENT = `
+  mutation SkipSkillAssessment($skillKey: SkillKey!) {
+    skipSkillAssessment(skillKey: $skillKey)
+  }
+`;
+
+export const GET_SKILL_PLAN = `
+  query SkillPlan($skillKey: SkillKey!) {
+    skillPlan(skillKey: $skillKey) {
+      actionId
+      moduleKey
+      title
+      tbd
+      done
+    }
+  }
+`;
+
+export const PLAN_SKILL_SCHEDULE = `
+  mutation PlanSkillSchedule(
+    $skillKey: SkillKey!
+    $startDate: String!
+    $sessionsPerWeek: Int
+    $timeOfDay: String
+    $sessionsPerModule: Int
+  ) {
+    planSkillSchedule(
+      skillKey: $skillKey
+      startDate: $startDate
+      sessionsPerWeek: $sessionsPerWeek
+      timeOfDay: $timeOfDay
+      sessionsPerModule: $sessionsPerModule
+    ) {
+      created
+      removed
+      warnings
+    }
+  }
+`;
+
+export const CLEAR_SKILL_SCHEDULE = `
+  mutation ClearSkillSchedule($skillKey: SkillKey!) {
+    clearSkillSchedule(skillKey: $skillKey)
+  }
+`;
